@@ -9,7 +9,12 @@ Make sure you up your bdd on docker (docker compose up -d)
 
 ## Frontend
 
-
+```
+npm run dev
+pnpm dev
+bun dev
+...
+```
 
 ## Docker 
 
