@@ -4,32 +4,75 @@ Open-source &amp; self-hosted e-learning platform
 
 ## Backend 
 
-Command to execute the back : `.\mvnw.cmd spring-boot:run` 
-Make sure you up your bdd on docker (docker compose up -d)
+Java
 
 ## Frontend
 
+Next.js
+
+## Docker Infrastructure
+
+### Architecture
+
+Three services orchestrated by `docker-compose.yml` at the root :
+
+| Service | Image | Port |
+|---|---|---|
+| `postgres` | `postgres:16-alpine` | 5432 |
+| `backend` | Build multi-stage Maven → JRE 17 alpine | 8080 |
+| `frontend` | Build multi-stage Next.js standalone | 3000 |
+
+The backend waits for PostgreSQL to be healthy before starting (health check). Data is persisted in a named Docker volume.
+
+### Launching
+
+**1. Configure secrets (one-time setup)**
+
+```bash
+cp .env.example .env # Linux
+copy .env.example .env # Windows
+# Edit .env: fill in secrets
 ```
-npm run dev
-pnpm dev
-bun dev
-...
+
+**2. Start (Windows / Linux / Mac)**
+
+```bash
+docker compose up --build -d
 ```
 
-## Docker 
+The application is accessible at `http://localhost:3000`, and the API at `http://localhost:8080`.
 
-Claude :
+### Commandes utiles
 
+```bash
+docker compose logs -f # follow logs in real-time
+docker compose ps # service status
+docker compose down # stop
+docker compose down -v # stop + delete database
 ```
-- Deux Dockerfiles séparés dans le front-end et le back-end :
-Chacun build dans son application et tourne indépendamment. Le docker-compose.yml à la racine les orchestre ensemble avec PostgreSQL.
 
-- docker-compose.dev.yml : 
-En dev vous ne voulez pas rebuilder l'image à chaque changement. Ce fichier surcharge le principal pour monter les sources en volume et activer le hot-reload.
+With `make` (Linux / Mac) :
 
-- .env.example : 
-Ce fichier documente toutes les variables nécessaires (DB_PASSWORD, JWT_SECRET, etc.), chaque organisation copie-colle et remplit ses valeurs.
+```bash
+make prod # build + strat everything
+make dev # development mode (frontend hot-reload, DB Docker)
+make logs # real-time logs
+make down # stop everything
+make clean # stop + delete volumes
+```
 
-- docker/postgres/init.sql :
-Le schéma initial de la base, exécuté automatiquement au premier lancement du container PostgreSQL.
+### Development Mode
+
+Run only the database in Docker, and the apps locally:
+
+```bash
+docker compose up postgres -d
+# In one terminal: cd apps/backend && .\mvnw.cmd spring-boot:run
+# In another: cd apps/frontend && pnpm dev
+```
+
+Or with frontend hot-reload via Docker:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```

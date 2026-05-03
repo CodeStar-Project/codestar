@@ -1,0 +1,13 @@
+# Environment secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+
+# Claude 
+.claude/

@@ -1,0 +1,30 @@
+# Dev override: mounts sources + hot-reload for frontend.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# For backend hot-reload, run locally: .\apps\backend\mvnw.cmd spring-boot:run
+# The backend service below is disabled in dev so you can run it natively.
+
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    environment:
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_PROFILES_ACTIVE: dev
+    # Remove the non-root user constraint in dev for easier debugging
+    user: root
+
+  frontend:
+    build:
+      target: build
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+    command: sh -c "npm install -g pnpm && pnpm dev"
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
