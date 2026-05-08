@@ -1,26 +1,215 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Brand color system
+   Validated palette — see CLAUDE.md (2026-05-04).
+   Primary accent: #F28022 — used as accent only, never large fill.
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand surfaces & ink */
+  --color-canvas-raw: #f5f5f7;
+  --color-surface-raw: #ffffff;
+  --color-surface-2-raw: #fafafc;
+  --color-ink-raw: #1d1d1f;
+  --color-ink-2-raw: #6e6e73;
+  --color-ink-3-raw: #aeaeb2;
+  --color-line-raw: rgba(0, 0, 0, 0.08);
+  --color-line-strong-raw: rgba(0, 0, 0, 0.13);
+
+  /* Brand accent — single source of truth for #F28022 */
+  --color-brand-raw: #f28022;
+  --color-brand-soft-raw: #fde9d8;
+  --color-brand-deep-raw: #c8651a;
+
+  /* Code surfaces (cool, never warm) */
+  --color-code-bg-raw: #111318;
+  --color-code-fg-raw: #cdd6f4;
+
+  /* Navy alt theme reference */
+  --color-navy-raw: #0b1220;
+  --color-navy-2-raw: #111d32;
+
+  /* shadcn radius */
+  --radius: 0.875rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ---- Brand tokens (used directly across the site) ---- */
+  --color-canvas: var(--color-canvas-raw);
+  --color-surface: var(--color-surface-raw);
+  --color-surface-2: var(--color-surface-2-raw);
+  --color-ink: var(--color-ink-raw);
+  --color-ink-2: var(--color-ink-2-raw);
+  --color-ink-3: var(--color-ink-3-raw);
+  --color-line: var(--color-line-raw);
+  --color-line-strong: var(--color-line-strong-raw);
+  --color-brand: var(--color-brand-raw);
+  --color-brand-soft: var(--color-brand-soft-raw);
+  --color-brand-deep: var(--color-brand-deep-raw);
+  --color-code-bg: var(--color-code-bg-raw);
+  --color-code-fg: var(--color-code-fg-raw);
+  --color-navy: var(--color-navy-raw);
+  --color-navy-2: var(--color-navy-2-raw);
+
+  /* Backwards-compat alias: `accent` was the previous name for brand orange.
+     Keeping it alive so legacy classNames (text-accent, bg-accent) still resolve. */
+  --color-accent: var(--color-brand-raw);
+  --color-accent-soft: var(--color-brand-soft-raw);
+  --color-accent-deep: var(--color-brand-deep-raw);
+
+  /* ---- shadcn semantic tokens (mapped to the brand) ---- */
+  --color-background: var(--color-canvas-raw);
+  --color-foreground: var(--color-ink-raw);
+  --color-card: var(--color-surface-raw);
+  --color-card-foreground: var(--color-ink-raw);
+  --color-popover: var(--color-surface-raw);
+  --color-popover-foreground: var(--color-ink-raw);
+  --color-primary: var(--color-brand-raw);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-surface-raw);
+  --color-secondary-foreground: var(--color-ink-raw);
+  --color-muted: var(--color-canvas-raw);
+  --color-muted-foreground: var(--color-ink-2-raw);
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--color-line-strong-raw);
+  --color-input: var(--color-line-strong-raw);
+  --color-ring: var(--color-brand-raw);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-outfit), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-display: var(--font-outfit), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 88px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas-raw);
+  color: var(--color-ink-raw);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-brand-raw);
+  color: #fff;
+}
+
+/* ============================================================
+   Display utilities
+   ============================================================ */
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.94;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.bg-dots {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -12px -12px;
+}
+
+.bg-grid {
+  background-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.04) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  background: currentColor;
+  margin-left: 0.18em;
+  vertical-align: -0.18em;
+  animation: blink 1.06s step-end infinite;
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.float-soft {
+  animation: float-soft 6s ease-in-out infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .cursor-blink,
+  .float-soft {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }
