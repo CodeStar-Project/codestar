@@ -1,10 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Document d'évolution du projet `codestar` à partir du draft `codestar-draft-design/`.
-> Source de vérité visuelle : draft (8 écrans React mock). Source de vérité technique : ce document.
->
 > Dernière mise à jour : 2026-05-09
-> Branche cible v1 : `front/home-page-non-auth` (à étendre vers `feat/v1-auth-cohort`)
 
 ---
 
@@ -14,16 +10,17 @@
 
 - Une instance = un déploiement = une organisation. Pas de SaaS centralisé.
 - Branding personnalisable par l'instance (couleur, logo, hero, polices).
-- Mention `Built on Codestar` figée par la licence GPLv3 — non retirable via l'UI.
+- Mention `[logo] Codestar` figée par la licence GPLv3 - non retirable via l'UI.
 - Public cible : 50–5 000 apprenants par instance.
 
-### Principes design (non-négociables)
+### Principes design (fixes)
 
 1. **Liquid Glass complet** — vitres translucides (`backdrop-filter: blur`), palette pastel iOS, accents doux. Abandon de l'accent `#F28022` unique défini dans `apps/frontend/CLAUDE.md` (à mettre à jour dans la même PR que la nouvelle HomePage).
 2. **Chaleureux + professionnel** — pas de néon, pas de flat brutalisme. Référence : Apple Vision OS, Linear, Arc Browser.
-3. **Mobile-first dès v1** sur les pages publiques (Landing + Login).
+3. **Mobile-first dès v1** sur toutes les pages.
 4. **Accessibilité WCAG AA** — contraste vérifié sur palette pastel, focus visibles, ARIA correct.
-5. **i18n prête dès v1** — `next-intl`, contenu FR seul mais arborescence `messages/{locale}.json` en place.
+5. **i18n prête dès v1** — `next-intl`, langage par defaut en anglais et rajout de la langue française dès la v1.
+6. **light / dark mode** dès la v1. 
 
 ---
 
@@ -34,7 +31,7 @@
 | Architecture | Single-tenant par déploiement Docker |
 | Identité instance | Fichier `instance.json` (volume Docker monté), lu au boot par le backend, exposé via `GET /api/instance/branding` |
 | Persistance branding | Phase v1 : JSON manuel · Phase v2 : page Branding super-admin réécrit le JSON |
-| `Built on Codestar` | Footer figé dans le composant `<SiteFooter />`, non paramétrable, imposé par licence GPLv3 |
+| `[Logo] Codestar` | Footer figé dans le composant `<SiteFooter />`, non paramétrable, imposé par licence GPLv3 |
 
 **Format `instance.json` v1** :
 ```json
@@ -65,35 +62,35 @@ Légende : ✅ = autorisé · ⚠️ = autorisé sur ses propres ressources · �
 | **Auth** ||||||
 | Voir landing publique | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Créer un compte (signup public) | ✅ | — | — | — | — |
-| Rejoindre via code invitation cohorte | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Rejoindre via code invitation groupe | ⚠️ doit se connecter par la suite | ✅ | ✅ | ✅ | ✅ |
 | Se connecter | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Catalogue & cours** ||||||
 | Voir catalogue cours publiés | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Lire un cours | ❌ | ✅ | ✅ | ✅ | ✅ |
 | Marquer progression / bookmarks / notes | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Répondre aux quiz, gagner XP | ❌ | ✅ | ✅ (en mode preview) | ✅ (en preview) | ✅ |
+| Répondre aux quiz | ❌ | ✅ | ✅ (en mode preview) | ✅ (en preview) | ✅ |
 | Créer un cours | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Éditer un cours | ❌ | ❌ | ⚠️ ses cours | ✅ | ✅ |
 | Publier / dépublier un cours | ❌ | ❌ | ⚠️ ses cours | ✅ | ✅ |
 | Supprimer un cours | ❌ | ❌ | ⚠️ ses cours | ✅ | ✅ |
-| **Cohortes** ||||||
-| Voir les cohortes auxquelles je suis inscrit | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Créer / éditer une cohorte | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Assigner un curriculum (cours) à une cohorte | ❌ | ❌ | ✅ (sur cohortes qu'il anime) | ✅ | ✅ |
-| Générer / révoquer codes d'invitation | ❌ | ❌ | ⚠️ pour ses cohortes | ✅ | ✅ |
+| **Groupes** ||||||
+| Voir les groupes auxquelles je suis inscrit | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Créer / éditer une groupe | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Assigner un cours à un groupe | ❌ | ❌ | ✅ (sur groupe qu'il anime) | ✅ | ✅ |
+| Générer / révoquer codes d'invitation | ❌ | ❌ | ⚠️ pour ses groupes | ✅ | ✅ |
 | **Utilisateurs** ||||||
-| Voir liste des étudiants d'une cohorte | ❌ | ❌ | ⚠️ ses cohortes | ✅ | ✅ |
-| Promouvoir / rétrograder rôles | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Voir liste des étudiants d'un groupe | ❌ | ❌ | ⚠️ ses groupes | ✅ | ✅ |
+| Promouvoir / rétrograder rôles | ❌ | ❌ | ❌ | ⚠️ les roles inférieurs à lui | ✅ |
 | Désactiver / supprimer un utilisateur | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **Gamification** ||||||
-| Voir classement (cohorte / global) | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Réinitialiser saison classement | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Voir classement (groupe / global) | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Réinitialiser saison/classement | ❌ | ❌ | ⚠️ ses groupes | ✅ | ✅ |
 | **Branding & instance** ||||||
-| Modifier branding (couleur, logo, hero, polices) | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Modifier branding (couleur, logo, hero, polices) | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Modifier paramètres instance (locale, signup ouvert/fermé, OAuth providers) | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Retirer mention `Built on Codestar` | — | — | — | — | ❌ (figé licence) |
+| Retirer mention `[Logo] Codestar` | — | — | — | — | ❌ (figé licence) |
 | Voir le dashboard admin (KPI, inscriptions, top cours) | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Exporter CSV stats | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Exporter CSV stats | ❌ | ❌ | ⚠️ ses groupes | ✅ | ✅ |
 
 ### Implémentation Spring Security
 
@@ -104,9 +101,9 @@ Légende : ✅ = autorisé · ⚠️ = autorisé sur ses propres ressources · �
 
 ---
 
-## 4. Modèle de données (entités v1 + v2 + v3)
+## 4. Modèle de données (entités v1 + v2 + v3) à déterminer
 
-### v1 (auth + cohortes)
+### v1 (auth + groupes)
 
 ```
 User
@@ -118,7 +115,7 @@ User
  ├── created_at
  └── disabled_at (nullable)
 
-Cohort
+Groups
  ├── id (UUID)
  ├── name
  ├── slug (unique)
@@ -127,17 +124,17 @@ Cohort
  ├── created_by (User.id)
  └── created_at
 
-CohortMembership
+GroupMembership
  ├── user_id (FK User)
- ├── cohort_id (FK Cohort)
+ ├── group_id (FK Group)
  ├── joined_at
- ├── role_in_cohort (enum: STUDENT | TEACHER)
- └── PK (user_id, cohort_id)
+ ├── role_in_group (enum: STUDENT | TEACHER)
+ └── PK (user_id, group_id)
 
 InvitationCode
  ├── id (UUID)
  ├── code (unique, format XXXX-XXXX-XXXX)
- ├── cohort_id (FK Cohort)
+ ├── group_id (FK Group)
  ├── max_uses (int, default 1)
  ├── used_count (int, default 0)
  ├── expires_at (nullable)
@@ -172,11 +169,11 @@ CourseBlock
  ├── payload (JSONB) — contenu spécifique au kind
  └── created_at
 
-CohortCurriculum
- ├── cohort_id (FK Cohort)
+GroupCurriculum
+ ├── group_id (FK Group)
  ├── course_id (FK Course)
  ├── added_at
- └── PK (cohort_id, course_id)
+ └── PK (group_id, course_id)
 
 Enrollment
  ├── user_id (FK User)
@@ -230,30 +227,30 @@ Streak
  └── updated_at
 ```
 
-### Schéma de migration
+### Schéma de migration à determiner
 
-Flyway versionné `V001__init.sql`, `V002__cohorts.sql`, etc. Une migration = une PR. Pas de modification rétroactive d'une migration mergée.
+Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une PR. Pas de modification rétroactive d'une migration mergée.
 
 ---
 
-## 5. API REST attendue
+## 5. API REST attendue à déterminer
 
 Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseDto<T> { success, message, data }` (déjà existant).
 
-### v1 — Auth & cohortes
+### v1 — Auth & groupes
 
 | Méthode | Endpoint | Rôle | Description |
 |---|---|---|---|
 | POST | `/api/v1/auth/register` | Visitor | Inscription email + mot de passe + invitationCode (obligatoire si signup fermé) |
 | POST | `/api/v1/auth/login` | Visitor | Retourne JWT |
 | POST | `/api/v1/auth/logout` | Tout authentifié | Invalide token (blacklist Redis ou expiration courte) |
-| GET | `/api/v1/auth/me` | Tout authentifié | Profil + rôle + cohortes |
-| POST | `/api/v1/cohorts/join` | Tout authentifié | Body `{ code }` → ajoute le user à la cohorte si valide |
-| GET | `/api/v1/cohorts` | Admin / SA | Liste toutes les cohortes |
-| GET | `/api/v1/cohorts/mine` | Tout authentifié | Mes cohortes |
-| POST | `/api/v1/cohorts` | Admin / SA | Créer une cohorte |
-| PATCH | `/api/v1/cohorts/{id}` | Admin / SA | Modifier nom/dates |
-| POST | `/api/v1/cohorts/{id}/invitations` | Admin / Teacher (sa cohorte) | Génère un code (params : maxUses, expiresAt) |
+| GET | `/api/v1/auth/me` | Tout authentifié | Profil + rôle + groupes |
+| POST | `/api/v1/groups/join` | Tout authentifié | Body `{ code }` → ajoute le user au gorupe si valide |
+| GET | `/api/v1/groups` | Admin / SA | Liste toutes les groupes |
+| GET | `/api/v1/groups/mine` | Tout authentifié | Mes groupes |
+| POST | `/api/v1/groups` | Admin / SA | Créer un group |
+| PATCH | `/api/v1/groups/{id}` | Admin / SA | Modifier nom/dates |
+| POST | `/api/v1/groups/{id}/invitations` | Admin / Teacher (son groupe) | Génère un code (params : maxUses, expiresAt) |
 | DELETE | `/api/v1/invitations/{id}` | Admin / créateur | Révoque |
 | GET | `/api/v1/instance/branding` | Visitor | Renvoie `instance.json` |
 
@@ -273,8 +270,8 @@ Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseD
 | POST | `/api/v1/bookmarks` | Student+ |
 | DELETE | `/api/v1/bookmarks/{id}` | Propriétaire |
 | GET/PUT | `/api/v1/notes/{courseId}/{blockId}` | Propriétaire |
-| GET | `/api/v1/cohorts/{id}/curriculum` | Membre cohorte |
-| PUT | `/api/v1/cohorts/{id}/curriculum` | Admin+ ou Teacher animant |
+| GET | `/api/v1/groups/{id}/curriculum` | Membre groupe |
+| PUT | `/api/v1/groups/{id}/curriculum` | Admin+ ou Teacher animant |
 | PATCH | `/api/v1/instance/branding` | Admin+ |
 
 ### v3 — Gamification
@@ -282,15 +279,13 @@ Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseD
 | Méthode | Endpoint | Rôle |
 |---|---|---|
 | POST | `/api/v1/quiz/{blockId}/attempt` | Student+ |
-| GET | `/api/v1/leaderboard?scope={global,cohort,friends}&season={current}` | Student+ |
+| GET | `/api/v1/leaderboard?scope={global,groups,friends}&season={current}` | Student+ |
 | GET | `/api/v1/me/stats` | Student+ — XP, streak, badges, rang |
 | POST | `/api/v1/admin/leaderboard/reset` | Admin+ |
 
 ---
 
 ## 6. Spécifications UI (8 écrans)
-
-Référence visuelle : `codestar-draft-design/*.jsx`. Le draft est en français, conserver la copie sauf indication contraire. **Tous les écrans en Liquid Glass (cf. §7).**
 
 ### Écran 1 — Landing publique (Visitor) · `/`
 
@@ -301,14 +296,14 @@ Sections de haut en bas :
 3. **Cours mis en avant** — 3 cartes glass avec gradient pastel, emoji XL, chip catégorie, titre, auteur, note. Clic → `/login`. **v1 : utilise mock data ou cache (`COURSES` du draft) puis remplace en v2 par `GET /courses?featured=true`.**
 4. **Trois piliers** — `Lecteur soigné` · `Progression motivante` · `Cours par des gens qui savent`. Cards glass avec icône pastel.
 5. **CTA final** — gros card glass centrée, titre éditorial, bouton primary.
-6. **Footer figé** — logo + nom instance + © + `Built on Codestar` (badge non éditable, lien vers le repo GitHub Codestar).
+6. **Footer figé** — logo + nom instance + © + `[Logo] Codestar` (badge non éditable, lien vers le repo GitHub Codestar).
 
 ### Écran 2 — Login & Signup & Join · `/login`
 
 3 modes dans la même page (state local) : `signin` · `signup` · `join`.
 
 Layout split 50/50 desktop, 100% mobile :
-- **Gauche (form)** — logo, h1 contextuel ("Bon retour." / "Créer un compte." / "Rejoindre votre cohorte."), inputs glass.
+- **Gauche (form)** — logo, h1 contextuel ("Bon retour." / "Créer un compte." / "Rejoindre votre groupe."), inputs glass.
   - **signin** : email + password + lien `Oublié ?` (désactivé v1) + boutons `Continuer avec Google/GitHub` masqués v1.
   - **signup** : email + password + (optionnel) `code d'invitation` si `instance.signupOpen=false` → obligatoire.
   - **join** : juste un input `code XXXX-XXXX-XXXX` → si user pas connecté, redirige vers signup pré-rempli avec le code.
@@ -324,16 +319,16 @@ Sections :
 
 1. **Hero greeting** — date courte mono, `Bonjour {prénom},` + emphase italique sur le streak (`14 jours de série. Continuons.`). À droite : card glass avec XP total + Rang (cliquable → `/leaderboard`).
 2. **Reprendre** — 3 cards (cours en cours, progress > 0 et < 1), barre de progression liquid, lien `Reprendre →`.
-3. **Découvrir** — h2 + filtres topics (chips glass cliquables) + grille 3 colonnes (desktop) / 1 col (mobile) des cours du curriculum (intersection des cohortes du user). Layout grid/list selon `instance.feedLayout`.
+3. **Découvrir** — h2 + filtres topics (chips glass cliquables) + grille 3 colonnes (desktop) / 1 col (mobile) des cours du curriculum (intersection des groupes du user). Layout grid/list selon `instance.feedLayout`.
 
 ### Écran 4 — Mes cours · `/my-courses`
 
 Vue **étudiant uniquement**. Liste tous les enrollments du user, groupés par statut :
 - **En cours** (progress > 0 et < 1) — cards avec progress bar.
 - **Terminés** (progress = 1) — cards plus discrètes, badge `Complété`.
-- **À démarrer** (curriculum cohorte non encore commencé) — cards "ghost", CTA `Commencer`.
+- **À démarrer** (curriculum groupe non encore commencé) — cards "ghost", CTA `Commencer`.
 
-Tri par `last_activity_at`. Filtre par cohorte si user dans plusieurs cohortes.
+Tri par `last_activity_at`. Filtre par groupe si user dans plusieurs groupes.
 
 ### Écran 5 — Lecteur de cours · `/courses/{slug}`
 
@@ -356,7 +351,7 @@ Tri par `last_activity_at`. Filtre par cohorte si user dans plusieurs cohortes.
 ### Écran 7 — Classement · `/leaderboard`
 
 - Hero éditorial : saison courante mono uppercase (`SAISON · MAI 2026`), titre `Classement de la semaine`, sous-titre règles XP + reset hebdo dimanche.
-- Toggle scope glass (`Global · Amis · Cohorte`).
+- Toggle scope glass (`Global · Amis · Groupe`).
 - **Podium** — 3 colonnes (2-1-3 avec or au centre, taille variable), avatars, médailles emoji.
 - **Table** — lignes (rank · avatar · nom · streak · cours · XP), highlight ligne du user courant.
 
@@ -383,7 +378,7 @@ Persistance : autosave debounced (1.5s) → `PUT /courses/{id}/blocks`.
 - Layout `1fr 380px` : settings à gauche, **live preview glass à droite (sticky)**.
 - Blocks : Identité (nom + tagline + logo presets/upload) · Page d'accueil (hero title/sub/cta) · Couleur d'accent (palette pastel + custom picker) · Typographie · Style cartes · Layout feed · Mode clair/sombre.
 - Bouton `Enregistrer` → `PATCH /instance/branding` → réécrit `instance.json` côté backend.
-- Mention figée `Built on Codestar` rappelée dans une callout.
+- Mention figée `[Logo] Codestar` rappelée dans une callout.
 
 ---
 
@@ -484,16 +479,16 @@ body {
 
 ## 8. Roadmap phasée
 
-### Phase v1 — Socle auth + landing (cible : 4–6 semaines · 1 dev fullstack)
+### Phase v1 — Socle auth + landing
 
-**Objectif** : un visiteur peut découvrir Codestar, créer un compte, rejoindre une cohorte avec un code. Les rôles existent en DB. Pas de cours, pas de gamification.
+**Objectif** : un visiteur peut découvrir Codestar, créer un compte, rejoindre un groupe avec un code. Les rôles existent en DB. Pas de cours, pas de gamification.
 
 | # | Tâche | Couche | Effort |
 |---|---|---|---|
-| 1.1 | Migration Flyway initiale (User + Role + Cohort + CohortMembership + InvitationCode) | back | M |
+| 1.1 | Migration Flyway initiale (User + Role + Group + GroupMembership + InvitationCode) | back | M |
 | 1.2 | Mise à jour `User.java` (UUID, email, role enum, displayName) | back | S |
 | 1.3 | Endpoints `/auth/{login,register,me,logout}` avec invitation code optionnelle | back | M |
-| 1.4 | Endpoints `/cohorts/*` + `/invitations/*` | back | M |
+| 1.4 | Endpoints `/groups/*` + `/invitations/*` | back | M |
 | 1.5 | Endpoint `/instance/branding` (lit `instance.json`) | back | S |
 | 1.6 | Spring Security : `@PreAuthorize` par rôle, JWT claims | back | M |
 | 1.7 | Tokens DA Liquid Glass dans `globals.css` + `<MeshBackground>` | front | M |
@@ -502,23 +497,15 @@ body {
 | 1.10 | Page `/login` (3 modes signin/signup/join, split layout, mobile-first) | front | M |
 | 1.11 | Hook React `useInstanceBranding()` consommant `/instance/branding` au mount | front | S |
 | 1.12 | Setup `next-intl` + arborescence `messages/fr.json` | front | S |
-| 1.13 | Setup Playwright + 3 tests E2E (signup, login, join cohorte) | tests | M |
+| 1.13 | Setup Playwright + 3 tests E2E (signup, login, join groupe) | tests | M |
 | 1.14 | Mise à jour `apps/frontend/CLAUDE.md` (nouvelle DA Liquid Glass) | docs | XS |
 | 1.15 | Mise à jour `README.md` (rôles, fichier `instance.json`, capture d'écran landing) | docs | S |
-
-**Definition of Done v1** :
-- ✅ Tous les tests Playwright passent
-- ✅ Lighthouse mobile sur `/` ≥ 90 (perf, a11y, best-practices)
-- ✅ Aucun warning console en prod build
-- ✅ Bundle JS landing < 200kb gzipped
-- ✅ Contraste vérifié (axe-core CI)
-- ✅ Backend : couverture > 70% sur services auth/cohort
 
 ### Phase v2 — Cours + dashboards + branding UI (cible : 8–10 semaines)
 
 | # | Tâche | Dépend | Effort |
 |---|---|---|---|
-| 2.1 | Migrations Course + CourseBlock + CohortCurriculum + Enrollment + Bookmark + Note | 1.1 | L |
+| 2.1 | Migrations Course + CourseBlock + GroupCurriculum + Enrollment + Bookmark + Note | 1.1 | L |
 | 2.2 | Endpoints `/courses/*` + `/blocks/*` + `/enrollments/*` + `/bookmarks/*` + `/notes/*` | 2.1 | L |
 | 2.3 | Page `/home` étudiant (hero + reprendre + découvrir) | 1.9, 2.2 | M |
 | 2.4 | Page `/courses/{slug}` lecteur 3 colonnes + responsive bottom-sheet TOC | 2.2 | XL |
@@ -542,7 +529,7 @@ body {
 | 3.6 | Génération PDF/print du cours (bouton Télécharger) | 2.4 | M |
 | 3.7 | Spring OAuth2 : provider Google + GitHub | 1.6 | L |
 | 3.8 | Boutons OAuth réactivés sur `/login` | 3.7 | S |
-| 3.9 | Notifications (bell topbar) : nouveau cours dans cohorte, badge gagné | 3.1 | M |
+| 3.9 | Notifications (bell topbar) : nouveau cours dans groupe, badge gagné | 3.1 | M |
 | 3.10 | Mode sombre auto + manuel | 1.7 | S |
 | 3.11 | i18n : ajouter `en` (EN) | 1.12 | M |
 
@@ -587,13 +574,13 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 ## 10. Checklist de démarrage v1 (ordre d'attaque conseillé)
 
 1. ☐ Créer branche `feat/v1-liquid-glass-foundation` depuis `front/home-page-non-auth`.
-2. ☐ Mettre à jour `apps/frontend/CLAUDE.md` avec la nouvelle DA Liquid Glass (§7).
-3. ☐ Définir tokens CSS dans `globals.css`, créer `<MeshBackground>`.
-4. ☐ Créer la lib de composants glass (`<GlassCard>`, `<GlassButton>`, etc.).
-5. ☐ Réécrire `app/page.tsx` (HomePage publique) — supprimer Sovereignty/Personas/etc, recréer Hero + Featured + Pillars + CTA + Footer figé.
-6. ☐ Créer `app/login/page.tsx` (3 modes).
-7. ☐ Setup `next-intl`, déplacer toutes les chaînes FR dans `messages/fr.json`.
-8. ☐ En parallèle backend : Flyway init + entités + endpoints auth/cohorts.
+2. ✅ Mettre à jour `apps/frontend/CLAUDE.md` avec la nouvelle DA Liquid Glass (§7).
+3. ✅ Définir tokens CSS dans `globals.css`, créer `<MeshBackground>`.
+4. ✅ Créer la lib de composants glass (`<GlassCard>`, `<GlassButton>`, etc.).
+5. ✅ Réécrire `app/page.tsx` (HomePage publique) — supprimer Sovereignty/Personas/etc, recréer Hero + Featured + Pillars + CTA + Footer figé.
+6. ✅ Créer `app/login/page.tsx` (3 modes).
+7. ✅ Setup `next-intl`, déplacer toutes les chaînes FR dans `messages/fr.json`.
+8. ☐ En parallèle backend : Flyway init + entités + endpoints auth/groups.
 9. ☐ Brancher front sur back (hooks `useAuth`, `useInstanceBranding`).
 10. ☐ Tests Playwright des 3 flows critiques.
 11. ☐ Audit Lighthouse + axe-core, corrections.
@@ -624,7 +611,7 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 - OAuth Google/GitHub → v3.
 - Mode sombre → v3 (token CSS prévus dès v1, mais pas de toggle UI).
 - Page `/admin/users` (gestion users) → v2 ou v3 selon besoin.
-- Détection appartenance cohorte au signup (un seul code → une seule cohorte au démarrage, multi-cohort via `/cohorts/join` après).
+- Détection appartenance groupe au signup (un seul code → un seul groupe au démarrage, multi-groupe via `/groups/join` après).
 
 ### C. Risques identifiés
 
@@ -633,7 +620,7 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 | Liquid Glass = mauvais contraste sur mesh coloré | Tests axe-core en CI + variant `glass-bg-strong` systématique au-dessus du texte. |
 | Next.js fork interne (cf. `AGENTS.md`) → APIs différentes | Toujours lire `node_modules/next/dist/docs/` avant un nouveau pattern. |
 | `instance.json` modifié à chaud → besoin de redémarrer ? | Lecture à chaque requête `GET /branding` (pas de cache backend) + invalidation côté front au save. |
-| Permissions teacher granulaires (sa cohorte) → boilerplate `@PreAuthorize` lourd | Helper `PermissionService.canEditCohort(user, cohortId)` réutilisé. |
+| Permissions teacher granulaires (son groupe) → boilerplate `@PreAuthorize` lourd | Helper `PermissionService.canEditGroup(user, groupId)` réutilisé. |
 | Codes invitations partagés publiquement | TTL + quota d'usages + révocation côté admin. |
 
 ---
