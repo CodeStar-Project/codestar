@@ -501,6 +501,34 @@ body {
 | 1.14 | Mise à jour `apps/frontend/CLAUDE.md` (nouvelle DA Liquid Glass) | docs | XS |
 | 1.15 | Mise à jour `README.md` (rôles, fichier `instance.json`, capture d'écran landing) | docs | S |
 
+
+- B1 — Permission Teacher granulaire (GroupPermissionService)
+- B2 — Permission DELETE invitation (créateur ou admin)
+- B3 — Validation DTOs (@Email, @NotBlank, @Pattern)
+- B4 — Healthcheck Spring actuator + docker-compose update
+- B5 — Rate-limit /auth/* (Bucket4j)
+- B6 — Logout effectif (token blacklist + jti claim)
+- B7 — Logging structuré JSON (logback-spring.xml)
+- B8 — Setup Testcontainers PostgreSQL
+- B9 — Tests AuthController
+- B10 — Tests GroupService
+- B11 — Tests InvitationService
+- B12 — Tests GroupPermissionService
+- F1 — Setup Playwright (config + deps)
+- F2 — E2E signup spec
+- F3 — E2E signin spec
+- F4 — E2E join group spec
+- F5 — Scripts package.json (test:e2e)
+- C1 — Activer tests backend en CI
+- C2 — Lint frontend strict en CI
+- C3 — Job Playwright E2E en CI
+- C4 — Type-check frontend en CI
+- D1 — Update apps/frontend/CLAUDE.md (DA)
+- D2 — Update README.md racine (rôles + instance.json)
+- D3 — Créer DEPLOYMENT.md
+- D4 — Créer CONTRIBUTING.md
+- D5 — Créer SECURITY.md
+
 ### Phase v2 — Cours + dashboards + branding UI (cible : 8–10 semaines)
 
 | # | Tâche | Dépend | Effort |
@@ -574,12 +602,12 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 ## 10. Checklist de démarrage v1 (ordre d'attaque conseillé)
 
 1. ☐ Créer branche `feat/v1-liquid-glass-foundation` depuis `front/home-page-non-auth`.
-2. ✅ Mettre à jour `apps/frontend/CLAUDE.md` avec la nouvelle DA Liquid Glass (§7).
-3. ✅ Définir tokens CSS dans `globals.css`, créer `<MeshBackground>`.
-4. ✅ Créer la lib de composants glass (`<GlassCard>`, `<GlassButton>`, etc.).
-5. ✅ Réécrire `app/page.tsx` (HomePage publique) — supprimer Sovereignty/Personas/etc, recréer Hero + Featured + Pillars + CTA + Footer figé.
-6. ✅ Créer `app/login/page.tsx` (3 modes).
-7. ✅ Setup `next-intl`, déplacer toutes les chaînes FR dans `messages/fr.json`.
+2. ☐ Mettre à jour `apps/frontend/CLAUDE.md` avec la nouvelle DA Liquid Glass (§7).
+3. ☐ Définir tokens CSS dans `globals.css`, créer `<MeshBackground>`.
+4. ☐ Créer la lib de composants glass (`<GlassCard>`, `<GlassButton>`, etc.).
+5. ☐ Réécrire `app/page.tsx` (HomePage publique) — supprimer Sovereignty/Personas/etc, recréer Hero + Featured + Pillars + CTA + Footer figé.
+6. ☐ Créer `app/login/page.tsx` (3 modes).
+7. ☐ Setup `next-intl`, déplacer toutes les chaînes FR dans `messages/fr.json`.
 8. ☐ En parallèle backend : Flyway init + entités + endpoints auth/groups.
 9. ☐ Brancher front sur back (hooks `useAuth`, `useInstanceBranding`).
 10. ☐ Tests Playwright des 3 flows critiques.
