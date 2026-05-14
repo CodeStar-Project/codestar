@@ -51,7 +51,7 @@ public class GroupController {
 
     @GetMapping("/mine")
     public ResponseEntity<ApiResponseDto<List<GroupSummaryDto>>> listMine(@AuthenticationPrincipal AuthenticatedUser principal) {
-        if (principal == null) throw ApiException.unauthorized("Unauthenticate");
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", groupService.listMine(principal.getId())));
     }
 
@@ -77,7 +77,7 @@ public class GroupController {
 
     @PostMapping("/join")
     public ResponseEntity<ApiResponseDto<UUID>> join(@Valid @RequestBody JoinGroupRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
-        if (principal == null) throw ApiException.unauthorized("Unauthenticate");
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         UUID groupId = invitationService.consumeAndJoin(request.getCode(), principal.getId());
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Group joined", groupId));
     }

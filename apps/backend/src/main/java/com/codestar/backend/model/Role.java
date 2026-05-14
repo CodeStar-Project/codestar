@@ -1,24 +1,28 @@
 package com.codestar.backend.model;
 
+import java.util.Objects;
+
 /**
- * Global roles, ordered least-to-most privileged.
- * 
- * {@code STUDENT < TEACHER < ADMIN < SUPER_ADMIN} is defined entirely by the
- * order below. Reordering or inserting a constant mid-list silently breaks
- * every authorization check. Append new roles at the correct privilege rank
- * only.
+ * Global roles
  */
 public enum Role {
-    STUDENT,
-    TEACHER,
-    ADMIN,
-    SUPER_ADMIN;
+    STUDENT(10),
+    TEACHER(20),
+    ADMIN(30),
+    SUPER_ADMIN(40);
+
+    private final int privilegeLevel;
+
+    Role(int privilegeLevel) {
+        this.privilegeLevel = privilegeLevel;
+    }
 
     /**
      * @return {@code true} if this role is at least as privileged as
-     *         {@code other}, per the declaration-order hierarchy above.
+     *         {@code other}, per the explicit {@code privilegeLevel} ranking.
      */
     public boolean isAtLeast(Role other) {
-        return this.ordinal() >= other.ordinal();
+        Objects.requireNonNull(other, "other role must not be null");
+        return this.privilegeLevel >= other.privilegeLevel;
     }
 }

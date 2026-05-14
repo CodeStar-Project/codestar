@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Group invation code 
+ * Group invitation code 
  * Format : {@code XXXX-XXXX-XXXX}
  * Validity : {@code revoked_at IS NULL} AND ({@code expires_at IS NULL} OR {@code expires_at > now()}) AND {@code used_count < max_uses}
  */

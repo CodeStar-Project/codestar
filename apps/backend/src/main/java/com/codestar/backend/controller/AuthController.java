@@ -88,7 +88,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponseDto<MeResponseDto>> me(@AuthenticationPrincipal AuthenticatedUser principal) {
-        if (principal == null) throw ApiException.unauthorized("Unauthenticate");
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
 
         User user = userRepository.findById(principal.getId())
                 .orElseThrow(() -> ApiException.unauthorized("Unable to find the user"));
