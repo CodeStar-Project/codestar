@@ -1,5 +1,6 @@
 package com.codestar.backend.model;
 
+import com.codestar.backend.utils.Emails;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -41,7 +42,7 @@ public class User {
     public User() {}
 
     public User(String email, String passwordHash, String displayName, Role role) {
-        this.email = email;
+        this.email = Emails.normalize(email);
         this.passwordHash = passwordHash;
         this.displayName = displayName;
         this.role = role != null ? role : Role.STUDENT;
@@ -50,7 +51,7 @@ public class User {
     public UUID getId() { return id; }
 
     public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public void setEmail(String email) { this.email = Emails.normalize(email); }
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }

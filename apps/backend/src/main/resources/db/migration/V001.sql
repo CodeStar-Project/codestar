@@ -2,9 +2,6 @@
 -- V001 — db schema v1
 -- ============================================================
 
--- Possible drop of the old users table
-DROP TABLE IF EXISTS users CASCADE;
-
 -- USERS
 CREATE TABLE users (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,7 +12,9 @@ CREATE TABLE users (
     created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     disabled_at     TIMESTAMPTZ     NULL,
     CONSTRAINT users_role_check
-        CHECK (role IN ('STUDENT', 'TEACHER', 'ADMIN', 'SUPER_ADMIN'))
+        CHECK (role IN ('STUDENT', 'TEACHER', 'ADMIN', 'SUPER_ADMIN')),
+    CONSTRAINT users_email_lowercase_chk
+        CHECK (email = LOWER(email))
 );
 
 CREATE INDEX idx_users_role ON users (role);

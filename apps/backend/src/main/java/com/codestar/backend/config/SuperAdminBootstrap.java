@@ -3,6 +3,7 @@ package com.codestar.backend.config;
 import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.IUserRepository;
+import com.codestar.backend.utils.Emails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,22 +43,23 @@ public class SuperAdminBootstrap {
                 return;
             }
 
-            Optional<User> existing = userRepository.findByEmail(bootstrapEmail);
+            String normalizedEmail = Emails.normalize(bootstrapEmail);
+            Optional<User> existing = userRepository.findByEmail(normalizedEmail);
 
             if (existing.isEmpty()) {
                 User u = new User(
-                        bootstrapEmail,
+                        normalizedEmail,
                         passwordEncoder.encode(bootstrapPassword),
                         bootstrapDisplayName,
                         Role.SUPER_ADMIN);
                 userRepository.save(u);
-                log.info("Bootstrap : super-admin created ({})", bootstrapEmail);
+                log.info("Bootstrap : super-admin created");
                 return;
             }
 
             User user = existing.get();
             if (user.getRole() != Role.SUPER_ADMIN) {
-                log.info("Bootstrap : user {} promoted from {} role to super-admin role", bootstrapEmail, user.getRole());
+                log.info("Bootstrap : user promoted from {} role to super-admin role", user.getRole());
                 user.setRole(Role.SUPER_ADMIN);
                 userRepository.save(user);
             }

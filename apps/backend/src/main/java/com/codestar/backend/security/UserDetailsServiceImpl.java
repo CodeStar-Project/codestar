@@ -1,6 +1,7 @@
 package com.codestar.backend.security;
 
 import com.codestar.backend.repository.IUserRepository;
+import com.codestar.backend.utils.Emails;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,8 +18,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        return userRepository.findByEmail(email)
+        String normalized = Emails.normalize(email);
+        return userRepository.findByEmail(normalized)
                 .map(AuthenticatedUser::new)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
     }
 }

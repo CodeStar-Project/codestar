@@ -83,7 +83,7 @@ public class GroupController {
     }
 
     @PostMapping("/{groupId}/invitations")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'TEACHER')")
+    @PreAuthorize("@groupGuard.canManageInvitations(#groupId, principal)")
     public ResponseEntity<ApiResponseDto<InvitationResponseDto>> createInvitation(@PathVariable UUID groupId, @Valid @RequestBody CreateInvitationRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         InvitationCode created = invitationService.create(
             groupId, request.getMaxUses(), request.getExpiresAt(), principal.getId());
@@ -92,7 +92,7 @@ public class GroupController {
     }
 
     @GetMapping("/{groupId}/invitations")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'TEACHER')")
+    @PreAuthorize("@groupGuard.canManageInvitations(#groupId, principal)")
     public ResponseEntity<ApiResponseDto<List<InvitationResponseDto>>> listInvitations(@PathVariable UUID groupId) {
         List<InvitationResponseDto> body = invitations
                 .findByGroupIdAndRevokedAtIsNull(groupId)

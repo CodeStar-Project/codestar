@@ -32,6 +32,8 @@ public class InstanceBrandingService {
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
 
+    private volatile InstanceBrandingDto cached;
+
     public InstanceBrandingService(ResourceLoader resourceLoader, ObjectMapper objectMapper) {
         this.resourceLoader = resourceLoader;
         this.objectMapper = objectMapper;
@@ -39,11 +41,21 @@ public class InstanceBrandingService {
 
     @PostConstruct
     void warmCheck() {
-        InstanceBrandingDto loaded = read();
-        log.info("Instance branding loaded: name='{}' accent={}", loaded.name(), loaded.accent());
+        cached = load();
+        log.info("Instance branding loaded: name='{}' accent={}", cached.name(), cached.accent());
     }
 
     public InstanceBrandingDto read() {
+        return cached;
+    }
+
+    /** Re-reads the branding file and replaces the cache */
+    public InstanceBrandingDto reload() {
+        cached = load();
+        return cached;
+    }
+
+    private InstanceBrandingDto load() {
         Resource resource = resourceLoader.getResource(configPath);
         if (!resource.exists()) {
             log.warn("The branding file not found at '{}', using fallback defaults", configPath);

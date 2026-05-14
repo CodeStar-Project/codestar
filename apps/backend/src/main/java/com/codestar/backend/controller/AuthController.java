@@ -12,6 +12,7 @@ import com.codestar.backend.repository.IUserRepository;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.GroupService;
 import com.codestar.backend.service.InvitationService;
+import com.codestar.backend.utils.Emails;
 import com.codestar.backend.utils.JwtUtils;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +49,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(Emails.normalize(request.getEmail()))
                 .filter(User::isActive)
                 .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPasswordHash()))
                 .orElseThrow(() -> ApiException.unauthorized("Invalid credentials"));
@@ -60,7 +61,8 @@ public class AuthController {
     @PostMapping("/register")
     @Transactional
     public ResponseEntity<ApiResponseDto<LoginResponseDto>> register(@Valid @RequestBody RegisterRequestDto request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        String normalizedEmail = Emails.normalize(request.getEmail());
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw ApiException.conflict("Your email is already linked with an account.");
         }
 
@@ -70,7 +72,7 @@ public class AuthController {
         }
 
         User user = new User(
-                request.getEmail(),
+                normalizedEmail,
                 passwordEncoder.encode(request.getPassword()),
                 request.getDisplayName(),
                 Role.STUDENT);

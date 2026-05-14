@@ -6,7 +6,9 @@ import com.codestar.backend.dto.GroupSummaryDto;
 import com.codestar.backend.dto.UpdateGroupRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Group;
+import com.codestar.backend.model.GroupMemberRole;
 import com.codestar.backend.model.GroupMembership;
+import com.codestar.backend.model.GroupMembershipId;
 import com.codestar.backend.repository.IGroupMembershipRepository;
 import com.codestar.backend.repository.IGroupRepository;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,8 @@ public class GroupService {
         validateDates(g);
 
         groups.save(g);
+        memberships.save(new GroupMembership(new GroupMembershipId(createdBy, g.getId()), GroupMemberRole.TEACHER));
+
         return toDto(g);
     }
 

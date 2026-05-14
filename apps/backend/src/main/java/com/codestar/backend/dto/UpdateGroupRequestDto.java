@@ -1,5 +1,6 @@
 package com.codestar.backend.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -20,4 +21,9 @@ public class UpdateGroupRequestDto {
 
     public LocalDate getEndsAt() { return endsAt; }
     public void setEndsAt(LocalDate endsAt) { this.endsAt = endsAt; }
+
+    @AssertTrue(message = "endsAt must be on or after startsAt")
+    public boolean isDateRangeValid() {
+        return startsAt == null || endsAt == null || !endsAt.isBefore(startsAt);
+    }
 }

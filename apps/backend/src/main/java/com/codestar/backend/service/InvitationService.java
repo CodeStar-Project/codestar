@@ -58,17 +58,23 @@ public class InvitationService {
         String code = rawCode == null ? "" : rawCode.toUpperCase();
         InvitationCode inv = invitations.findByCode(code).orElseThrow(() -> ApiException.notFound("Invalid code"));
 
-        if (!inv.isUsable(OffsetDateTime.now())) {
+        OffsetDateTime now = OffsetDateTime.now();
+        if (!inv.isUsable(now)) {
             throw ApiException.badRequest("Code expired, revoked or used up");
         }
 
         UUID groupId = inv.getGroupId();
-        if (!memberships.existsByIdUserIdAndIdGroupId(userId, groupId)) {
-            memberships.save(new GroupMembership(new GroupMembershipId(userId, groupId), GroupMemberRole.STUDENT));
+
+        if (memberships.existsByIdUserIdAndIdGroupId(userId, groupId)) {
+            return groupId;
         }
 
-        inv.incrementUse();
-        invitations.save(inv);
+        memberships.save(new GroupMembership(new GroupMembershipId(userId, groupId), GroupMemberRole.STUDENT));
+
+        if (invitations.tryConsume(inv.getId(), now) == 0) {
+            throw ApiException.badRequest("Code expired, revoked or used up");
+        }
+
         return groupId;
     }
 }

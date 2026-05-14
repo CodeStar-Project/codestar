@@ -592,7 +592,7 @@ body {
 ```env
 # .env.example à compléter
 JWT_SECRET=<random-256-bits>
-JWT_EXPIRATION_MS=86400000
+JWT_EXPIRATION=86400000
 INSTANCE_CONFIG_PATH=/app/config/instance.json
 SIGNUP_OPEN=false   # si false, code invitation obligatoire
 ```

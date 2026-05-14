@@ -61,10 +61,6 @@ public class InvitationCode {
         return usedCount < maxUses;
     }
 
-    public void incrementUse() {
-        this.usedCount++;
-    }
-
     public UUID getId() { return id; }
 
     public String getCode() { return code; }
