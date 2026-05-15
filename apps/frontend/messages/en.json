@@ -1,0 +1,175 @@
+{
+  "nav": {
+    "homeAria": "{name} — home",
+    "join": "Join with a code",
+    "signin": "Sign in",
+    "sectionsLabel": "Main sections",
+    "home": "Home",
+    "teach": "Teach",
+    "admin": "Admin"
+  },
+  "footer": {
+    "rights": "© {year} · All rights reserved",
+    "legal": "Legal",
+    "privacy": "Privacy",
+    "contact": "Contact",
+    "builtOn": "Built on",
+    "builtOnTitle": "This mention is locked by the Codestar license and cannot be removed.",
+    "label": "Footer"
+  },
+  "home": {
+    "hero": {
+      "chip": "New courses every week",
+      "ctaSecondary": "Browse catalog",
+      "comingSoon": "soon",
+      "stats": {
+        "courses": "courses",
+        "learnersValue": "{count, number}",
+        "learners": "learners",
+        "ratingLabel": "{value} average"
+      },
+      "previewLabel": "Preview"
+    },
+    "featured": {
+      "title": "Featured courses",
+      "subtitle": "A deliberately short selection. The full catalog is available once you're signed in.",
+      "by": "by {author}",
+      "linkAria": "View {title} (sign-in required)"
+    },
+    "pillars": {
+      "reader": {
+        "title": "A reader you'll come back to",
+        "description": "Table of contents, bookmarks, per-section notes. Built for return visits, not endless scroll."
+      },
+      "progress": {
+        "title": "Motivating progression",
+        "description": "XP, leaderboard, streaks. Keep the flame, don't force it. Weekly reset."
+      },
+      "authors": {
+        "title": "Courses by people who know",
+        "description": "Curated authors, content kept up to date, examples that match real work."
+      }
+    },
+    "finalCta": {
+      "titlePart1": "Ready to",
+      "titlePart2": "begin",
+      "titlePart3": "?",
+      "subtitle": "Create a free account. Five minutes, your first lesson is already waiting.",
+      "primary": "Get started",
+      "secondary": "Join with a code"
+    }
+  },
+  "login": {
+    "metaTitle": "Sign in",
+    "metaDescription": "Sign in to your Codestar instance or join a group with an invitation code.",
+    "expiredBanner": "Your session has expired. Please sign in again.",
+    "modes": {
+      "signin": "Sign in",
+      "signup": "Create account",
+      "join": "Join a group"
+    },
+    "headlines": {
+      "signin": "Welcome back.",
+      "signupPrefix": "Create",
+      "signupSuffix": "an account.",
+      "joinPrefix": "Join your",
+      "joinHighlight": "group",
+      "joinSuffix": "."
+    },
+    "taglines": {
+      "signin": "Pick up right where you left off.",
+      "signup": "Three clicks and you're in.",
+      "join": "Enter the code your admin gave you to join your group."
+    },
+    "ctas": {
+      "signin": "Sign in",
+      "signup": "Create my account",
+      "join": "Join"
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "passwordRecoverySoon": "Recovery soon",
+      "passwordHelper": "8 characters minimum.",
+      "code": "Invitation code",
+      "codeHelper": "Format XXXX-XXXX-XXXX. Ask your admin for it.",
+      "codePlaceholder": "ABCD-1234-WXYZ"
+    },
+    "errors": {
+      "emailRequired": "Email required.",
+      "emailInvalid": "Invalid email format.",
+      "passwordRequired": "Password required.",
+      "passwordTooShort": "8 characters minimum.",
+      "codeRequired": "Code required.",
+      "codeInvalid": "Expected format: XXXX-XXXX-XXXX.",
+      "backendStub": "Backend not wired in v1. See hand-off §8 (task 1.3).",
+      "unknown": "Unknown error.",
+      "backendInvalid": "Invalid backend response.",
+      "network": "Network error."
+    },
+    "modeAria": "Authentication mode",
+    "switch": {
+      "noAccount": "No account yet?",
+      "createAccount": "Create one",
+      "alreadyRegistered": "Already registered?",
+      "signin": "Sign in",
+      "noCode": "No code?"
+    },
+    "consent": {
+      "prefix": "By continuing, you accept our",
+      "terms": "terms of service",
+      "and": "and",
+      "privacy": "privacy policy"
+    },
+    "decorative": {
+      "license": "GPL v3",
+      "selfHosted": "Self-hosted",
+      "quote": "“We replaced our LMS with {name}. Our teachers love it.”",
+      "quoteAuthor": "Naïma Mansouri",
+      "quoteRole": "Head of Learning · Atelier 89",
+      "streakLabel": "Today's streak",
+      "streakValue": "14 days"
+    }
+  },
+  "instance": {
+    "tagline": "Open-source e-learning platform",
+    "heroTitle": "Learn at your own pace.",
+    "heroSubtitle": "Polished courses, quizzes that stick, motivating progress tracking. Five minutes a day is enough.",
+    "heroCta": "Get started"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français"
+  },
+  "roles": {
+    "STUDENT": "Student",
+    "TEACHER": "Teacher",
+    "ADMIN": "Admin",
+    "SUPER_ADMIN": "Super-admin"
+  },
+  "groupMemberRoles": {
+    "STUDENT": "Student",
+    "TEACHER": "Teacher"
+  },
+  "userMenu": {
+    "groups": "Groups",
+    "signOut": "Sign out"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Try again or head back home.",
+    "retry": "Try again",
+    "home": "Back home"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has moved.",
+    "home": "Back home"
+  },
+  "course": {
+    "back": "Back",
+    "pageLabel": "Page {number}",
+    "blocksCount": "{count, plural, one {# block} other {# blocks}}"
+  }
+}

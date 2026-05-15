@@ -1,0 +1,175 @@
+{
+  "nav": {
+    "homeAria": "{name} — accueil",
+    "join": "Rejoindre avec un code",
+    "signin": "Se connecter",
+    "sectionsLabel": "Sections principales",
+    "home": "Accueil",
+    "teach": "Enseigner",
+    "admin": "Admin"
+  },
+  "footer": {
+    "rights": "© {year} · Tous droits réservés",
+    "legal": "Mentions légales",
+    "privacy": "Confidentialité",
+    "contact": "Contact",
+    "builtOn": "Built on",
+    "builtOnTitle": "Cette mention est figée par la licence Codestar et ne peut pas être supprimée.",
+    "label": "Pied de page"
+  },
+  "home": {
+    "hero": {
+      "chip": "Nouveaux cours chaque semaine",
+      "ctaSecondary": "Voir le catalogue",
+      "comingSoon": "bientôt",
+      "stats": {
+        "courses": "cours",
+        "learnersValue": "{count, number}",
+        "learners": "apprenants",
+        "ratingLabel": "{value} de moyenne"
+      },
+      "previewLabel": "Aperçu"
+    },
+    "featured": {
+      "title": "Cours mis en avant",
+      "subtitle": "Une sélection volontairement courte. Tout le catalogue est accessible une fois connecté.",
+      "by": "par {author}",
+      "linkAria": "Voir {title} (connexion requise)"
+    },
+    "pillars": {
+      "reader": {
+        "title": "Lecteur soigné",
+        "description": "Sommaire, marque-pages, notes par section. Pensé pour qu'on revienne, pas qu'on scroll."
+      },
+      "progress": {
+        "title": "Progression motivante",
+        "description": "XP, classement, séries. Garder la flamme, pas se forcer. Reset hebdomadaire."
+      },
+      "authors": {
+        "title": "Cours faits par des gens qui savent",
+        "description": "Auteurs sélectionnés, contenus mis à jour, exemples qui collent au métier."
+      }
+    },
+    "finalCta": {
+      "titlePart1": "Prêt·e à",
+      "titlePart2": "commencer",
+      "titlePart3": "?",
+      "subtitle": "Créez un compte gratuit. Cinq minutes, votre première leçon est déjà là.",
+      "primary": "Commencer maintenant",
+      "secondary": "Rejoindre avec un code"
+    }
+  },
+  "login": {
+    "metaTitle": "Connexion",
+    "metaDescription": "Connectez-vous à votre instance Codestar ou rejoignez un groupe avec un code d'invitation.",
+    "expiredBanner": "Votre session a expiré. Veuillez vous reconnecter.",
+    "modes": {
+      "signin": "Se connecter",
+      "signup": "Créer un compte",
+      "join": "Rejoindre un groupe"
+    },
+    "headlines": {
+      "signin": "Bon retour.",
+      "signupPrefix": "Créer",
+      "signupSuffix": "un compte.",
+      "joinPrefix": "Rejoindre votre",
+      "joinHighlight": "groupe",
+      "joinSuffix": "."
+    },
+    "taglines": {
+      "signin": "Continuez là où vous vous êtes arrêté.",
+      "signup": "Trois clics et c'est parti.",
+      "join": "Saisissez le code reçu de votre admin pour rejoindre votre groupe."
+    },
+    "ctas": {
+      "signin": "Se connecter",
+      "signup": "Créer mon compte",
+      "join": "Rejoindre"
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Mot de passe",
+      "passwordRecoverySoon": "Récupération bientôt",
+      "passwordHelper": "8 caractères minimum.",
+      "code": "Code d'invitation",
+      "codeHelper": "Format XXXX-XXXX-XXXX. Demandez-le à votre admin.",
+      "codePlaceholder": "ABCD-1234-WXYZ"
+    },
+    "errors": {
+      "emailRequired": "Email requis.",
+      "emailInvalid": "Format d'email invalide.",
+      "passwordRequired": "Mot de passe requis.",
+      "passwordTooShort": "8 caractères minimum.",
+      "codeRequired": "Code requis.",
+      "codeInvalid": "Format attendu : XXXX-XXXX-XXXX.",
+      "backendStub": "Backend non câblé en v1. Voir hand-off §8 (tâche 1.3).",
+      "unknown": "Erreur inconnue.",
+      "backendInvalid": "Réponse backend invalide.",
+      "network": "Erreur réseau."
+    },
+    "modeAria": "Mode d'authentification",
+    "switch": {
+      "noAccount": "Pas encore de compte ?",
+      "createAccount": "Créer un compte",
+      "alreadyRegistered": "Déjà inscrit·e ?",
+      "signin": "Se connecter",
+      "noCode": "Pas de code ?"
+    },
+    "consent": {
+      "prefix": "En continuant, vous acceptez nos",
+      "terms": "conditions d'utilisation",
+      "and": "et",
+      "privacy": "politique de confidentialité"
+    },
+    "decorative": {
+      "license": "GPL v3",
+      "selfHosted": "Self-hosted",
+      "quote": "« On a remplacé notre LMS par {name}. Nos profs adorent. »",
+      "quoteAuthor": "Naïma Mansouri",
+      "quoteRole": "Head of Learning · Atelier 89",
+      "streakLabel": "Streak du jour",
+      "streakValue": "14 jours"
+    }
+  },
+  "instance": {
+    "tagline": "Plateforme e-learning open-source",
+    "heroTitle": "Apprenez à votre rythme.",
+    "heroSubtitle": "Des cours soignés, des quiz qui collent, un suivi de progression motivant. Cinq minutes par jour suffisent.",
+    "heroCta": "Commencer maintenant"
+  },
+  "localeSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  },
+  "roles": {
+    "STUDENT": "Étudiant",
+    "TEACHER": "Professeur",
+    "ADMIN": "Admin",
+    "SUPER_ADMIN": "Super-admin"
+  },
+  "groupMemberRoles": {
+    "STUDENT": "Étudiant",
+    "TEACHER": "Professeur"
+  },
+  "userMenu": {
+    "groups": "Groupes",
+    "signOut": "Se déconnecter"
+  },
+  "errors": {
+    "title": "Une erreur est survenue",
+    "description": "Une erreur inattendue s'est produite. Réessayez ou revenez à l'accueil.",
+    "retry": "Réessayer",
+    "home": "Retour à l'accueil"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page demandée n'existe pas ou a été déplacée.",
+    "home": "Retour à l'accueil"
+  },
+  "course": {
+    "back": "Retour",
+    "pageLabel": "Page {number}",
+    "blocksCount": "{count, plural, one {# bloc} other {# blocs}}"
+  }
+}

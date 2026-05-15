@@ -1,96 +1,105 @@
 @import "tailwindcss";
 
-/* ============================================================
-   Brand color system
-   Validated palette — see CLAUDE.md (2026-05-04).
-   Primary accent: #F28022 — used as accent only, never large fill.
-   ============================================================ */
-
 :root {
-  /* Brand surfaces & ink */
-  --color-canvas-raw: #f5f5f7;
-  --color-surface-raw: #ffffff;
-  --color-surface-2-raw: #fafafc;
-  --color-ink-raw: #1d1d1f;
-  --color-ink-2-raw: #6e6e73;
-  --color-ink-3-raw: #aeaeb2;
-  --color-line-raw: rgba(0, 0, 0, 0.08);
-  --color-line-strong-raw: rgba(0, 0, 0, 0.13);
+  --color-bg-base-raw: #f4f6fb;
+  --color-bg-mesh-1-raw: #dce8ff;
+  --color-bg-mesh-2-raw: #ffe4d6;
+  --color-bg-mesh-3-raw: #e1f5e8;
 
-  /* Brand accent — single source of truth for #F28022 */
-  --color-brand-raw: #f28022;
-  --color-brand-soft-raw: #fde9d8;
-  --color-brand-deep-raw: #c8651a;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+  --glass-blur: blur(20px) saturate(180%);
 
-  /* Code surfaces (cool, never warm) */
-  --color-code-bg-raw: #111318;
-  --color-code-fg-raw: #cdd6f4;
+  --color-text-raw: #1a1f2e;
+  --color-text-soft-raw: #4a5366;
+  --color-muted-raw: #8892a6;
 
-  /* Navy alt theme reference */
-  --color-navy-raw: #0b1220;
-  --color-navy-2-raw: #111d32;
+  --color-accent-raw: #7aa9ff;
+  --color-accent-fg-raw: #ffffff;
+  --color-accent-soft-raw: rgba(122, 169, 255, 0.18);
 
-  /* shadcn radius */
+  --color-success-raw: #5dc9a8;
+  --color-warning-raw: #ffb672;
+  --color-danger-raw: #ff8a95;
+
+  --r-sm: 8px;
+  --r: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
   --radius: 0.875rem;
 }
 
+[data-theme="dark"] {
+  --color-bg-base-raw: #0e1422;
+  --color-bg-mesh-1-raw: #1a2440;
+  --color-bg-mesh-2-raw: #2a1f30;
+  --color-bg-mesh-3-raw: #14283a;
+
+  --glass-bg: rgba(20, 28, 48, 0.55);
+  --glass-bg-strong: rgba(20, 28, 48, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+  --color-text-raw: #edf1f9;
+  --color-text-soft-raw: #b6c0d6;
+  --color-muted-raw: #7c8ba8;
+
+  --color-accent-soft-raw: rgba(122, 169, 255, 0.22);
+}
+
 @theme inline {
-  /* ---- Brand tokens (used directly across the site) ---- */
-  --color-canvas: var(--color-canvas-raw);
-  --color-surface: var(--color-surface-raw);
-  --color-surface-2: var(--color-surface-2-raw);
-  --color-ink: var(--color-ink-raw);
-  --color-ink-2: var(--color-ink-2-raw);
-  --color-ink-3: var(--color-ink-3-raw);
-  --color-line: var(--color-line-raw);
-  --color-line-strong: var(--color-line-strong-raw);
-  --color-brand: var(--color-brand-raw);
-  --color-brand-soft: var(--color-brand-soft-raw);
-  --color-brand-deep: var(--color-brand-deep-raw);
-  --color-code-bg: var(--color-code-bg-raw);
-  --color-code-fg: var(--color-code-fg-raw);
-  --color-navy: var(--color-navy-raw);
-  --color-navy-2: var(--color-navy-2-raw);
+  --color-bg-base: var(--color-bg-base-raw);
+  --color-bg-mesh-1: var(--color-bg-mesh-1-raw);
+  --color-bg-mesh-2: var(--color-bg-mesh-2-raw);
+  --color-bg-mesh-3: var(--color-bg-mesh-3-raw);
+  --color-text: var(--color-text-raw);
+  --color-text-soft: var(--color-text-soft-raw);
+  --color-muted: var(--color-muted-raw);
+  --color-accent: var(--color-accent-raw);
+  --color-accent-fg: var(--color-accent-fg-raw);
+  --color-accent-soft: var(--color-accent-soft-raw);
+  --color-success: var(--color-success-raw);
+  --color-warning: var(--color-warning-raw);
+  --color-danger: var(--color-danger-raw);
 
-  /* Backwards-compat alias: `accent` was the previous name for brand orange.
-     Keeping it alive so legacy classNames (text-accent, bg-accent) still resolve. */
-  --color-accent: var(--color-brand-raw);
-  --color-accent-soft: var(--color-brand-soft-raw);
-  --color-accent-deep: var(--color-brand-deep-raw);
-
-  /* ---- shadcn semantic tokens (mapped to the brand) ---- */
-  --color-background: var(--color-canvas-raw);
-  --color-foreground: var(--color-ink-raw);
-  --color-card: var(--color-surface-raw);
-  --color-card-foreground: var(--color-ink-raw);
-  --color-popover: var(--color-surface-raw);
-  --color-popover-foreground: var(--color-ink-raw);
-  --color-primary: var(--color-brand-raw);
-  --color-primary-foreground: #ffffff;
-  --color-secondary: var(--color-surface-raw);
-  --color-secondary-foreground: var(--color-ink-raw);
-  --color-muted: var(--color-canvas-raw);
-  --color-muted-foreground: var(--color-ink-2-raw);
-  --color-destructive: #ef4444;
+  --color-background: var(--color-bg-base-raw);
+  --color-foreground: var(--color-text-raw);
+  --color-card: var(--glass-bg);
+  --color-card-foreground: var(--color-text-raw);
+  --color-popover: var(--glass-bg-strong);
+  --color-popover-foreground: var(--color-text-raw);
+  --color-primary: var(--color-accent-raw);
+  --color-primary-foreground: var(--color-accent-fg-raw);
+  --color-secondary: var(--glass-bg);
+  --color-secondary-foreground: var(--color-text-raw);
+  --color-muted-foreground: var(--color-muted-raw);
+  --color-destructive: var(--color-danger-raw);
   --color-destructive-foreground: #ffffff;
-  --color-border: var(--color-line-strong-raw);
-  --color-input: var(--color-line-strong-raw);
-  --color-ring: var(--color-brand-raw);
+  --color-border: var(--glass-border);
+  --color-input: var(--glass-border);
+  --color-ring: var(--color-accent-raw);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-outfit), -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --font-display: var(--font-outfit), -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, monospace;
+  --font-sans:
+    var(--font-outfit), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-display:
+    var(--font-instrument-serif), "Fraunces", Georgia, serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
   color-scheme: light;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 html {
@@ -99,8 +108,10 @@ html {
 }
 
 body {
-  background: var(--color-canvas-raw);
-  color: var(--color-ink-raw);
+  position: relative;
+  min-height: 100vh;
+  background: var(--color-bg-base-raw);
+  color: var(--color-text-raw);
   font-family: var(--font-sans);
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
@@ -108,108 +119,90 @@ body {
 }
 
 ::selection {
-  background: var(--color-brand-raw);
-  color: #fff;
+  background: var(--color-accent-raw);
+  color: var(--color-accent-fg-raw);
 }
 
-/* ============================================================
-   Display utilities
-   ============================================================ */
+
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--r-lg);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--r-lg);
+}
+
+.glass-tinted {
+  background: var(--color-accent-soft);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--r-lg);
+}
+
+/* Focus ring — non-supprimable (a11y WCAG AA) */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-raw);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+@keyframes mesh-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(3%, -2%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-2%, 3%, 0) scale(0.96);
+  }
+}
+
+.mesh-spot {
+  will-change: transform;
+}
 
 .font-display {
   font-family: var(--font-display);
-  font-weight: 900;
-  letter-spacing: -0.035em;
-  line-height: 0.94;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.02;
 }
 
 .font-mono {
   font-family: var(--font-mono);
 }
 
-.bg-dots {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-position: -12px -12px;
-}
-
-.bg-grid {
-  background-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.04) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-  background-size: 64px 64px;
-}
-
-[data-reveal] {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: var(--reveal-delay, 0ms);
-}
-
-[data-reveal].is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-.cursor-blink {
-  display: inline-block;
-  width: 0.55em;
-  height: 1.05em;
-  background: currentColor;
-  margin-left: 0.18em;
-  vertical-align: -0.18em;
-  animation: blink 1.06s step-end infinite;
-}
-
-@keyframes float-soft {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.float-soft {
-  animation: float-soft 6s ease-in-out infinite;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  [data-reveal] {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .cursor-blink,
-  .float-soft {
-    animation: none;
+  .mesh-spot {
+    animation: none !important;
   }
   html {
     scroll-behavior: auto;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass,
+  .glass-strong,
+  .glass-tinted {
+    background: var(--color-bg-base-raw);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-color: var(--color-text-raw);
+    box-shadow: none;
   }
 }

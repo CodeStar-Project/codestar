@@ -9,9 +9,6 @@ import java.util.UUID;
 
 /**
  * Permission helper exposed to {@code @PreAuthorize} SpEL expressions.
- *
- * Bean name {@code "groupPermissionService"} is referenced from annotations as
- * {@code @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")}.
  */
 @Service("groupPermissionService")
 public class GroupPermissionService {
