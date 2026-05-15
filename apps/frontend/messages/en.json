@@ -102,7 +102,6 @@
       "passwordTooShort": "8 characters minimum.",
       "codeRequired": "Code required.",
       "codeInvalid": "Expected format: XXXX-XXXX-XXXX.",
-      "backendStub": "Backend not wired in v1. See hand-off §8 (task 1.3).",
       "unknown": "Unknown error.",
       "backendInvalid": "Invalid backend response.",
       "network": "Network error."

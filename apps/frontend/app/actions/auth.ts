@@ -105,7 +105,7 @@ export async function signOutAction(): Promise<AuthActionResult> {
     try {
       await apiFetch("/api/v1/auth/logout", { method: "POST" });
     } catch {
-      /* logout backend stateless / ignore failure */
+      // logout backend stateless / ignore failure
     }
   }
 
@@ -120,10 +120,13 @@ export async function getMe(): Promise<MeResponse | null> {
   if (!store.get(authCookieName())) return null;
 
   try {
-    return await apiFetch<MeResponse>("/api/v1/auth/me", { method: "GET" });
-  } catch {
-    // 401
-    return null;
+    const response = await apiFetch<MeResponse>("/api/v1/auth/me", { method: "GET" });
+    return response ?? null;
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+      return null;
+    }
+    throw e;
   }
 }
 

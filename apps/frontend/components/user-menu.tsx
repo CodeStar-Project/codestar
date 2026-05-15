@@ -25,7 +25,8 @@ export function UserMenu({ user }: { user: MeResponse }) {
   React.useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
+      const target = e.target;
+      if(!(target instanceof Element)) return;
       if (!target.closest("[data-user-menu]")) setOpen(false);
     };
     const onEscape = (e: KeyboardEvent) => {

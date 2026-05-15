@@ -30,6 +30,7 @@ export function BrandMark({
   className,
 }: BrandMarkProps) {
   const glyph = PRESET_GLYPH[preset];
+  const gradientID = "mark-" + String(accent).replace(/[^a-zA-Z0-9_-]/g, "")
 
   if (glyph) {
     return (
@@ -64,14 +65,14 @@ export function BrandMark({
       aria-hidden
     >
       <defs>
-        <linearGradient id={`mark-${accent.replace("#", "")}`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={gradientID} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={accent} />
           <stop offset="100%" stopColor={accent} stopOpacity="0.6" />
         </linearGradient>
       </defs>
       <path
         d="M12 2 L14.5 9 L22 10 L16 15 L17.6 22 L12 18 L6.4 22 L8 15 L2 10 L9.5 9 Z"
-        fill={`url(#mark-${accent.replace("#", "")})`}
+        fill={`url(#${gradientID})`}
       />
       <circle cx="12" cy="12" r="2.4" fill="var(--color-bg-base)" />
     </svg>

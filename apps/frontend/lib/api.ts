@@ -55,7 +55,7 @@ export async function apiFetch<T>(
     timeoutMs = DEFAULT_TIMEOUT_MS,
     ...rest
   }: ApiFetchOptions = {}
-): Promise<T> {
+): Promise<T | undefined> {
   const finalHeaders = new Headers(headers);
   if (body !== undefined && !finalHeaders.has("Content-Type")) {
     finalHeaders.set("Content-Type", "application/json");

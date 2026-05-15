@@ -23,7 +23,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const courseId = Number(id);
-  if (!Number.isFinite(courseId) || courseId <= 0) return {};
+  if (!Number.isInteger(courseId) || courseId <= 0) return {};
 
   const course = await getCourseById(courseId);
   if (!course) return {};
@@ -39,7 +39,7 @@ export async function generateMetadata({
 export default async function CoursePage({ params }: PageProps) {
   const { id } = await params;
   const courseId = Number(id);
-  if (!Number.isFinite(courseId) || courseId <= 0) notFound();
+  if (!Number.isInteger(courseId) || courseId <= 0) notFound();
 
   const [course, t] = await Promise.all([
     getCourseById(courseId),

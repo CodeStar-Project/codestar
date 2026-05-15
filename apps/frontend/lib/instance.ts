@@ -1,5 +1,5 @@
 /**
- * Static fallbackc for the instance branding.
+ * Static fallback for the instance branding.
 */
 
 import type { InstanceBranding } from "./types";
