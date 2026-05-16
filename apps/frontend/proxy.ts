@@ -23,8 +23,9 @@ function jwtSecretKey(): Uint8Array {
  * Verifies the JWT signature against the shared backend secret and rejects disallowed algorithms 
  */
 async function verifyToken(token: string): Promise<"valid" | "expired" | "invalid"> {
+  const key = jwtSecretKey();
   try {
-    await jwtVerify(token, jwtSecretKey(), {
+    await jwtVerify(token, key, {
       algorithms: ["HS256", "HS384", "HS512"],
     });
     return "valid";
@@ -59,13 +60,12 @@ export async function proxy(req: NextRequest) {
 
   let hasValidToken = false;
   let tokenExpired = false;
+  let tokenInvalid = false;
   if (tokenValue) {
     const status = await verifyToken(tokenValue);
-    if (status === "valid") {
-      hasValidToken = true;
-    } else {
-      tokenExpired = true;
-    }
+    if (status === "valid") hasValidToken = true;
+    else if (status === "expired") tokenExpired = true;
+    else tokenInvalid = true;
   }
 
   if (hasValidToken && isOnLogin(pathname)) {
@@ -77,7 +77,7 @@ export async function proxy(req: NextRequest) {
     if (tokenExpired) url.searchParams.set("expired", "1");
     url.searchParams.set("next", pathname + req.nextUrl.search);
     const res = NextResponse.redirect(url);
-    return tokenExpired ? clearAuthCookie(res) : res;
+    return tokenExpired || tokenInvalid ? clearAuthCookie(res) : res;
   }
 
   if (tokenExpired) {
