@@ -25,6 +25,9 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  env: {
+    JWT_SECRET: process.env.JWT_SECRET ?? "",
+  },
   async headers() {
     return [
       {

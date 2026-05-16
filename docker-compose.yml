@@ -31,7 +31,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       CODESTAR_SIGNUP_OPEN: ${SIGNUP_OPEN:-false}
@@ -53,14 +53,24 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
+      # Build-time secrets/config: Next inlines these into the Edge middleware
+      # bundle + statically-generated routes (robots.txt, sitemap.xml). The
+      # values MUST be present at build time, not just at runtime.
+      args:
+        JWT_SECRET: ${JWT_SECRET}
+        AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-codestar_token}
+        SITE_URL: ${SITE_URL:-http://localhost:3000}
     container_name: codestar-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
       # Server-side fetch vers backend dans le réseau Docker.
+      # Intra-Docker hostname → hardcoded (only valid inside compose network).
       API_URL: http://backend:8080
-      AUTH_COOKIE_NAME: codestar_token
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-codestar_token}
+      JWT_SECRET: ${JWT_SECRET}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
