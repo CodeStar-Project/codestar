@@ -1,5 +1,10 @@
+import path from "node:path";
+
+import dotenv from "dotenv";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 

@@ -93,6 +93,7 @@
       "passwordHelper": "8 characters minimum.",
       "code": "Invitation code",
       "codeHelper": "Format XXXX-XXXX-XXXX. Ask your admin for it.",
+      "codeHelperOptional": "Optional. Format XXXX-XXXX-XXXX.",
       "codePlaceholder": "ABCD-1234-WXYZ"
     },
     "errors": {

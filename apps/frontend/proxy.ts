@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { errors as joseErrors, jwtVerify } from "jose";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -13,6 +14,26 @@ function authCookieName(): string {
   return (_authCookieName ??= requireEnv("AUTH_COOKIE_NAME"));
 }
 
+let _jwtSecretKey: Uint8Array | undefined;
+function jwtSecretKey(): Uint8Array {
+  return (_jwtSecretKey ??= new TextEncoder().encode(requireEnv("JWT_SECRET")));
+}
+
+/**
+ * Verifies the JWT signature against the shared backend secret and rejects disallowed algorithms 
+ */
+async function verifyToken(token: string): Promise<"valid" | "expired" | "invalid"> {
+  try {
+    await jwtVerify(token, jwtSecretKey(), {
+      algorithms: ["HS256", "HS384", "HS512"],
+    });
+    return "valid";
+  } catch (e) {
+    if (e instanceof joseErrors.JWTExpired) return "expired";
+    return "invalid";
+  }
+}
+
 const PUBLIC_PREFIXES = ["/login"];
 const PUBLIC_EXACT = new Set(["/"]);
 
@@ -21,21 +42,6 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
-}
-
-function decodeJwtPayload(token: string): { exp?: number } | null {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const pad = (4 - (b64.length % 4)) % 4;
-    const bin = atob(b64 + "=".repeat(pad));
-    const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-    const json = new TextDecoder().decode(bytes);
-    return JSON.parse(json) as { exp?: number };
-  } catch {
-    return null;
-  }
 }
 
 function isOnLogin(pathname: string): boolean {
@@ -47,15 +53,15 @@ function clearAuthCookie<T extends NextResponse>(res: T): T {
   return res;
 }
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const tokenValue = req.cookies.get(authCookieName())?.value;
 
   let hasValidToken = false;
   let tokenExpired = false;
   if (tokenValue) {
-    const payload = decodeJwtPayload(tokenValue);
-    if (payload?.exp && payload.exp * 1000 > Date.now()) {
+    const status = await verifyToken(tokenValue);
+    if (status === "valid") {
       hasValidToken = true;
     } else {
       tokenExpired = true;

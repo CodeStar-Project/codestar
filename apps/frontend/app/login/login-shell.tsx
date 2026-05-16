@@ -238,6 +238,7 @@ function LoginForm({
   const [submitting, setSubmitting] = React.useState(false);
 
   const requireCode = mode === "join";
+  const showCode = mode === "join" || mode === "signup";
 
   const validate = (s: FormState): FormErrors => {
     const e: FormErrors = {};
@@ -249,10 +250,11 @@ function LoginForm({
     else if (mode === "signup" && s.password.length < 8)
       e.password = tErrors("passwordTooShort");
 
-    if (requireCode) {
-      if (!s.code) e.code = tErrors("codeRequired");
-      else if (!CODE_RE.test(s.code.toUpperCase()))
-        e.code = tErrors("codeInvalid");
+    const trimmedCode = s.code.trim();
+    if (requireCode && !trimmedCode) {
+      e.code = tErrors("codeRequired");
+    } else if (trimmedCode && !CODE_RE.test(trimmedCode.toUpperCase())) {
+      e.code = tErrors("codeInvalid");
     }
     return e;
   };
@@ -366,12 +368,16 @@ function LoginForm({
         />
       </GlassField>
 
-      {requireCode && (
+      {showCode && (
         <GlassField
           label={tFields("code")}
           htmlFor="code"
-          required
-          helper={tFields("codeHelper")}
+          required={requireCode}
+          helper={
+            requireCode
+              ? tFields("codeHelper")
+              : tFields("codeHelperOptional")
+          }
           error={errors.code}
         >
           <GlassInput
@@ -380,7 +386,7 @@ function LoginForm({
             type="text"
             inputMode="text"
             autoComplete="one-time-code"
-            required
+            required={requireCode}
             placeholder={tFields("codePlaceholder")}
             aria-invalid={!!errors.code}
             value={state.code}
