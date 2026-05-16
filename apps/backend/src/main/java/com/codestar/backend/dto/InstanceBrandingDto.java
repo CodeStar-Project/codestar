@@ -1,8 +1,6 @@
 package com.codestar.backend.dto;
 
-/**
- * branding exposed to unauthenticated customers from {@code instance.json}
- */
+// TODO Logo
 public record InstanceBrandingDto(
         String name,
         String tagline,

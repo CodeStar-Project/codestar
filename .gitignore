@@ -75,3 +75,6 @@ nbdist/
 logs/
 tmp/
 temp/
+
+# have to be delete
+codestar-draft-design/

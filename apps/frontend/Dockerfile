@@ -11,6 +11,14 @@ WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+ARG JWT_SECRET
+ARG AUTH_COOKIE_NAME=codestar_token
+ARG SITE_URL=http://localhost:3000
+ENV JWT_SECRET=$JWT_SECRET
+ENV AUTH_COOKIE_NAME=$AUTH_COOKIE_NAME
+ENV SITE_URL=$SITE_URL
+
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
