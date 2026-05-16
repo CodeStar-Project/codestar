@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "engines": {
-    "node": ">=20.3.0"
+    "node": ">=20.9.0"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
