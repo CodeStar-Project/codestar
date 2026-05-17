@@ -38,11 +38,9 @@ services:
       CODESTAR_BOOTSTRAP_SUPER_ADMIN_EMAIL: ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_EMAIL:-}
       CODESTAR_BOOTSTRAP_SUPER_ADMIN_PASSWORD: ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_PASSWORD:-}
       CODESTAR_BOOTSTRAP_SUPER_ADMIN_DISPLAY_NAME: ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_DISPLAY_NAME:-Super-admin}
-      # Branding : fallback classpath si INSTANCE_CONFIG_PATH non défini dans .env.
       CODESTAR_INSTANCE_CONFIG_PATH: ${INSTANCE_CONFIG_PATH:-classpath:instance.json}
     volumes:
-      # Monte le dossier hôte ./config dans le container. Le fichier
-      # instance.json placé dans ./config sera lu si INSTANCE_CONFIG_PATH=file:/app/config/instance.json.
+      # ./config with the instance.json file by the INSTANCE_CONFIG_PATH=file:/app/config/instance.json
       - ./config:/app/config:ro
     ports:
       - "${BACKEND_PORT:-8080}:8080"
@@ -53,9 +51,6 @@ services:
     build:
       context: ./apps/frontend
       dockerfile: Dockerfile
-      # Build-time secrets/config: Next inlines these into the Edge middleware
-      # bundle + statically-generated routes (robots.txt, sitemap.xml). The
-      # values MUST be present at build time, not just at runtime.
       args:
         JWT_SECRET: ${JWT_SECRET}
         AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-codestar_token}
@@ -65,8 +60,6 @@ services:
     depends_on:
       - backend
     environment:
-      # Server-side fetch vers backend dans le réseau Docker.
-      # Intra-Docker hostname → hardcoded (only valid inside compose network).
       API_URL: http://backend:8080
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-codestar_token}
       JWT_SECRET: ${JWT_SECRET}
