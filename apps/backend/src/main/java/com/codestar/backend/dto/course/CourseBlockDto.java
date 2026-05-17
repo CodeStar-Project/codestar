@@ -1,69 +1,31 @@
 package com.codestar.backend.dto.course;
 
+import java.util.Map;
+import java.util.UUID;
+
 public class CourseBlockDto {
-    private CourseBlockType type;
-    private String content;
-    private String level;
-    private String expectedAnswer;
-    private String language;
-    private String mediaPath;
-    private String sourceUrl;
 
-    public CourseBlockDto(CourseBlockType type, String content) {
-        this.type = type;
-        this.content = content;
+    private UUID id;
+    private String kind;
+    private int orderIndex;
+    private Map<String, Object> payload;
+
+    public CourseBlockDto() {}
+
+    public CourseBlockDto(UUID id, String kind, int orderIndex, Map<String, Object> payload) {
+        this.id = id;
+        this.kind = kind;
+        this.orderIndex = orderIndex;
+        this.payload = payload;
     }
 
-    public CourseBlockDto withLevel(String level) {
-        this.level = level;
-        return this;
-    }
+    public UUID getId()                     { return id; }
+    public String getKind()                 { return kind; }
+    public int getOrderIndex()              { return orderIndex; }
+    public Map<String, Object> getPayload() { return payload; }
 
-    public CourseBlockDto withExpectedAnswer(String expectedAnswer) {
-        this.expectedAnswer = expectedAnswer;
-        return this;
-    }
-
-    public CourseBlockDto withLanguage(String language) {
-        this.language = language;
-        return this;
-    }
-
-    public CourseBlockDto withMediaPath(String mediaPath) {
-        this.mediaPath = mediaPath;
-        return this;
-    }
-
-    public CourseBlockDto withSourceUrl(String sourceUrl) {
-        this.sourceUrl = sourceUrl;
-        return this;
-    }
-
-    public CourseBlockType getType() {
-        return type;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public String getLevel() {
-        return level;
-    }
-
-    public String getExpectedAnswer() {
-        return expectedAnswer;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public String getMediaPath() {
-        return mediaPath;
-    }
-
-    public String getSourceUrl() {
-        return sourceUrl;
-    }
+    public void setId(UUID id)                              { this.id = id; }
+    public void setKind(String kind)                        { this.kind = kind; }
+    public void setOrderIndex(int orderIndex)               { this.orderIndex = orderIndex; }
+    public void setPayload(Map<String, Object> payload)     { this.payload = payload; }
 }

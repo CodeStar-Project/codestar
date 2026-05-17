@@ -1,80 +1,118 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.course.CourseBlockDto;
-import com.codestar.backend.dto.course.CourseBlockType;
-import com.codestar.backend.dto.course.CourseDto;
-import com.codestar.backend.dto.course.CoursePageDto;
+import com.codestar.backend.dto.course.*;
+import com.codestar.backend.exception.ApiException;
+import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.service.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-// TODO
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/courses")
-@CrossOrigin(origins = "*")
 public class CourseController {
 
-    private final List<CourseDto> courses;
+    private final CourseService courseService;
 
-    public CourseController() {
-        courses = List.of(
-                new CourseDto(
-                        1L,
-                        "introduction-variables",
-                        "Introduction aux variables",
-                        "Bases des variables en Java",
-                        List.of(
-                                new CoursePageDto(
-                                        1,
-                                        List.of(
-                                                new CourseBlockDto(CourseBlockType.TITLE, "Introduction aux variables").withLevel("h1"),
-                                                new CourseBlockDto(CourseBlockType.BLOC, "Une variable permet de stocker une valeur."),
-                                                new CourseBlockDto(CourseBlockType.CODE, "int age = 25;").withLanguage("java"),
-                                                new CourseBlockDto(CourseBlockType.QUIZ, "Exercice : combien font 2 + 2 ?").withExpectedAnswer("4")
-                                        )
-                                )
-                        )
-                ),
-                new CourseDto(
-                        2L,
-                        "conditions-et-operateurs",
-                        "Conditions et operateurs",
-                        "Comprendre if, else et les operateurs logiques",
-                        List.of(
-                                new CoursePageDto(
-                                        1,
-                                        List.of(
-                                                new CourseBlockDto(CourseBlockType.TITLE, "Tester des conditions").withLevel("h2"),
-                                                new CourseBlockDto(CourseBlockType.WARNING, "Attention aux comparaisons de chaines avec == en Java."),
-                                                new CourseBlockDto(CourseBlockType.VALIDATION, "Super, tu sais maintenant utiliser if/else."),
-                                                new CourseBlockDto(CourseBlockType.TIP, "Pense a simplifier tes conditions avec des booleens.")
-                                        )
-                                )
-                        )
-                )
-        );
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
     }
 
+    // ── GET /api/v1/courses ──────────────────────────────────────────────────
+    // Retourne tous les cours publiés (étudiants)
+    // Avec ?all=true retourne tous les cours (admin/teacher)
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<CourseDto>>> getAllCourses() {
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours recuperes", courses));
+    public ResponseEntity<ApiResponseDto<List<CourseDto>>> getCourses(
+            @RequestParam(value = "all", defaultValue = "false") boolean all,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        List<CourseDto> courses = all
+                ? courseService.getAllCourses()
+                : courseService.getAllPublishedCourses();
+
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupérés", courses));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseById(@PathVariable Long id) {
-        return courses.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
-                .map(course -> ResponseEntity.ok(new ApiResponseDto<>(true, "Cours recupere", course)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ApiResponseDto<>(false, "Cours introuvable", null)));
+    // ── GET /api/v1/courses/{slug} ───────────────────────────────────────────
+    // Récupère un cours par son slug
+    @GetMapping("/{slug}")
+    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(@PathVariable String slug) {
+        CourseDto course = courseService.getCourseBySlug(slug);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupéré", course));
+    }
+
+    // ── POST /api/v1/courses ─────────────────────────────────────────────────
+    // Crée un nouveau cours (teacher+)
+    @PostMapping
+    public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(
+            @Valid @RequestBody CreateCourseRequestDto request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+
+        CourseDto course = courseService.createCourse(request, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponseDto<>(true, "Cours créé", course));
+    }
+
+    // ── PATCH /api/v1/courses/{id} ───────────────────────────────────────────
+    // Modifie les métadonnées d'un cours (titre, description, catégorie, niveau)
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(
+            @PathVariable UUID id,
+            @RequestBody UpdateCourseRequestDto request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+
+        CourseDto course = courseService.updateCourse(id, request);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours mis à jour", course));
+    }
+
+    // ── POST /api/v1/courses/{id}/publish ────────────────────────────────────
+    // Publie ou dépublie un cours selon son état actuel
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<ApiResponseDto<CourseDto>> togglePublish(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+
+        CourseDto course = courseService.togglePublish(id);
+        String message = "PUBLISHED".equals(course.getStatus()) ? "Cours publié" : "Cours dépublié";
+        return ResponseEntity.ok(new ApiResponseDto<>(true, message, course));
+    }
+
+    // ── DELETE /api/v1/courses/{id} ──────────────────────────────────────────
+    // Supprime un cours et tous ses blocs
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseDto<Void>> deleteCourse(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+
+        courseService.deleteCourse(id);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours supprimé", null));
+    }
+
+    // ── PUT /api/v1/courses/{id}/blocks ──────────────────────────────────────
+    // Remplace tous les blocs — c'est cet endpoint qu'appelle le Course Builder
+    @PutMapping("/{id}/blocks")
+    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> saveBlocks(
+            @PathVariable UUID id,
+            @RequestBody SaveBlocksRequestDto request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+
+        List<CourseBlockDto> blocks = courseService.saveBlocks(id, request);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Blocs sauvegardés", blocks));
     }
 }
