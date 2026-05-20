@@ -24,9 +24,6 @@ public class CourseController {
         this.courseService = courseService;
     }
 
-    // ── GET /api/v1/courses ──────────────────────────────────────────────────
-    // Retourne tous les cours publiés (étudiants)
-    // Avec ?all=true retourne tous les cours (admin/teacher)
     @GetMapping
     public ResponseEntity<ApiResponseDto<List<CourseDto>>> getCourses(
             @RequestParam(value = "all", defaultValue = "false") boolean all,
@@ -39,16 +36,14 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupérés", courses));
     }
 
-    // ── GET /api/v1/courses/{slug} ───────────────────────────────────────────
-    // Récupère un cours par son slug
+
     @GetMapping("/{slug}")
     public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(@PathVariable String slug) {
         CourseDto course = courseService.getCourseBySlug(slug);
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupéré", course));
     }
 
-    // ── POST /api/v1/courses ─────────────────────────────────────────────────
-    // Crée un nouveau cours (teacher+)
+
     @PostMapping
     public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(
             @Valid @RequestBody CreateCourseRequestDto request,
@@ -61,8 +56,6 @@ public class CourseController {
                 .body(new ApiResponseDto<>(true, "Cours créé", course));
     }
 
-    // ── PATCH /api/v1/courses/{id} ───────────────────────────────────────────
-    // Modifie les métadonnées d'un cours (titre, description, catégorie, niveau)
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(
             @PathVariable UUID id,
@@ -75,8 +68,6 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours mis à jour", course));
     }
 
-    // ── POST /api/v1/courses/{id}/publish ────────────────────────────────────
-    // Publie ou dépublie un cours selon son état actuel
     @PostMapping("/{id}/publish")
     public ResponseEntity<ApiResponseDto<CourseDto>> togglePublish(
             @PathVariable UUID id,
@@ -89,8 +80,7 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponseDto<>(true, message, course));
     }
 
-    // ── DELETE /api/v1/courses/{id} ──────────────────────────────────────────
-    // Supprime un cours et tous ses blocs
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDto<Void>> deleteCourse(
             @PathVariable UUID id,
@@ -102,8 +92,7 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours supprimé", null));
     }
 
-    // ── PUT /api/v1/courses/{id}/blocks ──────────────────────────────────────
-    // Remplace tous les blocs — c'est cet endpoint qu'appelle le Course Builder
+
     @PutMapping("/{id}/blocks")
     public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> saveBlocks(
             @PathVariable UUID id,
