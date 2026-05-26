@@ -4,12 +4,12 @@ import com.codestar.backend.dto.course.*;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
-import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICourseRepository;
 import com.codestar.backend.repository.IUserRepository;
 import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.security.CoursePermissionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,11 +31,13 @@ public class CourseService {
     private final ICourseRepository courseRepository;
     private final ICourseBlockRepository blockRepository;
     private final IUserRepository userRepository;
+    private final CoursePermissionService coursePermissions;
 
-    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository) {
+    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository, CoursePermissionService coursePermissions) {
         this.courseRepository = courseRepository;
         this.blockRepository = blockRepository;
         this.userRepository = userRepository;
+        this.coursePermissions = coursePermissions;
     }
 
     public List<CourseSummaryDto> getAllPublishedCourses() {
@@ -55,7 +57,7 @@ public class CourseService {
     public List<CourseBlockDto> getBlocks(UUID courseId, AuthenticatedUser principal) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
-        if (!canRead(principal, course)) {
+        if (!coursePermissions.canReadCourse(principal, course)) {
             throw ApiException.notFound("Course not found: " + courseId);
         }
         return blockRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
@@ -67,24 +69,10 @@ public class CourseService {
     public CourseDto getCourseBySlug(String slug, AuthenticatedUser principal) {
         Course course = courseRepository.findBySlug(slug)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + slug));
-        if (!canRead(principal, course)) {
+        if (!coursePermissions.canReadCourse(principal, course)) {
             throw ApiException.notFound("Course not found: " + slug);
         }
         return toDto(course);
-    }
-
-    /**
-     *  PUBLISHED courses are visible to any authenticated user
-     *  DRAFT / ARCHIVED courses are visible only to their author and to ADMIN+
-     */
-    private static boolean canRead(AuthenticatedUser principal, Course course) {
-        if ("PUBLISHED".equals(course.getStatus())) return true;
-        if (principal == null) return false;
-
-        Role role = principal.getRole();
-        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) return true;
-        return course.getAuthor() != null
-                && course.getAuthor().getId().equals(principal.getId());
     }
 
     @Transactional
@@ -178,31 +166,28 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
 
-        if (request.getBlocks() == null) {
+        if (request.getBlocks() == null || request.getBlocks().isEmpty()) {
             throw ApiException.badRequest("blocks is required");
         }
-        for (SaveBlocksRequestDto.BlockInput input : request.getBlocks()) {
+        List<SaveBlocksRequestDto.BlockInput> inputs = request.getBlocks();
+        for (SaveBlocksRequestDto.BlockInput input : inputs) {
             if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
                 throw ApiException.badRequest("Invalid block kind: " + input.getKind());
-            }
-            if (input.getOrderIndex() < 0) {
-                throw ApiException.badRequest("orderIndex must be >= 0");
             }
         }
 
         blockRepository.deleteByCourseId(courseId);
 
-        List<CourseBlock> newBlocks = request.getBlocks()
-                .stream()
-                .map(input -> {
-                    CourseBlock block = new CourseBlock();
-                    block.setCourse(course);
-                    block.setKind(input.getKind());
-                    block.setOrderIndex(input.getOrderIndex());
-                    block.setPayload(input.getPayload());
-                    return block;
-                })
-                .collect(Collectors.toList());
+        List<CourseBlock> newBlocks = new java.util.ArrayList<>(inputs.size());
+        for (int i = 0; i < inputs.size(); i++) {
+            SaveBlocksRequestDto.BlockInput input = inputs.get(i);
+            CourseBlock block = new CourseBlock();
+            block.setCourse(course);
+            block.setKind(input.getKind());
+            block.setOrderIndex(i);
+            block.setPayload(input.getPayload());
+            newBlocks.add(block);
+        }
 
         blockRepository.saveAll(newBlocks);
 

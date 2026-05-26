@@ -10,6 +10,8 @@ import com.codestar.backend.model.CourseBlock;
 import com.codestar.backend.repository.IBookmarkRepository;
 import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICourseRepository;
+import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.security.CoursePermissionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,26 +31,36 @@ public class BookmarkService {
     private final IBookmarkRepository bookmarks;
     private final ICourseBlockRepository blocks;
     private final ICourseRepository courses;
+    private final CoursePermissionService coursePermissions;
 
-    public BookmarkService(IBookmarkRepository bookmarks, ICourseBlockRepository blocks, ICourseRepository courses) {
+    public BookmarkService(IBookmarkRepository bookmarks, ICourseBlockRepository blocks, ICourseRepository courses, CoursePermissionService coursePermissions) {
         this.bookmarks = bookmarks;
         this.blocks = blocks;
         this.courses = courses;
+        this.coursePermissions = coursePermissions;
     }
 
     @Transactional
-    public BookmarkDto create(UUID userId, CreateBookmarkRequestDto request) {
+    public BookmarkDto create(AuthenticatedUser principal, CreateBookmarkRequestDto request) {
         CourseBlock block = blocks.findById(request.getBlockId())
                 .orElseThrow(() -> ApiException.notFound("Block not found"));
 
-        if (block.getCourse() == null || !block.getCourse().getId().equals(request.getCourseId())) {
+        Course course = block.getCourse();
+        if (course == null || !course.getId().equals(request.getCourseId())) {
             throw ApiException.badRequest("block does not belong to the given course");
         }
 
+        if (!coursePermissions.canReadCourse(principal, course)) {
+            throw ApiException.notFound("Course not found: " + request.getCourseId());
+        }
+
+        UUID userId = principal.getId();
+        bookmarks.upsert(userId, request.getCourseId(), request.getBlockId());
         return bookmarks.findByUserIdAndBlockId(userId, request.getBlockId())
                 .map(BookmarkService::toDto)
-                .orElseGet(() -> toDto(bookmarks.save(
-                        new Bookmark(userId, request.getCourseId(), request.getBlockId()))));
+                .orElseThrow(() -> new IllegalStateException(
+                        "Bookmark upsert succeeded but row not found for user=" + userId
+                                + " block=" + request.getBlockId()));
     }
 
     @Transactional
@@ -62,18 +74,23 @@ public class BookmarkService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookmarkEnrichedDto> listMine(UUID userId) {
-        return enrich(bookmarks.findByUserIdOrderByCreatedAtDesc(userId));
+    public List<BookmarkEnrichedDto> listMine(AuthenticatedUser principal) {
+        return enrich(bookmarks.findByUserIdOrderByCreatedAtDesc(principal.getId()), principal);
     }
 
     @Transactional(readOnly = true)
-    public List<BookmarkEnrichedDto> listMineForCourse(UUID userId, UUID courseId) {
-        return enrich(bookmarks.findByUserIdAndCourseId(userId, courseId));
+    public List<BookmarkEnrichedDto> listMineForCourse(AuthenticatedUser principal, UUID courseId) {
+        Course course = courses.findById(courseId)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
+        if (!coursePermissions.canReadCourse(principal, course)) {
+            throw ApiException.notFound("Course not found: " + courseId);
+        }
+        return enrich(bookmarks.findByUserIdAndCourseId(principal.getId(), courseId), principal);
     }
 
     // helpers
 
-    private List<BookmarkEnrichedDto> enrich(List<Bookmark> rows) {
+    private List<BookmarkEnrichedDto> enrich(List<Bookmark> rows, AuthenticatedUser principal) {
         if (rows.isEmpty()) return List.of();
 
         List<UUID> blockIds = rows.stream().map(Bookmark::getBlockId).distinct().toList();
@@ -85,6 +102,7 @@ public class BookmarkService {
                 .collect(Collectors.toMap(Course::getId, Function.identity()));
 
         return rows.stream()
+                .filter(b -> coursePermissions.canReadCourse(principal, coursesById.get(b.getCourseId())))
                 .map(b -> toEnriched(b, blocksById.get(b.getBlockId()), coursesById.get(b.getCourseId())))
                 .toList();
     }

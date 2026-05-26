@@ -14,7 +14,7 @@ public class UpdateCurriculumRequestDto {
 
     @NotNull
     @Size(max = 500, message = "curriculum cannot exceed 500 courses")
-    private List<UUID> courseIds;
+    private List<@NotNull(message = "courseIds entries must not be null") UUID> courseIds;
 
     public UpdateCurriculumRequestDto() {}
 

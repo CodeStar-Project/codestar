@@ -17,6 +17,7 @@ import org.springframework.util.ResourceUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -50,8 +51,7 @@ public class InstanceBrandingService {
         return cached;
     }
 
-    /** Re-reads the branding file and replaces the cache */
-    public InstanceBrandingDto reload() {
+    public synchronized InstanceBrandingDto reload() {
         cached = load();
         return cached;
     }
@@ -60,21 +60,30 @@ public class InstanceBrandingService {
         Path target = resolveWritableTarget();
         InstanceBrandingDto merged = merge(cached, request);
 
+        Path tmp = null;
         try {
-            Path tmp = Files.createTempFile(target.getParent(), "instance-", ".json.tmp");
+            tmp = Files.createTempFile(target.getParent(), "instance-", ".json.tmp");
+
+            objectMapper.copy()
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .writeValue(tmp.toFile(), merged);
+
             try {
-                objectMapper.copy()
-                        .enable(SerializationFeature.INDENT_OUTPUT)
-                        .writeValue(tmp.toFile(), merged);
                 Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException atomicFailure) {
+            } catch (AtomicMoveNotSupportedException atomicUnsupported) {
                 Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
-            } finally {
-                Files.deleteIfExists(tmp);
             }
         } catch (IOException e) {
             log.error("Failed to write branding file '{}': {}", target, e.getMessage());
             throw ApiException.badRequest("Cannot persist branding: " + e.getMessage());
+        } finally {
+            if (tmp != null) {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (IOException cleanupFailure) {
+                    log.warn("Failed to delete temp branding file '{}': {}", tmp, cleanupFailure.getMessage());
+                }
+            }
         }
 
         cached = merged;

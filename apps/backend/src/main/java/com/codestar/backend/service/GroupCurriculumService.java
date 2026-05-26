@@ -52,6 +52,11 @@ public class GroupCurriculumService {
             throw ApiException.notFound("Group not found");
         }
         List<UUID> requested = request.getCourseIds() != null ? request.getCourseIds() : List.of();
+        for (UUID id : requested) {
+            if (id == null) {
+                throw ApiException.badRequest("courseIds entries must not be null");
+            }
+        }
 
         if (!requested.isEmpty()) {
             Map<UUID, Course> found = courses.findAllById(requested).stream()

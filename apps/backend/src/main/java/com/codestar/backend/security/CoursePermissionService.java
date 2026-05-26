@@ -46,4 +46,27 @@ public class CoursePermissionService {
         Role role = user.getRole();
         return role == Role.ADMIN || role == Role.SUPER_ADMIN;
     }
+
+    /**
+     * Read-visibility rule:
+     *  - PUBLISHED courses are visible to any authenticated user
+     *  - DRAFT / ARCHIVED courses are visible only to their author and to ADMIN+
+     */
+    public boolean canReadCourse(Object principal, Course course) {
+        if (course == null) return false;
+        if ("PUBLISHED".equals(course.getStatus())) return true;
+        if (!(principal instanceof AuthenticatedUser user)) return false;
+
+        Role role = user.getRole();
+        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) return true;
+        return course.getAuthor() != null
+                && course.getAuthor().getId().equals(user.getId());
+    }
+
+    public boolean canReadCourse(Object principal, UUID courseId) {
+        if (courseId == null) return false;
+        return courses.findById(courseId)
+                .map(c -> canReadCourse(principal, c))
+                .orElse(false);
+    }
 }

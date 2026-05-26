@@ -1,7 +1,6 @@
 package com.codestar.backend.dto.course;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,19 +17,14 @@ public class SaveBlocksRequestDto {
                 message = "kind must be one of H1, H2, H3, P, CODE, IMAGE, AUDIO, VIDEO, QUIZ, CALLOUT")
         private String kind;
 
-        @Min(0)
-        private int orderIndex;
-
         private Map<String, Object> payload;
 
         public BlockInput() {}
 
         public String getKind()                     { return kind; }
-        public int getOrderIndex()                  { return orderIndex; }
         public Map<String, Object> getPayload()     { return payload; }
 
         public void setKind(String kind)                        { this.kind = kind; }
-        public void setOrderIndex(int orderIndex)               { this.orderIndex = orderIndex; }
         public void setPayload(Map<String, Object> payload)     { this.payload = payload; }
     }
 

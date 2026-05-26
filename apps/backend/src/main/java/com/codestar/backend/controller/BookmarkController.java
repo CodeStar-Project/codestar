@@ -29,7 +29,7 @@ public class BookmarkController {
     @PostMapping
     public ResponseEntity<ApiResponseDto<BookmarkDto>> create(@Valid @RequestBody CreateBookmarkRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
-        BookmarkDto dto = bookmarkService.create(principal.getId(), request);
+        BookmarkDto dto = bookmarkService.create(principal, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponseDto<>(true, "Bookmark saved", dto));
     }
@@ -44,13 +44,13 @@ public class BookmarkController {
     @GetMapping("/mine")
     public ResponseEntity<ApiResponseDto<List<BookmarkEnrichedDto>>> mine(@AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", bookmarkService.listMine(principal.getId())));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", bookmarkService.listMine(principal)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponseDto<List<BookmarkEnrichedDto>>> listForCourse(@RequestParam("courseId") UUID courseId, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         return ResponseEntity.ok(new ApiResponseDto<>(true, "OK",
-                bookmarkService.listMineForCourse(principal.getId(), courseId)));
+                bookmarkService.listMineForCourse(principal, courseId)));
     }
 }
