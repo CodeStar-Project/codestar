@@ -1,80 +1,118 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.course.CourseBlockDto;
-import com.codestar.backend.dto.course.CourseBlockType;
-import com.codestar.backend.dto.course.CourseDto;
-import com.codestar.backend.dto.course.CoursePageDto;
+import com.codestar.backend.dto.course.*;
+import com.codestar.backend.exception.ApiException;
+import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.service.CourseService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-// TODO
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/courses")
-@CrossOrigin(origins = "*")
 public class CourseController {
 
-    private final List<CourseDto> courses;
+    private final CourseService courseService;
 
-    public CourseController() {
-        courses = List.of(
-                new CourseDto(
-                        1L,
-                        "introduction-variables",
-                        "Introduction aux variables",
-                        "Bases des variables en Java",
-                        List.of(
-                                new CoursePageDto(
-                                        1,
-                                        List.of(
-                                                new CourseBlockDto(CourseBlockType.TITLE, "Introduction aux variables").withLevel("h1"),
-                                                new CourseBlockDto(CourseBlockType.BLOC, "Une variable permet de stocker une valeur."),
-                                                new CourseBlockDto(CourseBlockType.CODE, "int age = 25;").withLanguage("java"),
-                                                new CourseBlockDto(CourseBlockType.QUIZ, "Exercice : combien font 2 + 2 ?").withExpectedAnswer("4")
-                                        )
-                                )
-                        )
-                ),
-                new CourseDto(
-                        2L,
-                        "conditions-et-operateurs",
-                        "Conditions et operateurs",
-                        "Comprendre if, else et les operateurs logiques",
-                        List.of(
-                                new CoursePageDto(
-                                        1,
-                                        List.of(
-                                                new CourseBlockDto(CourseBlockType.TITLE, "Tester des conditions").withLevel("h2"),
-                                                new CourseBlockDto(CourseBlockType.WARNING, "Attention aux comparaisons de chaines avec == en Java."),
-                                                new CourseBlockDto(CourseBlockType.VALIDATION, "Super, tu sais maintenant utiliser if/else."),
-                                                new CourseBlockDto(CourseBlockType.TIP, "Pense a simplifier tes conditions avec des booleens.")
-                                        )
-                                )
-                        )
-                )
-        );
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<CourseDto>>> getAllCourses() {
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours recuperes", courses));
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getCourses(
+            @RequestParam(value = "all", defaultValue = "false") boolean all,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        if (all && (principal == null
+                || !(principal.getRole() == com.codestar.backend.model.Role.ADMIN
+                  || principal.getRole() == com.codestar.backend.model.Role.SUPER_ADMIN))) {
+            throw ApiException.forbidden("Only ADMIN+ can list all courses");
+        }
+
+        List<CourseSummaryDto> courses = all
+                ? courseService.getAllCourses()
+                : courseService.getAllPublishedCourses();
+
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Courses retrieved", courses));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseById(@PathVariable Long id) {
-        return courses.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
-                .map(course -> ResponseEntity.ok(new ApiResponseDto<>(true, "Cours recupere", course)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new ApiResponseDto<>(false, "Cours introuvable", null)));
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getMyCourses(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK",
+                courseService.getCoursesAuthoredBy(principal.getId())));
+    }
+
+    @GetMapping("/{slug}")
+    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(
+            @PathVariable String slug,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        CourseDto course = courseService.getCourseBySlug(slug, principal);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course retrieved", course));
+    }
+
+    @GetMapping("/{id}/blocks")
+    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> getBlocks(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", courseService.getBlocks(id, principal)));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(
+            @Valid @RequestBody CreateCourseRequestDto request,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+
+        CourseDto course = courseService.createCourse(request, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponseDto<>(true, "Course created", course));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateCourseRequestDto request) {
+
+        CourseDto course = courseService.updateCourse(id, request);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course updated", course));
+    }
+
+    @PostMapping("/{id}/status")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<CourseDto>> changeStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateCourseStatusRequestDto request) {
+
+        CourseDto course = courseService.changeStatus(id, request.getStatus());
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course status updated to " + course.getStatus(), course));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<Void>> deleteCourse(@PathVariable UUID id) {
+
+        courseService.deleteCourse(id);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course deleted", null));
+    }
+
+    @PutMapping("/{id}/blocks")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> saveBlocks(
+            @PathVariable UUID id,
+            @Valid @RequestBody SaveBlocksRequestDto request) {
+
+        List<CourseBlockDto> blocks = courseService.saveBlocks(id, request);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Blocks saved", blocks));
     }
 }

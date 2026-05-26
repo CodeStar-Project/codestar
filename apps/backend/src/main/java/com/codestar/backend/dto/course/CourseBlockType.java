@@ -1,18 +1,9 @@
 package com.codestar.backend.dto.course;
 
+/**
+ * Course block kinds.
+ * Must stay in sync with DB CHECK constraint on {@code course_blocks.kind}.
+ */
 public enum CourseBlockType {
-    TITLE,
-    BLOC,
-    CODE,
-    WARNING,
-    ERROR,
-    VALIDATION,
-    GREEN,
-    TIP,
-    SANDBOX,
-    QUOTE,
-    IMAGE,
-    QUIZ,
-    IFRAME,
-    TABLE
+    H1, H2, H3, P, CODE, IMAGE, AUDIO, VIDEO, QUIZ, CALLOUT
 }

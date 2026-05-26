@@ -7,11 +7,14 @@ import com.codestar.backend.dto.GroupResponseDto;
 import com.codestar.backend.dto.GroupSummaryDto;
 import com.codestar.backend.dto.InvitationResponseDto;
 import com.codestar.backend.dto.JoinGroupRequestDto;
+import com.codestar.backend.dto.UpdateCurriculumRequestDto;
 import com.codestar.backend.dto.UpdateGroupRequestDto;
+import com.codestar.backend.dto.course.CourseSummaryDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.InvitationCode;
 import com.codestar.backend.repository.IInvitationCodeRepository;
 import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.service.GroupCurriculumService;
 import com.codestar.backend.service.GroupService;
 import com.codestar.backend.service.InvitationService;
 import jakarta.validation.Valid;
@@ -24,8 +27,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-// TODO les permissions fines (Teacher animant son groupe) sont actuellement traitées au niveau Admin/Super-admin. Le scope « Teacher de son groupe » sera affiné en pass 3 via PermissionService dédié.
-
 /**
  * groups + invitations endpoints
  */
@@ -36,11 +37,13 @@ public class GroupController {
     private final GroupService groupService;
     private final InvitationService invitationService;
     private final IInvitationCodeRepository invitations;
+    private final GroupCurriculumService curriculumService;
 
-    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations) {
+    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService) {
         this.groupService = groupService;
         this.invitationService = invitationService;
         this.invitations = invitations;
+        this.curriculumService = curriculumService;
     }
 
     @GetMapping
@@ -101,6 +104,21 @@ public class GroupController {
                 .toList();
     
         return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", body));
+    }
+
+    @GetMapping("/{groupId}/curriculum")
+    @PreAuthorize("@groupPermissionService.isGroupMember(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getCurriculum(@PathVariable UUID groupId) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", curriculumService.getCurriculum(groupId)));
+    }
+
+    @PutMapping("/{groupId}/curriculum")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> replaceCurriculum(
+            @PathVariable UUID groupId,
+            @Valid @RequestBody UpdateCurriculumRequestDto request) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Curriculum updated",
+                curriculumService.replaceCurriculum(groupId, request)));
     }
 
     // helper
