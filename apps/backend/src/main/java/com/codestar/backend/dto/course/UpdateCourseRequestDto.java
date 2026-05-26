@@ -1,10 +1,21 @@
 package com.codestar.backend.dto.course;
 
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public class UpdateCourseRequestDto {
 
+    @Size(min = 1, max = 255)
     private String title;
+
+    @Size(max = 4000)
     private String description;
+
+    @Size(max = 80)
     private String category;
+
+    @Pattern(regexp = "^(BEGINNER|INTERMEDIATE|ADVANCED)$",
+            message = "level must be BEGINNER, INTERMEDIATE or ADVANCED")
     private String level;
 
     public UpdateCourseRequestDto() {}

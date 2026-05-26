@@ -1,7 +1,10 @@
 package com.codestar.backend.service;
 
 import com.codestar.backend.dto.InstanceBrandingDto;
+import com.codestar.backend.dto.UpdateBrandingRequestDto;
+import com.codestar.backend.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,22 +12,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 
 @Service
 public class InstanceBrandingService {
 
     private static final Logger log = LoggerFactory.getLogger(InstanceBrandingService.class);
-
-    private static final InstanceBrandingDto FALLBACK = new InstanceBrandingDto(
-            "Codestar",
-            "Open-source e-learning platform",
-            new InstanceBrandingDto.LogoDto("preset", "star"),
-            "#7AA9FF",
-            null, null, null,
-            "en");
 
     @Value("${codestar.instance.config-path}")
     private String configPath;
@@ -55,19 +56,74 @@ public class InstanceBrandingService {
         return cached;
     }
 
-    private InstanceBrandingDto load() {
-        Resource resource = resourceLoader.getResource(configPath);
-        if (!resource.exists()) {
-            log.warn("The branding file not found at '{}', using fallback defaults", configPath);
-            return FALLBACK;
+    public synchronized InstanceBrandingDto update(UpdateBrandingRequestDto request) {
+        Path target = resolveWritableTarget();
+        InstanceBrandingDto merged = merge(cached, request);
+
+        try {
+            Path tmp = Files.createTempFile(target.getParent(), "instance-", ".json.tmp");
+            try {
+                objectMapper.copy()
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .writeValue(tmp.toFile(), merged);
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException atomicFailure) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(tmp);
+            }
+        } catch (IOException e) {
+            log.error("Failed to write branding file '{}': {}", target, e.getMessage());
+            throw ApiException.badRequest("Cannot persist branding: " + e.getMessage());
         }
-        try (InputStream in = resource.getInputStream()) {
-            return objectMapper.readValue(in, InstanceBrandingDto.class);
-        } catch (Exception e) {
-            log.error("Failed to parse the branding file at '{}': {}. Fallback in use.", configPath, e.getMessage());
-            return FALLBACK;
+
+        cached = merged;
+        return cached;
+    }
+
+    private Path resolveWritableTarget() {
+        if (configPath == null || configPath.isBlank()) {
+            throw ApiException.badRequest("codestar.instance.config-path is not set");
+        }
+        if (configPath.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX)) {
+            throw ApiException.badRequest("Branding is read-only when loaded from classpath. Set INSTANCE_CONFIG_PATH to a file: URL.");
+        }
+        Resource resource = resourceLoader.getResource(configPath);
+        try {
+            File file = resource.getFile();
+            return file.toPath().toAbsolutePath();
+        } catch (IOException e) {
+            throw ApiException.badRequest("Cannot resolve branding file path: " + e.getMessage());
         }
     }
 
-    // TODO Can modify the branding (endpoint PUT /api/v1/instance/branding (super-admin) qui réécrit fichier)
+    private static InstanceBrandingDto merge(InstanceBrandingDto current, UpdateBrandingRequestDto patch) {
+        return new InstanceBrandingDto(
+                patch.getName() != null ? patch.getName() : current.name(),
+                patch.getTagline() != null ? patch.getTagline() : current.tagline(),
+                patch.getLogo() != null ? patch.getLogo() : current.logo(),
+                patch.getAccent() != null ? patch.getAccent() : current.accent(),
+                patch.getHeroTitle() != null ? patch.getHeroTitle() : current.heroTitle(),
+                patch.getHeroSubtitle() != null ? patch.getHeroSubtitle() : current.heroSubtitle(),
+                patch.getHeroCta() != null ? patch.getHeroCta() : current.heroCta(),
+                patch.getLocale() != null ? patch.getLocale() : current.locale());
+    }
+
+    private InstanceBrandingDto load() {
+        Resource resource = resourceLoader.getResource(configPath);
+        if (!resource.exists()) {
+            throw new IllegalStateException(
+                    "Branding file not found at '" + configPath + "'. Set codestar.instance.config-path / INSTANCE_CONFIG_PATH to a valid file.");
+        }
+        try (InputStream in = resource.getInputStream()) {
+            InstanceBrandingDto dto = objectMapper.readValue(in, InstanceBrandingDto.class);
+            if (dto == null) {
+                throw new IllegalStateException("Branding file at '" + configPath + "' is empty or invalid.");
+            }
+            return dto;
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Failed to parse branding file at '" + configPath + "': " + e.getMessage(), e);
+        }
+    }
 }

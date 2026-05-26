@@ -1,6 +1,9 @@
 package com.codestar.backend.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +39,13 @@ public class Course {
     @Column(nullable = false, length = 20)
     private String status = "DRAFT";
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt = OffsetDateTime.now();
+    private OffsetDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt = OffsetDateTime.now();
+    private OffsetDateTime updatedAt;
 
     @Column(name = "published_at")
     private OffsetDateTime publishedAt;
@@ -48,11 +53,6 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("orderIndex ASC")
     private List<CourseBlock> blocks = new ArrayList<>();
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = OffsetDateTime.now();
-    }
 
     public Course() {}
 

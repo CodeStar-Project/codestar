@@ -1,133 +1,194 @@
 package com.codestar.backend.service;
 
 import com.codestar.backend.dto.course.*;
+import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
+import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICourseRepository;
 import com.codestar.backend.repository.IUserRepository;
+import com.codestar.backend.security.AuthenticatedUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class CourseService {
 
+    private static final Set<String> ALLOWED_LEVELS = Set.of("BEGINNER", "INTERMEDIATE", "ADVANCED");
+    private static final Set<String> ALLOWED_STATUSES = Set.of("DRAFT", "PUBLISHED", "ARCHIVED");
+    private static final Set<String> ALLOWED_BLOCK_KINDS = EnumSet.allOf(CourseBlockType.class)
+            .stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
+
     private final ICourseRepository courseRepository;
     private final ICourseBlockRepository blockRepository;
     private final IUserRepository userRepository;
 
-    public CourseService(ICourseRepository courseRepository,
-                         ICourseBlockRepository blockRepository,
-                         IUserRepository userRepository) {
+    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository) {
         this.courseRepository = courseRepository;
         this.blockRepository = blockRepository;
         this.userRepository = userRepository;
     }
 
-    // ── Récupérer tous les cours publiés ─────────────────────────────────────
-    public List<CourseDto> getAllPublishedCourses() {
+    public List<CourseSummaryDto> getAllPublishedCourses() {
         return courseRepository.findByStatus("PUBLISHED")
                 .stream()
-                .map(this::toDto)
+                .map(CourseService::toSummaryDto)
                 .collect(Collectors.toList());
     }
 
-    // ── Récupérer tous les cours (admin) ─────────────────────────────────────
-    public List<CourseDto> getAllCourses() {
+    public List<CourseSummaryDto> getAllCourses() {
         return courseRepository.findAll()
                 .stream()
-                .map(this::toDto)
+                .map(CourseService::toSummaryDto)
                 .collect(Collectors.toList());
     }
 
-    // ── Récupérer un cours par son slug ──────────────────────────────────────
-    public CourseDto getCourseBySlug(String slug) {
+    public List<CourseBlockDto> getBlocks(UUID courseId, AuthenticatedUser principal) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
+        if (!canRead(principal, course)) {
+            throw ApiException.notFound("Course not found: " + courseId);
+        }
+        return blockRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
+                .stream()
+                .map(this::toBlockDto)
+                .collect(Collectors.toList());
+    }
+
+    public CourseDto getCourseBySlug(String slug, AuthenticatedUser principal) {
         Course course = courseRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Cours introuvable : " + slug));
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + slug));
+        if (!canRead(principal, course)) {
+            throw ApiException.notFound("Course not found: " + slug);
+        }
         return toDto(course);
     }
 
-    // ── Récupérer un cours par son id ────────────────────────────────────────
-    public CourseDto getCourseById(UUID id) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cours introuvable : " + id));
-        return toDto(course);
+    /**
+     *  PUBLISHED courses are visible to any authenticated user
+     *  DRAFT / ARCHIVED courses are visible only to their author and to ADMIN+
+     */
+    private static boolean canRead(AuthenticatedUser principal, Course course) {
+        if ("PUBLISHED".equals(course.getStatus())) return true;
+        if (principal == null) return false;
+
+        Role role = principal.getRole();
+        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) return true;
+        return course.getAuthor() != null
+                && course.getAuthor().getId().equals(principal.getId());
     }
 
-    // ── Créer un cours ───────────────────────────────────────────────────────
     @Transactional
     public CourseDto createCourse(CreateCourseRequestDto request, UUID authorId) {
         if (courseRepository.existsBySlug(request.getSlug())) {
-            throw new RuntimeException("Ce slug est déjà utilisé : " + request.getSlug());
+            throw ApiException.conflict("Slug already used: " + request.getSlug());
         }
 
         User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+
+        String level = request.getLevel() != null ? request.getLevel() : "BEGINNER";
+        if (!ALLOWED_LEVELS.contains(level)) {
+            throw ApiException.badRequest("Invalid level: " + level);
+        }
 
         Course course = new Course();
         course.setTitle(request.getTitle());
         course.setSlug(request.getSlug());
         course.setDescription(request.getDescription());
         course.setCategory(request.getCategory());
-        course.setLevel(request.getLevel() != null ? request.getLevel() : "BEGINNER");
+        course.setLevel(level);
         course.setAuthor(author);
         course.setStatus("DRAFT");
 
         return toDto(courseRepository.save(course));
     }
 
-    // ── Modifier les métadonnées d'un cours ──────────────────────────────────
     @Transactional
     public CourseDto updateCourse(UUID id, UpdateCourseRequestDto request) {
         Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cours introuvable : " + id));
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
 
-        if (request.getTitle() != null)       course.setTitle(request.getTitle());
+        if (request.getTitle() != null) course.setTitle(request.getTitle());
         if (request.getDescription() != null) course.setDescription(request.getDescription());
-        if (request.getCategory() != null)    course.setCategory(request.getCategory());
-        if (request.getLevel() != null)       course.setLevel(request.getLevel());
-
-        return toDto(courseRepository.save(course));
-    }
-
-    // ── Publier / dépublier un cours ─────────────────────────────────────────
-    @Transactional
-    public CourseDto togglePublish(UUID id) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cours introuvable : " + id));
-
-        if ("PUBLISHED".equals(course.getStatus())) {
-            course.setStatus("DRAFT");
-            course.setPublishedAt(null);
-        } else {
-            course.setStatus("PUBLISHED");
-            course.setPublishedAt(OffsetDateTime.now());
+        if (request.getCategory() != null) course.setCategory(request.getCategory());
+        if (request.getLevel() != null) {
+            if (!ALLOWED_LEVELS.contains(request.getLevel())) {
+                throw ApiException.badRequest("Invalid level: " + request.getLevel());
+            }
+            course.setLevel(request.getLevel());
         }
 
         return toDto(courseRepository.save(course));
     }
 
-    // ── Supprimer un cours ───────────────────────────────────────────────────
+    @Transactional
+    public CourseDto changeStatus(UUID id, String newStatus) {
+        if (newStatus == null || !ALLOWED_STATUSES.contains(newStatus)) {
+            throw ApiException.badRequest("Invalid status: " + newStatus);
+        }
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
+
+        String current = course.getStatus();
+        if (newStatus.equals(current)) {
+            return toDto(course);
+        }
+
+        switch (newStatus) {
+            case "PUBLISHED" -> {
+                course.setStatus("PUBLISHED");
+                if (course.getPublishedAt() == null) {
+                    course.setPublishedAt(OffsetDateTime.now());
+                }
+            }
+            case "DRAFT" -> {
+                course.setStatus("DRAFT");
+                course.setPublishedAt(null);
+            }
+            case "ARCHIVED" -> {
+                course.setStatus("ARCHIVED");
+                // keep publishedAt as historical marker
+            }
+            default -> throw ApiException.badRequest("Invalid status: " + newStatus);
+        }
+
+        return toDto(courseRepository.save(course));
+    }
+
     @Transactional
     public void deleteCourse(UUID id) {
         if (!courseRepository.existsById(id)) {
-            throw new RuntimeException("Cours introuvable : " + id);
+            throw ApiException.notFound("Course not found: " + id);
         }
         courseRepository.deleteById(id);
     }
 
-    // ── Remplacer tous les blocs d'un cours ──────────────────────────────────
-    // C'est cet endpoint qu'appelle le Course Builder lors d'un import JSON
     @Transactional
     public List<CourseBlockDto> saveBlocks(UUID courseId, SaveBlocksRequestDto request) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new RuntimeException("Cours introuvable : " + courseId));
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
+
+        if (request.getBlocks() == null) {
+            throw ApiException.badRequest("blocks is required");
+        }
+        for (SaveBlocksRequestDto.BlockInput input : request.getBlocks()) {
+            if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
+                throw ApiException.badRequest("Invalid block kind: " + input.getKind());
+            }
+            if (input.getOrderIndex() < 0) {
+                throw ApiException.badRequest("orderIndex must be >= 0");
+            }
+        }
 
         blockRepository.deleteByCourseId(courseId);
 
@@ -150,8 +211,6 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-
-
     private CourseDto toDto(Course course) {
         List<CourseBlockDto> blocks = course.getBlocks()
                 .stream()
@@ -171,6 +230,22 @@ public class CourseService {
                 course.getUpdatedAt(),
                 course.getPublishedAt(),
                 blocks
+        );
+    }
+
+    private static CourseSummaryDto toSummaryDto(Course c) {
+        return new CourseSummaryDto(
+                c.getId(),
+                c.getSlug(),
+                c.getTitle(),
+                c.getDescription(),
+                c.getCategory(),
+                c.getLevel(),
+                c.getStatus(),
+                c.getAuthor() != null ? c.getAuthor().getDisplayName() : null,
+                c.getCreatedAt(),
+                c.getUpdatedAt(),
+                c.getPublishedAt()
         );
     }
 

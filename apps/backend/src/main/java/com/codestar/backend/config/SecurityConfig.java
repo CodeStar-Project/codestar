@@ -49,12 +49,11 @@ public class SecurityConfig {
                             "/api/v1/auth/register").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/instance/branding").permitAll()
-                    // swager/openAPI
+                    // swagger / OpenAPI
                     .requestMatchers(
                             "/v3/api-docs/**",
                             "/swagger-ui/**",
                             "/swagger-ui.html").permitAll()
-                    // TODO .requestMatchers("/api/v1/courses/**").permitAll()
                     .anyRequest().authenticated())
             .exceptionHandling(ex -> ex
                     .authenticationEntryPoint(securityExceptionHandler)

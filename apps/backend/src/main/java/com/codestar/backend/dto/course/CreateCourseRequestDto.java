@@ -1,11 +1,29 @@
 package com.codestar.backend.dto.course;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public class CreateCourseRequestDto {
 
+    @NotBlank
+    @Size(min = 1, max = 255)
     private String title;
+
+    @NotBlank
+    @Size(min = 1, max = 120)
+    @Pattern(regexp = "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            message = "slug must be lowercase kebab-case (a-z, 0-9, hyphens)")
     private String slug;
+
+    @Size(max = 4000)
     private String description;
+
+    @Size(max = 80)
     private String category;
+
+    @Pattern(regexp = "^(BEGINNER|INTERMEDIATE|ADVANCED)$",
+            message = "level must be BEGINNER, INTERMEDIATE or ADVANCED")
     private String level;
 
     public CreateCourseRequestDto() {}

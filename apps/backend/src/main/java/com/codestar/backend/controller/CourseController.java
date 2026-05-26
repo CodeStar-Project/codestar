@@ -8,6 +8,7 @@ import com.codestar.backend.service.CourseService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,83 +26,84 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<CourseDto>>> getCourses(
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getCourses(
             @RequestParam(value = "all", defaultValue = "false") boolean all,
             @AuthenticationPrincipal AuthenticatedUser principal) {
 
-        List<CourseDto> courses = all
+        if (all && (principal == null
+                || !(principal.getRole() == com.codestar.backend.model.Role.ADMIN
+                  || principal.getRole() == com.codestar.backend.model.Role.SUPER_ADMIN))) {
+            throw ApiException.forbidden("Only ADMIN+ can list all courses");
+        }
+
+        List<CourseSummaryDto> courses = all
                 ? courseService.getAllCourses()
                 : courseService.getAllPublishedCourses();
 
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupérés", courses));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Courses retrieved", courses));
     }
-
 
     @GetMapping("/{slug}")
-    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(@PathVariable String slug) {
-        CourseDto course = courseService.getCourseBySlug(slug);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours récupéré", course));
+    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(
+            @PathVariable String slug,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        CourseDto course = courseService.getCourseBySlug(slug, principal);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course retrieved", course));
     }
 
+    @GetMapping("/{id}/blocks")
+    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> getBlocks(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", courseService.getBlocks(id, principal)));
+    }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(
             @Valid @RequestBody CreateCourseRequestDto request,
             @AuthenticationPrincipal AuthenticatedUser principal) {
 
-        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
-
         CourseDto course = courseService.createCourse(request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseDto<>(true, "Cours créé", course));
+                .body(new ApiResponseDto<>(true, "Course created", course));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
     public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(
             @PathVariable UUID id,
-            @RequestBody UpdateCourseRequestDto request,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
-
-        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+            @Valid @RequestBody UpdateCourseRequestDto request) {
 
         CourseDto course = courseService.updateCourse(id, request);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours mis à jour", course));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course updated", course));
     }
 
-    @PostMapping("/{id}/publish")
-    public ResponseEntity<ApiResponseDto<CourseDto>> togglePublish(
+    @PostMapping("/{id}/status")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<CourseDto>> changeStatus(
             @PathVariable UUID id,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
+            @Valid @RequestBody UpdateCourseStatusRequestDto request) {
 
-        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
-
-        CourseDto course = courseService.togglePublish(id);
-        String message = "PUBLISHED".equals(course.getStatus()) ? "Cours publié" : "Cours dépublié";
-        return ResponseEntity.ok(new ApiResponseDto<>(true, message, course));
+        CourseDto course = courseService.changeStatus(id, request.getStatus());
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course status updated to " + course.getStatus(), course));
     }
-
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> deleteCourse(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
-
-        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<Void>> deleteCourse(@PathVariable UUID id) {
 
         courseService.deleteCourse(id);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Cours supprimé", null));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course deleted", null));
     }
 
-
     @PutMapping("/{id}/blocks")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
     public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> saveBlocks(
             @PathVariable UUID id,
-            @RequestBody SaveBlocksRequestDto request,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
-
-        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+            @Valid @RequestBody SaveBlocksRequestDto request) {
 
         List<CourseBlockDto> blocks = courseService.saveBlocks(id, request);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Blocs sauvegardés", blocks));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Blocks saved", blocks));
     }
 }

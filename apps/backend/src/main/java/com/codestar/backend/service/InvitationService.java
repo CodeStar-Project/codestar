@@ -8,14 +8,20 @@ import com.codestar.backend.model.InvitationCode;
 import com.codestar.backend.repository.IGroupMembershipRepository;
 import com.codestar.backend.repository.IGroupRepository;
 import com.codestar.backend.repository.IInvitationCodeRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+// TODO logs example
+
 @Service
 public class InvitationService {
+
+    private static final Logger log = LoggerFactory.getLogger(InvitationService.class);
 
     private final IInvitationCodeRepository invitations;
     private final IGroupRepository groups;
@@ -47,10 +53,12 @@ public class InvitationService {
 
     @Transactional
     public void revoke(UUID invitationId, UUID actorUserId) {
-        InvitationCode inv = invitations.findById(invitationId).orElseThrow(() -> ApiException.notFound("Invalid invintation"));
+        InvitationCode inv = invitations.findById(invitationId)
+                .orElseThrow(() -> ApiException.notFound("Invalid invitation"));
         if (inv.getRevokedAt() != null) return;
         inv.setRevokedAt(OffsetDateTime.now());
         invitations.save(inv);
+        log.info("Invitation {} revoked by user {}", invitationId, actorUserId);
     }
 
     @Transactional

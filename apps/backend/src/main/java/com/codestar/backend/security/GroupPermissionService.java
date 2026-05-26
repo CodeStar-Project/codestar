@@ -19,12 +19,6 @@ public class GroupPermissionService {
         this.memberships = memberships;
     }
 
-    /**
-     * Returns {@code true} if the principal is allowed to manage the given group:
-     * - ADMIN and SUPER_ADMIN can manage any group.
-     * - TEACHER can manage only groups where they hold the TEACHER membership role.
-     * - All other principals (anonymous, STUDENT) are denied.
-     */
     public boolean canManageGroup(Object principal, UUID groupId) {
         if (!(principal instanceof AuthenticatedUser user) || groupId == null) {
             return false;
@@ -38,5 +32,16 @@ public class GroupPermissionService {
                     user.getId(), groupId, GroupMemberRole.TEACHER);
         }
         return false;
+    }
+
+    public boolean isGroupMember(Object principal, UUID groupId) {
+        if (!(principal instanceof AuthenticatedUser user) || groupId == null) {
+            return false;
+        }
+        Role role = user.getRole();
+        if (role == Role.ADMIN || role == Role.SUPER_ADMIN) {
+            return true;
+        }
+        return memberships.existsByIdUserIdAndIdGroupId(user.getId(), groupId);
     }
 }

@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.UUID;
@@ -31,7 +32,14 @@ public class JwtUtils {
 
     @PostConstruct
     public void init() {
-        key = Keys.hmacShaKeyFor(secret.getBytes());
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("jwt.secret must be set");
+        }
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < 32) {
+            throw new IllegalStateException("jwt.secret must be at least 32 bytes (256 bits) for HS256");
+        }
+        key = Keys.hmacShaKeyFor(bytes);
     }
 
     public String generateToken(User user) {

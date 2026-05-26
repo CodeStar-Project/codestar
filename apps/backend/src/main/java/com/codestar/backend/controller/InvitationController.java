@@ -1,6 +1,7 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
+import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.InvitationService;
 import org.springframework.http.ResponseEntity;
@@ -24,8 +25,10 @@ public class InvitationController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponseDto<Void>> revoke(@PathVariable UUID id, @AuthenticationPrincipal AuthenticatedUser principal) {
+    @PreAuthorize("@invitationPermissionService.canRevoke(principal, #id)")
+    public ResponseEntity<ApiResponseDto<Void>> revoke(@PathVariable UUID id,
+                                                       @AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         invitationService.revoke(id, principal.getId());
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Invitation revoked", null));
     }
