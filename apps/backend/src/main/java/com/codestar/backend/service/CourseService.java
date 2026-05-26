@@ -40,6 +40,7 @@ public class CourseService {
         this.coursePermissions = coursePermissions;
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getAllPublishedCourses() {
         return courseRepository.findByStatus(CourseStatus.PUBLISHED)
                 .stream()
@@ -47,6 +48,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getAllCourses() {
         return courseRepository.findAll()
                 .stream()
@@ -54,6 +56,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getCoursesAuthoredBy(UUID authorId) {
         return courseRepository.findByAuthorId(authorId)
                 .stream()

@@ -38,7 +38,7 @@ const COOKIE_OPTS = {
   maxAge: 60 * 60 * 24 * 365,
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: (process.env.SITE_URL ?? "").startsWith("https://"),
 };
 
 async function setAuthCookie(token: string) {

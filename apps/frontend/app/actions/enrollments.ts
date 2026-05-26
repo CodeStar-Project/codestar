@@ -1,4 +1,4 @@
-import "server-only";
+"use server";
 
 import { ApiError, apiFetch } from "@/lib/api";
 import type { Enrollment } from "@/lib/types";

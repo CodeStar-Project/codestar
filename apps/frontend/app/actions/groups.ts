@@ -1,4 +1,4 @@
-import "server-only";
+"use server";
 
 import { ApiError, apiFetch } from "@/lib/api";
 import type { CourseSummary, GroupResponse, GroupSummary } from "@/lib/types";
