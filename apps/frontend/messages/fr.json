@@ -5,6 +5,8 @@
     "signin": "Se connecter",
     "sectionsLabel": "Sections principales",
     "home": "Accueil",
+    "catalog": "Catalogue",
+    "myCourses": "Mes cours",
     "teach": "Enseigner",
     "admin": "Admin"
   },
@@ -170,6 +172,184 @@
   "course": {
     "back": "Retour",
     "pageLabel": "Page {number}",
-    "blocksCount": "{count, plural, one {# bloc} other {# blocs}}"
+    "blocksCount": "{count, plural, one {# bloc} other {# blocs}}",
+    "intro": {
+      "byAuthor": "par {author}",
+      "lessons": "{count, plural, one {# leçon} other {# leçons}}",
+      "publishedOn": "Publié le {date}",
+      "draft": "Brouillon",
+      "archived": "Archivé",
+      "start": "Commencer",
+      "resume": "Reprendre",
+      "review": "Revoir",
+      "progressLabel": "Votre progression",
+      "bookmarksTitle": "Vos favoris dans ce cours",
+      "bookmarksEmpty": "Aucun favori. Ouvrez le cours et cliquez sur l'icône favori sur un bloc.",
+      "openReader": "Ouvrir le lecteur",
+      "statsLearners": "apprenants inscrits",
+      "statsCompletion": "% taux de complétion",
+      "notFound": "Cours introuvable",
+      "notFoundDesc": "Ce cours n'existe pas, n'est pas publié ou ne vous est pas accessible.",
+      "backToCatalog": "Retour au catalogue"
+    },
+    "reader": {
+      "kicker": "Lecture",
+      "toc": "Sommaire",
+      "tocMobile": "Sommaire",
+      "addBookmark": "Ajouter aux favoris",
+      "removeBookmark": "Retirer des favoris",
+      "viewBookmarks": "Mes favoris",
+      "next": "Suivant",
+      "prev": "Précédent",
+      "empty": "Ce cours n'a pas encore de contenu.",
+      "backToIntro": "Retour à l'aperçu"
+    },
+    "card": {
+      "view": "Voir le cours"
+    }
+  },
+  "catalog": {
+    "title": "Catalogue",
+    "kicker": "Tous les cours",
+    "description": "Explorez les cours publiés et ceux assignés à vos groupes.",
+    "tabs": {
+      "all": "Tous",
+      "mine": "Mes groupes",
+      "published": "Publiés"
+    },
+    "search": "Rechercher un cours",
+    "empty": "Aucun cours pour l'instant.",
+    "emptyFiltered": "Aucun cours ne correspond à votre recherche."
+  },
+  "studentHome": {
+    "kicker": "{date}",
+    "greeting": "Bonjour {name},",
+    "streak": "{count} jours de série.",
+    "streakNoStreak": "Démarrez votre série aujourd'hui.",
+    "continue": "Continuons.",
+    "statXp": "XP total",
+    "statRank": "Rang",
+    "resumeTitle": "Reprendre",
+    "resumeEmpty": "Aucun cours en cours. Découvrez le catalogue.",
+    "discoverTitle": "Découvrir",
+    "discoverDesc": "Sélection issue de vos groupes.",
+    "browseCta": "Voir tout le catalogue"
+  },
+  "myCourses": {
+    "title": "Mes cours",
+    "kicker": "Apprentissage",
+    "description": "Tous vos cours suivis, organisés par statut.",
+    "sections": {
+      "inProgress": "En cours",
+      "completed": "Terminés",
+      "toStart": "À démarrer"
+    },
+    "empty": {
+      "inProgress": "Aucun cours en cours.",
+      "completed": "Vous n'avez pas encore terminé de cours.",
+      "toStart": "Aucun cours assigné non encore démarré."
+    },
+    "ctaStart": "Commencer",
+    "ctaResume": "Reprendre",
+    "ctaReview": "Revoir"
+  },
+  "bookmarks": {
+    "title": "Mes favoris",
+    "kicker": "Favoris",
+    "description": "Tous vos marque-pages, groupés par cours.",
+    "empty": "Aucun favori pour l'instant. Cliquez sur l'icône favori dans le lecteur d'un cours.",
+    "viewBlock": "Voir dans le cours",
+    "remove": "Retirer",
+    "bookmarksCount": "{count, plural, one {# favori} other {# favoris}}"
+  },
+  "dash": {
+    "title": "Mes progrès",
+    "kicker": "Tableau de bord",
+    "description": "Votre progression d'un coup d'œil.",
+    "stats": {
+      "completed": "Cours finis",
+      "inProgress": "En cours",
+      "discover": "À découvrir",
+      "xp": "XP total",
+      "rank": "Rang",
+      "streak": "Streak"
+    },
+    "activityTitle": "Activité (30 derniers jours)",
+    "activitySoon": "Bientôt — graphique d'activité",
+    "badgesTitle": "Badges",
+    "badgesSoon": "Bientôt — collection de badges",
+    "resumeTitle": "Reprendre"
+  },
+  "admin": {
+    "kicker": "Admin · {name}",
+    "kickerTeacher": "Espace enseignant · {name}",
+    "title": "Vos cours, en un coup d'œil.",
+    "titleTeacher": "Vos cours et groupes.",
+    "newCourse": "Nouveau cours",
+    "exportCsv": "Export CSV",
+    "stats": {
+      "totalCourses": "Cours totaux",
+      "myCourses": "Mes cours",
+      "published": "Publiés",
+      "drafts": "Brouillons",
+      "students": "Étudiants actifs",
+      "groups": "Groupes"
+    },
+    "recentTitle": "Cours récents",
+    "groupsTitle": "Mes groupes",
+    "groupsManage": "Gérer le curriculum",
+    "noGroups": "Aucun groupe.",
+    "table": {
+      "title": "Titre",
+      "category": "Catégorie",
+      "level": "Niveau",
+      "status": "Statut",
+      "author": "Auteur",
+      "updated": "MAJ",
+      "actions": "Actions",
+      "empty": "Aucun cours. Créez votre premier cours.",
+      "edit": "Éditer",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "archive": "Archiver",
+      "delete": "Supprimer",
+      "confirmDelete": "Supprimer définitivement ce cours ?"
+    },
+    "courseForm": {
+      "createTitle": "Nouveau cours",
+      "editTitle": "Modifier le cours",
+      "kicker": "Cours",
+      "title": "Titre",
+      "titlePlaceholder": "Introduction à React",
+      "slug": "Slug",
+      "slugHelper": "Identifiant URL. Lettres minuscules, chiffres et tirets uniquement. Non modifiable après création.",
+      "slugPlaceholder": "introduction-a-react",
+      "description": "Description",
+      "category": "Catégorie",
+      "categoryPlaceholder": "Programmation",
+      "level": "Niveau",
+      "levelEmpty": "— Aucun —",
+      "levelBeginner": "Débutant",
+      "levelIntermediate": "Intermédiaire",
+      "levelAdvanced": "Avancé",
+      "submitCreate": "Créer le cours",
+      "submitUpdate": "Enregistrer",
+      "cancel": "Annuler",
+      "required": "Titre requis.",
+      "editNotice": "L'édition des blocs (contenu du cours) sera disponible plus tard."
+    },
+    "curriculum": {
+      "kicker": "Curriculum · {group}",
+      "title": "Cours assignés au groupe",
+      "description": "Sélectionnez les cours à inclure dans le curriculum de ce groupe.",
+      "searchPlaceholder": "Rechercher un cours…",
+      "selected": "Sélectionnés",
+      "available": "Disponibles",
+      "empty": "Aucun cours assigné.",
+      "emptyAvailable": "Aucun cours disponible.",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Enregistré"
+    }
   }
 }

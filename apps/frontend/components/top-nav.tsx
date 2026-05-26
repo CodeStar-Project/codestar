@@ -45,25 +45,29 @@ export async function TopNav() {
             className="ml-6 hidden items-center gap-1 md:flex"
           >
             <Link
-              href="/"
+              href="/home"
               className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
             >
               {t("home")}
             </Link>
+            <Link
+              href="/courses"
+              className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
+            >
+              {t("catalog")}
+            </Link>
+            <Link
+              href="/my-courses"
+              className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
+            >
+              {t("myCourses")}
+            </Link>
             {isStaff(me.role) && (
-              <Link
-                href="/courses"
-                className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
-              >
-                {t("teach")}
-              </Link>
-            )}
-            {isAdmin(me.role) && (
               <Link
                 href="/admin"
                 className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
               >
-                {t("admin")}
+                {isAdmin(me.role) ? t("admin") : t("teach")}
               </Link>
             )}
           </nav>

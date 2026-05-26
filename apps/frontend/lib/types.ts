@@ -22,6 +22,16 @@ export interface GroupSummary {
   roleInGroup: GroupMemberRole;
 }
 
+export interface GroupResponse {
+  id: string;
+  name: string;
+  slug: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface MeResponse {
   id: string;
   email: string;
@@ -31,43 +41,66 @@ export interface MeResponse {
   groups: GroupSummary[];
 }
 
-export type CourseBlockType =
-  | "TITLE"
-  | "BLOC"
+export type CourseStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type CourseLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+
+export type CourseBlockKind =
+  | "H1"
+  | "H2"
+  | "H3"
+  | "P"
   | "CODE"
-  | "WARNING"
-  | "ERROR"
-  | "VALIDATION"
-  | "GREEN"
-  | "TIP"
-  | "SANDBOX"
-  | "QUOTE"
   | "IMAGE"
+  | "AUDIO"
+  | "VIDEO"
   | "QUIZ"
-  | "IFRAME"
-  | "TABLE";
+  | "CALLOUT";
 
 export interface CourseBlock {
-  type: CourseBlockType;
-  content: string;
-  level: string | null;
-  expectedAnswer: string | null;
-  language: string | null;
-  mediaPath: string | null;
-  sourceUrl: string | null;
+  id: string;
+  kind: CourseBlockKind;
+  orderIndex: number;
+  payload: Record<string, unknown>;
 }
 
-export interface CoursePage {
-  pageNumber: number;
+export interface CourseSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  level: CourseLevel | null;
+  status: CourseStatus;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+}
+
+export interface Course extends CourseSummary {
   blocks: CourseBlock[];
 }
 
-export interface Course {
-  id: number;
-  slug: string;
-  title: string;
-  description: string;
-  pages: CoursePage[];
+export interface Enrollment {
+  userId: string;
+  courseId: string;
+  progress: string;
+  lastBlockId: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  lastActivityAt: string;
+}
+
+export interface BookmarkEnriched {
+  id: string;
+  courseId: string;
+  courseSlug: string;
+  courseTitle: string;
+  blockId: string;
+  blockKind: CourseBlockKind;
+  blockOrderIndex: number;
+  blockPreview: string | null;
+  createdAt: string;
 }
 
 export interface InstanceBranding {

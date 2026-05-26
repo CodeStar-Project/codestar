@@ -19,14 +19,14 @@ import {
   StarIcon,
   TrophyIcon,
 } from "@/components/ui/icons";
-import { getCourses } from "@/app/actions/courses";
-import type { Course } from "@/lib/types";
+import { getPublishedCourses } from "@/app/actions/courses";
+import type { CourseSummary } from "@/lib/types";
 
 export default async function HomePage() {
   const [tInstance, branding, courses] = await Promise.all([
     getTranslations("instance"),
     getInstanceBranding(),
-    getCourses(),
+    getPublishedCourses(),
   ]);
 
   const heroTitle = branding.heroTitle ?? tInstance("heroTitle");
@@ -165,7 +165,8 @@ async function HeroVisual() {
   );
 }
 
-async function FeaturedCourses({ courses }: { courses: Course[] }) {
+async function FeaturedCourses({ courses }: { courses: CourseSummary[] }) {
+  courses = courses.slice(0, 3);
   if (courses.length === 0) return null;
   const t = await getTranslations("home.featured");
 
@@ -199,13 +200,13 @@ function FeaturedCard({
   course,
   linkAria,
 }: {
-  course: Course;
+  course: CourseSummary;
   linkAria: string;
 }) {
   return (
     <li>
       <Link
-        href={`/courses/${course.id}`}
+        href={`/courses/${course.slug}`}
         className="block focus-visible:outline-none"
         aria-label={linkAria}
       >
