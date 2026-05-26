@@ -1,6 +1,7 @@
 package com.codestar.backend.repository;
 
 import com.codestar.backend.model.Course;
+import com.codestar.backend.model.CourseStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,7 +12,7 @@ public interface ICourseRepository extends JpaRepository<Course, UUID> {
 
     Optional<Course> findBySlug(String slug);
 
-    List<Course> findByStatus(String status);
+    List<Course> findByStatus(CourseStatus status);
 
     List<Course> findByAuthorId(UUID authorId);
 

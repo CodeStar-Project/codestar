@@ -1,6 +1,7 @@
 package com.codestar.backend.security;
 
 import com.codestar.backend.model.Course;
+import com.codestar.backend.model.CourseStatus;
 import com.codestar.backend.model.Role;
 import com.codestar.backend.repository.ICourseRepository;
 import org.springframework.stereotype.Service;
@@ -48,14 +49,15 @@ public class CoursePermissionService {
     }
 
     /**
-     * Read-visibility rule:
-     *  - PUBLISHED courses are visible to any authenticated user
-     *  - DRAFT / ARCHIVED courses are visible only to their author and to ADMIN+
+     * Read-visibility rule (hand-off §3 matrix) :
+     *  - Anonymous / VISITOR : no access (catalogue is not public)
+     *  - Authenticated user : may read PUBLISHED courses
+     *  - DRAFT / ARCHIVED : author and ADMIN+ only
      */
     public boolean canReadCourse(Object principal, Course course) {
         if (course == null) return false;
-        if ("PUBLISHED".equals(course.getStatus())) return true;
         if (!(principal instanceof AuthenticatedUser user)) return false;
+        if (course.getStatus() == CourseStatus.PUBLISHED) return true;
 
         Role role = user.getRole();
         if (role == Role.ADMIN || role == Role.SUPER_ADMIN) return true;

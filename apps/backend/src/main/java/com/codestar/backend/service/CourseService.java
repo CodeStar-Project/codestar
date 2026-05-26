@@ -4,6 +4,7 @@ import com.codestar.backend.dto.course.*;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
+import com.codestar.backend.model.CourseStatus;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICourseRepository;
@@ -24,7 +25,6 @@ import java.util.stream.Collectors;
 public class CourseService {
 
     private static final Set<String> ALLOWED_LEVELS = Set.of("BEGINNER", "INTERMEDIATE", "ADVANCED");
-    private static final Set<String> ALLOWED_STATUSES = Set.of("DRAFT", "PUBLISHED", "ARCHIVED");
     private static final Set<String> ALLOWED_BLOCK_KINDS = EnumSet.allOf(CourseBlockType.class)
             .stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
 
@@ -41,7 +41,7 @@ public class CourseService {
     }
 
     public List<CourseSummaryDto> getAllPublishedCourses() {
-        return courseRepository.findByStatus("PUBLISHED")
+        return courseRepository.findByStatus(CourseStatus.PUBLISHED)
                 .stream()
                 .map(CourseService::toSummaryDto)
                 .collect(Collectors.toList());
@@ -54,7 +54,6 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
-    /** Courses authored by the given user, regardless of status. */
     public List<CourseSummaryDto> getCoursesAuthoredBy(UUID authorId) {
         return courseRepository.findByAuthorId(authorId)
                 .stream()
@@ -104,7 +103,7 @@ public class CourseService {
         course.setCategory(request.getCategory());
         course.setLevel(level);
         course.setAuthor(author);
-        course.setStatus("DRAFT");
+        course.setStatus(CourseStatus.DRAFT);
 
         return toDto(courseRepository.save(course));
     }
@@ -128,34 +127,31 @@ public class CourseService {
     }
 
     @Transactional
-    public CourseDto changeStatus(UUID id, String newStatus) {
-        if (newStatus == null || !ALLOWED_STATUSES.contains(newStatus)) {
-            throw ApiException.badRequest("Invalid status: " + newStatus);
-        }
+    public CourseDto changeStatus(UUID id, String newStatusRaw) {
+        CourseStatus newStatus = parseStatus(newStatusRaw);
+
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
 
-        String current = course.getStatus();
-        if (newStatus.equals(current)) {
+        if (newStatus == course.getStatus()) {
             return toDto(course);
         }
 
         switch (newStatus) {
-            case "PUBLISHED" -> {
-                course.setStatus("PUBLISHED");
+            case PUBLISHED -> {
+                course.setStatus(CourseStatus.PUBLISHED);
                 if (course.getPublishedAt() == null) {
                     course.setPublishedAt(OffsetDateTime.now());
                 }
             }
-            case "DRAFT" -> {
-                course.setStatus("DRAFT");
+            case DRAFT -> {
+                course.setStatus(CourseStatus.DRAFT);
                 course.setPublishedAt(null);
             }
-            case "ARCHIVED" -> {
-                course.setStatus("ARCHIVED");
+            case ARCHIVED -> {
+                course.setStatus(CourseStatus.ARCHIVED);
                 // keep publishedAt as historical marker
             }
-            default -> throw ApiException.badRequest("Invalid status: " + newStatus);
         }
 
         return toDto(courseRepository.save(course));
@@ -204,6 +200,17 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    // helpers
+
+    private static CourseStatus parseStatus(String raw) {
+        if (raw == null) throw ApiException.badRequest("status is required");
+        try {
+            return CourseStatus.valueOf(raw);
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest("Invalid status: " + raw);
+        }
+    }
+
     private CourseDto toDto(Course course) {
         List<CourseBlockDto> blocks = course.getBlocks()
                 .stream()
@@ -217,7 +224,7 @@ public class CourseService {
                 course.getDescription(),
                 course.getCategory(),
                 course.getLevel(),
-                course.getStatus(),
+                course.getStatus() != null ? course.getStatus().name() : null,
                 course.getAuthor() != null ? course.getAuthor().getDisplayName() : null,
                 course.getCreatedAt(),
                 course.getUpdatedAt(),
@@ -234,7 +241,7 @@ public class CourseService {
                 c.getDescription(),
                 c.getCategory(),
                 c.getLevel(),
-                c.getStatus(),
+                c.getStatus() != null ? c.getStatus().name() : null,
                 c.getAuthor() != null ? c.getAuthor().getDisplayName() : null,
                 c.getCreatedAt(),
                 c.getUpdatedAt(),

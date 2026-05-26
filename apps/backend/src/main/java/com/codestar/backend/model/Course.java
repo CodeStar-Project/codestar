@@ -36,8 +36,9 @@ public class Course {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "DRAFT";
+    private CourseStatus status = CourseStatus.DRAFT;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -63,7 +64,7 @@ public class Course {
     public String getCategory()          { return category; }
     public String getLevel()             { return level; }
     public User getAuthor()              { return author; }
-    public String getStatus()            { return status; }
+    public CourseStatus getStatus()      { return status; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public OffsetDateTime getPublishedAt(){ return publishedAt; }
@@ -75,7 +76,7 @@ public class Course {
     public void setCategory(String category)             { this.category = category; }
     public void setLevel(String level)                   { this.level = level; }
     public void setAuthor(User author)                   { this.author = author; }
-    public void setStatus(String status)                 { this.status = status; }
+    public void setStatus(CourseStatus status)           { this.status = status; }
     public void setPublishedAt(OffsetDateTime publishedAt){ this.publishedAt = publishedAt; }
     public void setBlocks(List<CourseBlock> blocks)      { this.blocks = blocks; }
 }

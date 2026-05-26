@@ -81,7 +81,8 @@ public class GroupCurriculumService {
     private static CourseSummaryDto toSummary(Course c) {
         return new CourseSummaryDto(
                 c.getId(), c.getSlug(), c.getTitle(), c.getDescription(),
-                c.getCategory(), c.getLevel(), c.getStatus(),
+                c.getCategory(), c.getLevel(),
+                c.getStatus() != null ? c.getStatus().name() : null,
                 c.getAuthor() != null ? c.getAuthor().getDisplayName() : null,
                 c.getCreatedAt(), c.getUpdatedAt(), c.getPublishedAt());
     }
