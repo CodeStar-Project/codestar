@@ -43,6 +43,15 @@ public class CourseController {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Courses retrieved", courses));
     }
 
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getMyCourses(
+            @AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK",
+                courseService.getCoursesAuthoredBy(principal.getId())));
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(
             @PathVariable String slug,

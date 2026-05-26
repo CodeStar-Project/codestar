@@ -54,6 +54,14 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    /** Courses authored by the given user, regardless of status. */
+    public List<CourseSummaryDto> getCoursesAuthoredBy(UUID authorId) {
+        return courseRepository.findByAuthorId(authorId)
+                .stream()
+                .map(CourseService::toSummaryDto)
+                .collect(Collectors.toList());
+    }
+
     public List<CourseBlockDto> getBlocks(UUID courseId, AuthenticatedUser principal) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));

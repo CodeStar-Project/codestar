@@ -13,14 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class EnrollmentService {
-
-    private static final BigDecimal ONE = BigDecimal.ONE.setScale(2);
 
     private final IEnrollmentRepository enrollments;
     private final ICourseRepository courses;
@@ -45,32 +43,35 @@ public class EnrollmentService {
         if (!courses.existsById(courseId)) {
             throw ApiException.notFound("Course not found: " + courseId);
         }
-        BigDecimal progress = request.getProgress().setScale(2, java.math.RoundingMode.HALF_UP);
+
+        BigDecimal progress = request.getProgress().setScale(2, RoundingMode.HALF_UP);
 
         EnrollmentId id = new EnrollmentId(userId, courseId);
-        Enrollment enrollment = enrollments.findById(id).orElseGet(() -> new Enrollment(id));
-
-        BigDecimal current = enrollment.getProgress() != null ? enrollment.getProgress() : BigDecimal.ZERO;
+        BigDecimal current = enrollments.findById(id)
+                .map(Enrollment::getProgress)
+                .orElse(BigDecimal.ZERO);
         if (progress.compareTo(current) < 0) {
             throw ApiException.badRequest("progress cannot decrease");
         }
 
+        UUID validatedBlockId = null;
         if (request.getLastBlockId() != null) {
             CourseBlock block = blocks.findById(request.getLastBlockId())
                     .orElseThrow(() -> ApiException.notFound("Block not found: " + request.getLastBlockId()));
             if (block.getCourse() == null || !block.getCourse().getId().equals(courseId)) {
                 throw ApiException.badRequest("lastBlockId does not belong to the given course");
             }
-            enrollment.setLastBlockId(block.getId());
+            validatedBlockId = block.getId();
         }
+        
+        enrollments.upsertProgress(userId, courseId, progress, validatedBlockId);
 
-        enrollment.setProgress(progress);
-        enrollment.setLastActivityAt(OffsetDateTime.now());
-        if (progress.compareTo(ONE) >= 0 && enrollment.getCompletedAt() == null) {
-            enrollment.setCompletedAt(OffsetDateTime.now());
-        }
+        Enrollment persisted = enrollments.findById(id)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Enrollment upsert succeeded but row not found for user=" + userId
+                                + " course=" + courseId));
 
-        return toDto(enrollments.save(enrollment));
+        return toDto(persisted);
     }
 
     private static EnrollmentDto toDto(Enrollment e) {
