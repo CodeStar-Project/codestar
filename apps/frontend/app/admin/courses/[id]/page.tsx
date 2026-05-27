@@ -45,11 +45,18 @@ export default async function EditCoursePage({ params }: PageProps) {
         kicker={t("kicker")}
         title={t("editTitle")}
         actions={
-          <GlassButton asChild variant="ghost">
-            <Link href={`/courses/${course.slug}`} target="_blank">
-              {course.slug}
-            </Link>
-          </GlassButton>
+          <>
+            <GlassButton asChild variant="primary">
+              <Link href={`/admin/courses/${course.id}/blocks`}>
+                {t("editBlocks")}
+              </Link>
+            </GlassButton>
+            <GlassButton asChild variant="ghost">
+              <Link href={`/courses/${course.slug}`} target="_blank">
+                {course.slug}
+              </Link>
+            </GlassButton>
+          </>
         }
         className="mb-8"
       />

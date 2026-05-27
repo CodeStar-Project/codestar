@@ -10,6 +10,7 @@ import {
 import { GlassButton } from "@/components/ui/glass-button";
 import {
   ArchiveIcon,
+  CodeIcon,
   EyeIcon,
   EyeOffIcon,
   PencilIcon,
@@ -64,6 +65,17 @@ export function CourseRowActions({ course, labels }: CourseRowActionsProps) {
         <a href={`/admin/courses/${course.id}`}>
           <PencilIcon size={14} />
           <span className="hidden sm:inline">{labels.edit}</span>
+        </a>
+      </GlassButton>
+
+      <GlassButton
+        asChild
+        variant="ghost"
+        size="sm"
+        aria-label={`Blocs ${course.title}`}
+      >
+        <a href={`/admin/courses/${course.id}/blocks`}>
+          <CodeIcon size={14} />
         </a>
       </GlassButton>
 

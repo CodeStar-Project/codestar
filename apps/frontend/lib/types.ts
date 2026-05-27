@@ -91,6 +91,32 @@ export interface Enrollment {
   lastActivityAt: string;
 }
 
+export interface BlockInput {
+  kind: string;
+  payload: Record<string, unknown>;
+}
+
+export interface CourseMutationResult {
+  ok: boolean;
+  error?: string;
+  course?: Course;
+}
+
+export interface CreateCoursePayload {
+  title: string;
+  slug: string;
+  description?: string;
+  category?: string;
+  level?: CourseLevel;
+}
+
+export interface UpdateCoursePayload {
+  title?: string;
+  description?: string;
+  category?: string;
+  level?: CourseLevel;
+}
+
 export interface BookmarkEnriched {
   id: string;
   courseId: string;

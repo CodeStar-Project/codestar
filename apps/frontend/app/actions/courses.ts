@@ -1,16 +1,19 @@
-import "server-only";
+"use server";
 
 /**
- * Course server fetchers.
+ * Course server actions + fetchers. Callable from server components and client (RPC).
  */
 
 import { ApiError, apiFetch } from "@/lib/api";
 import type {
+  BlockInput,
   Course,
   CourseBlock,
-  CourseLevel,
+  CourseMutationResult,
   CourseStatus,
   CourseSummary,
+  CreateCoursePayload,
+  UpdateCoursePayload,
 } from "@/lib/types";
 
 export async function getPublishedCourses(): Promise<CourseSummary[]> {
@@ -49,24 +52,30 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 
 export async function getCourseBlocks(courseId: string): Promise<CourseBlock[]> {
   try {
-    return (await apiFetch<CourseBlock[]>(`/api/v1/courses/${courseId}/blocks`)) ?? [];
+    return (
+      (await apiFetch<CourseBlock[]>(`/api/v1/courses/${courseId}/blocks`)) ?? []
+    );
   } catch {
     return [];
   }
 }
 
-export interface CourseMutationResult {
-  ok: boolean;
-  error?: string;
-  course?: Course;
-}
-
-export interface CreateCoursePayload {
-  title: string;
-  slug: string;
-  description?: string;
-  category?: string;
-  level?: CourseLevel;
+export async function saveCourseBlocks(
+  courseId: string,
+  blocks: BlockInput[]
+): Promise<{ ok: boolean; error?: string; blocks?: CourseBlock[] }> {
+  try {
+    const data = await apiFetch<CourseBlock[]>(
+      `/api/v1/courses/${courseId}/blocks`,
+      {
+        method: "PUT",
+        body: { blocks },
+      }
+    );
+    return { ok: true, blocks: data ?? [] };
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
 }
 
 export async function createCourse(
@@ -81,13 +90,6 @@ export async function createCourse(
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
-}
-
-export interface UpdateCoursePayload {
-  title?: string;
-  description?: string;
-  category?: string;
-  level?: CourseLevel;
 }
 
 export async function updateCourse(

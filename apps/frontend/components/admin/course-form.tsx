@@ -1,14 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
-import {
-  createCourse,
-  type CreateCoursePayload,
-  type UpdateCoursePayload,
-  updateCourse,
-} from "@/app/actions/courses";
+import { createCourse, updateCourse } from "@/app/actions/courses";
 import { GlassButton } from "@/components/ui/glass-button";
 import {
   GlassField,
@@ -19,7 +14,12 @@ import {
   GlassSelect,
   GlassTextarea,
 } from "@/components/ui/glass-input";
-import type { CourseLevel, CourseSummary } from "@/lib/types";
+import type {
+  CourseLevel,
+  CourseSummary,
+  CreateCoursePayload,
+  UpdateCoursePayload,
+} from "@/lib/types";
 
 interface Labels {
   title: string;
@@ -68,21 +68,24 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
     (course?.level as CourseLevel | null) ?? ""
   );
   const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   function onTitleChange(v: string) {
     setTitle(v);
     if (!slugTouched && !isEdit) setSlug(slugify(v));
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSaved(false);
     if (!title.trim()) {
       setError(labels.required);
       return;
     }
-    start(async () => {
+    setSubmitting(true);
+    try {
       if (isEdit && course) {
         const body: UpdateCoursePayload = {
           title: title.trim(),
@@ -95,8 +98,6 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
           setError(r.error ?? "Erreur");
           return;
         }
-        router.push("/admin/courses");
-        router.refresh();
       } else {
         const body: CreateCoursePayload = {
           title: title.trim(),
@@ -110,10 +111,13 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
           setError(r.error ?? "Erreur");
           return;
         }
-        router.push("/admin/courses");
-        router.refresh();
       }
-    });
+      setSaved(true);
+      router.refresh();
+      router.push("/admin/courses");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -185,12 +189,31 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
       {error && <GlassFieldError>{error}</GlassFieldError>}
 
       <div className="flex flex-wrap items-center gap-3 pt-2">
-        <GlassButton type="submit" variant="primary" disabled={pending}>
+        <GlassButton
+          type="submit"
+          variant="primary"
+          disabled={submitting}
+          loading={submitting}
+        >
           {isEdit ? labels.submitUpdate : labels.submitCreate}
         </GlassButton>
-        <GlassButton type="button" variant="ghost" onClick={() => router.push(cancelHref)}>
+        <GlassButton
+          type="button"
+          variant="ghost"
+          onClick={() => router.push(cancelHref)}
+          disabled={submitting}
+        >
           {labels.cancel}
         </GlassButton>
+        {saved && (
+          <span
+            role="status"
+            aria-live="polite"
+            className="text-[0.85rem] text-[color:var(--color-success)]"
+          >
+            ✓ {isEdit ? labels.submitUpdate : labels.submitCreate}
+          </span>
+        )}
       </div>
     </form>
   );
