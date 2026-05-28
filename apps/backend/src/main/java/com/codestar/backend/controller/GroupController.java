@@ -41,7 +41,7 @@ public class GroupController {
     private final IInvitationCodeRepository invitations;
     private final GroupCurriculumService curriculumService;
     private final GroupMemberService memberService;
-    private final GroupStatsService statsService;
+    // private final GroupStatsService statsService;
 
     public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService, GroupMemberService memberService, GroupStatsService statsService) {
         this.groupService = groupService;
@@ -49,7 +49,7 @@ public class GroupController {
         this.invitations = invitations;
         this.curriculumService = curriculumService;
         this.memberService = memberService;
-        this.statsService = statsService;
+        // this.statsService = statsService;
     }
 
     @GetMapping
