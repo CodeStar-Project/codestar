@@ -92,7 +92,7 @@ export interface Enrollment {
 }
 
 export interface BlockInput {
-  kind: string;
+  kind: CourseBlockKind;
   payload: Record<string, unknown>;
 }
 

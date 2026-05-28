@@ -25,7 +25,7 @@ export async function getCourseBookmarks(
   try {
     return (
       (await apiFetch<BookmarkEnriched[]>(
-        `/api/v1/bookmarks?courseId=${courseId}`
+        `/api/v1/bookmarks?courseId=${encodeURIComponent(courseId)}`
       )) ?? []
     );
   } catch {

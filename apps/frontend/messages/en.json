@@ -224,7 +224,7 @@
   "studentHome": {
     "kicker": "{date}",
     "greeting": "Hi {name},",
-    "streak": "{count} day streak.",
+    "streak": "{count, plural, one {# day streak.} other {# day streaks.}}",
     "streakNoStreak": "Start your streak today.",
     "continue": "Let's keep going.",
     "statXp": "Total XP",
@@ -247,7 +247,7 @@
     "empty": {
       "inProgress": "No course in progress.",
       "completed": "You haven't completed any course yet.",
-      "toStart": "No unstarted assigned course."
+      "toStart": "No assigned course to start."
     },
     "ctaStart": "Start",
     "ctaResume": "Resume",

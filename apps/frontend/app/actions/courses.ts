@@ -46,7 +46,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
   } catch (e) {
     if (e instanceof ApiError && (e.status === 404 || e.status === 403))
       return null;
-    return null;
+    throw e;
   }
 }
 

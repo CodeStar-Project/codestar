@@ -129,7 +129,7 @@
       "quote": "« On a remplacé notre LMS par {name}. Nos profs adorent. »",
       "quoteAuthor": "Naïma Mansouri",
       "quoteRole": "Head of Learning · Atelier 89",
-      "streakLabel": "Streak du jour",
+      "streakLabel": "Série du jour",
       "streakValue": "14 jours"
     }
   },
@@ -224,7 +224,7 @@
   "studentHome": {
     "kicker": "{date}",
     "greeting": "Bonjour {name},",
-    "streak": "{count} jours de série.",
+    "streak": "{count, plural, one {# jour de série.} other {# jours de série.}}",
     "streakNoStreak": "Démarrez votre série aujourd'hui.",
     "continue": "Continuons.",
     "statXp": "XP total",
@@ -272,7 +272,7 @@
       "discover": "À découvrir",
       "xp": "XP total",
       "rank": "Rang",
-      "streak": "Streak"
+      "streak": "Série"
     },
     "activityTitle": "Activité (30 derniers jours)",
     "activitySoon": "Bientôt — graphique d'activité",
