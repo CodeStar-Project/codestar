@@ -297,7 +297,9 @@
     },
     "recentTitle": "Recent courses",
     "groupsTitle": "My groups",
-    "groupsManage": "Manage curriculum",
+    "groupsManage": "Curriculum",
+    "membersLink": "Members",
+    "usersLink": "Users",
     "noGroups": "No group.",
     "table": {
       "title": "Title",
@@ -312,8 +314,60 @@
       "publish": "Publish",
       "unpublish": "Unpublish",
       "archive": "Archive",
-      "delete": "Delete",
-      "confirmDelete": "Delete this course permanently?"
+      "delete": "Archive",
+      "duplicate": "Duplicate",
+      "confirmDelete": "Archive this course? Enrollments and bookmarks are kept. Reversible by changing status.",
+      "filterStatusAll": "All statuses",
+      "filterCategoryAll": "All categories",
+      "filterLevelAll": "All levels",
+      "filterSearchPlaceholder": "Search (title, description)"
+    },
+    "users": {
+      "kicker": "Users",
+      "title": "User management",
+      "description": "Promote, demote, enable or disable accounts.",
+      "searchPlaceholder": "Search (email, name)",
+      "roleFilter": "Role",
+      "stateFilter": "State",
+      "stateAll": "All",
+      "stateActive": "Active",
+      "stateDisabled": "Disabled",
+      "promote": "Promote",
+      "demote": "Demote",
+      "disable": "Disable",
+      "enable": "Enable",
+      "confirmDisable": "Disable this account?",
+      "confirmEnable": "Re-enable this account?",
+      "empty": "No user.",
+      "self": "You",
+      "columns": {
+        "user": "User",
+        "role": "Role",
+        "state": "State",
+        "createdAt": "Joined",
+        "actions": "Actions"
+      },
+      "state": {
+        "active": "Active",
+        "disabled": "Disabled"
+      }
+    },
+    "members": {
+      "kicker": "Members · {group}",
+      "title": "Group members",
+      "description": "View, remove or change member roles.",
+      "searchPlaceholder": "Search (email, name)",
+      "promoteToTeacher": "Promote to teacher",
+      "demoteToStudent": "Demote to student",
+      "remove": "Remove from group",
+      "confirmRemove": "Remove this member from the group?",
+      "empty": "No member.",
+      "columns": {
+        "user": "User",
+        "roleInGroup": "Role in group",
+        "joinedAt": "Joined",
+        "actions": "Actions"
+      }
     },
     "courseForm": {
       "createTitle": "New course",

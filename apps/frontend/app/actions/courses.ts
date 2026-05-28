@@ -16,17 +16,37 @@ import type {
   UpdateCoursePayload,
 } from "@/lib/types";
 
-export async function getPublishedCourses(): Promise<CourseSummary[]> {
+export interface CourseFilters {
+  status?: string;
+  category?: string;
+  level?: string;
+  author?: string;
+  q?: string;
+}
+
+function buildFilterQuery(filters: CourseFilters | undefined, all: boolean): string {
+  const p = new URLSearchParams();
+  if (all) p.set("all", "true");
+  if (filters?.status) p.set("status", filters.status);
+  if (filters?.category) p.set("category", filters.category);
+  if (filters?.level) p.set("level", filters.level);
+  if (filters?.author) p.set("author", filters.author);
+  if (filters?.q) p.set("q", filters.q);
+  const qs = p.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export async function getPublishedCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
   try {
-    return (await apiFetch<CourseSummary[]>("/api/v1/courses")) ?? [];
+    return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, false)}`)) ?? [];
   } catch {
     return [];
   }
 }
 
-export async function getAllCourses(): Promise<CourseSummary[]> {
+export async function getAllCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
   try {
-    return (await apiFetch<CourseSummary[]>("/api/v1/courses?all=true")) ?? [];
+    return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, true)}`)) ?? [];
   } catch {
     return [];
   }
@@ -128,6 +148,19 @@ export async function deleteCourse(
   try {
     await apiFetch<void>(`/api/v1/courses/${id}`, { method: "DELETE" });
     return { ok: true };
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
+}
+
+export async function duplicateCourse(
+  id: string
+): Promise<{ ok: boolean; error?: string; course?: Course }> {
+  try {
+    const course = await apiFetch<Course>(`/api/v1/courses/${id}/duplicate`, {
+      method: "POST",
+    });
+    return { ok: true, course: course ?? undefined };
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }

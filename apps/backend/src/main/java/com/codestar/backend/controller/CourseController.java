@@ -28,6 +28,11 @@ public class CourseController {
     @GetMapping
     public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getCourses(
             @RequestParam(value = "all", defaultValue = "false") boolean all,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "level", required = false) String level,
+            @RequestParam(value = "author", required = false) UUID author,
+            @RequestParam(value = "q", required = false) String q,
             @AuthenticationPrincipal AuthenticatedUser principal) {
 
         if (all && (principal == null
@@ -36,9 +41,8 @@ public class CourseController {
             throw ApiException.forbidden("Only ADMIN+ can list all courses");
         }
 
-        List<CourseSummaryDto> courses = all
-                ? courseService.getAllCourses()
-                : courseService.getAllPublishedCourses();
+        CourseService.CourseSearchFilters filters = new CourseService.CourseSearchFilters(status, category, level, author, q);
+        List<CourseSummaryDto> courses = courseService.searchCourses(filters, all);
 
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Courses retrieved", courses));
     }
@@ -76,6 +80,15 @@ public class CourseController {
         CourseDto course = courseService.createCourse(request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponseDto<>(true, "Course created", course));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN') and @coursePermissionService.canReadCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<CourseDto>> duplicateCourse(@PathVariable UUID id, @AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+        CourseDto course = courseService.duplicateCourse(id, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponseDto<>(true, "Course duplicated", course));
     }
 
     @PatchMapping("/{id}")

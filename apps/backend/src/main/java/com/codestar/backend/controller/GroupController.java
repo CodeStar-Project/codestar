@@ -15,6 +15,7 @@ import com.codestar.backend.model.InvitationCode;
 import com.codestar.backend.repository.IInvitationCodeRepository;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.GroupCurriculumService;
+import com.codestar.backend.service.GroupMemberService;
 import com.codestar.backend.service.GroupService;
 import com.codestar.backend.service.InvitationService;
 import jakarta.validation.Valid;
@@ -38,12 +39,14 @@ public class GroupController {
     private final InvitationService invitationService;
     private final IInvitationCodeRepository invitations;
     private final GroupCurriculumService curriculumService;
+    private final GroupMemberService memberService;
 
-    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService) {
+    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService, GroupMemberService memberService) {
         this.groupService = groupService;
         this.invitationService = invitationService;
         this.invitations = invitations;
         this.curriculumService = curriculumService;
+        this.memberService = memberService;
     }
 
     @GetMapping
@@ -68,8 +71,7 @@ public class GroupController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponseDto<GroupResponseDto>> create(@Valid @RequestBody CreateGroupRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         GroupResponseDto created = groupService.create(request, principal.getId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseDto<>(true, "Group created", created));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseDto<>(true, "Group created", created));
     }
 
     @PatchMapping("/{id}")
@@ -117,8 +119,30 @@ public class GroupController {
     public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> replaceCurriculum(
             @PathVariable UUID groupId,
             @Valid @RequestBody UpdateCurriculumRequestDto request) {
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Curriculum updated",
-                curriculumService.replaceCurriculum(groupId, request)));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Curriculum updated", curriculumService.replaceCurriculum(groupId, request)));
+    }
+
+    @GetMapping("/{groupId}/members")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<List<com.codestar.backend.dto.GroupMemberDto>>> listMembers(@PathVariable UUID groupId) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", memberService.list(groupId)));
+    }
+
+    @DeleteMapping("/{groupId}/members/{userId}")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<Void>> removeMember(
+            @PathVariable UUID groupId, @PathVariable UUID userId) {
+        memberService.remove(groupId, userId);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Member removed", null));
+    }
+
+    @PatchMapping("/{groupId}/members/{userId}")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<com.codestar.backend.dto.GroupMemberDto>> updateMemberRole(
+            @PathVariable UUID groupId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody com.codestar.backend.dto.UpdateGroupMemberRoleRequestDto request) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Member role updated", memberService.updateRole(groupId, userId, request.getRoleInGroup())));
     }
 
     // helper

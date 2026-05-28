@@ -54,3 +54,54 @@ export async function replaceCurriculum(
     return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
   }
 }
+
+export interface GroupMember {
+  userId: string;
+  email: string;
+  displayName: string;
+  globalRole: string;
+  roleInGroup: "STUDENT" | "TEACHER";
+  joinedAt: string;
+  disabledAt: string | null;
+}
+
+export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
+  try {
+    return (await apiFetch<GroupMember[]>(`/api/v1/groups/${groupId}/members`)) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function removeGroupMember(
+  groupId: string,
+  userId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiFetch<void>(`/api/v1/groups/${groupId}/members/${userId}`, {
+      method: "DELETE",
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+  }
+}
+
+export async function updateGroupMemberRole(
+  groupId: string,
+  userId: string,
+  roleInGroup: "STUDENT" | "TEACHER"
+): Promise<{ ok: boolean; error?: string; member?: GroupMember }> {
+  try {
+    const m = await apiFetch<GroupMember>(
+      `/api/v1/groups/${groupId}/members/${userId}`,
+      {
+        method: "PATCH",
+        body: { roleInGroup },
+      }
+    );
+    return { ok: true, member: m ?? undefined };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+  }
+}

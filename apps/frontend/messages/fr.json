@@ -297,7 +297,9 @@
     },
     "recentTitle": "Cours récents",
     "groupsTitle": "Mes groupes",
-    "groupsManage": "Gérer le curriculum",
+    "groupsManage": "Curriculum",
+    "membersLink": "Membres",
+    "usersLink": "Utilisateurs",
     "noGroups": "Aucun groupe.",
     "table": {
       "title": "Titre",
@@ -312,8 +314,60 @@
       "publish": "Publier",
       "unpublish": "Dépublier",
       "archive": "Archiver",
-      "delete": "Supprimer",
-      "confirmDelete": "Supprimer définitivement ce cours ?"
+      "delete": "Archiver",
+      "duplicate": "Dupliquer",
+      "confirmDelete": "Archiver ce cours ? Inscriptions et favoris conservés. Réversible via changement de statut.",
+      "filterStatusAll": "Tous statuts",
+      "filterCategoryAll": "Toutes catégories",
+      "filterLevelAll": "Tous niveaux",
+      "filterSearchPlaceholder": "Rechercher (titre, description)"
+    },
+    "users": {
+      "kicker": "Utilisateurs",
+      "title": "Gestion des utilisateurs",
+      "description": "Promouvoir, rétrograder, activer ou désactiver des comptes.",
+      "searchPlaceholder": "Rechercher (email, nom)",
+      "roleFilter": "Rôle",
+      "stateFilter": "État",
+      "stateAll": "Tous",
+      "stateActive": "Actifs",
+      "stateDisabled": "Désactivés",
+      "promote": "Promouvoir",
+      "demote": "Rétrograder",
+      "disable": "Désactiver",
+      "enable": "Activer",
+      "confirmDisable": "Désactiver ce compte ?",
+      "confirmEnable": "Réactiver ce compte ?",
+      "empty": "Aucun utilisateur.",
+      "self": "Vous",
+      "columns": {
+        "user": "Utilisateur",
+        "role": "Rôle",
+        "state": "État",
+        "createdAt": "Inscrit le",
+        "actions": "Actions"
+      },
+      "state": {
+        "active": "Actif",
+        "disabled": "Désactivé"
+      }
+    },
+    "members": {
+      "kicker": "Membres · {group}",
+      "title": "Membres du groupe",
+      "description": "Voir, retirer ou changer le rôle des membres.",
+      "searchPlaceholder": "Rechercher (email, nom)",
+      "promoteToTeacher": "Promouvoir en professeur",
+      "demoteToStudent": "Rétrograder en étudiant",
+      "remove": "Retirer du groupe",
+      "confirmRemove": "Retirer ce membre du groupe ?",
+      "empty": "Aucun membre.",
+      "columns": {
+        "user": "Utilisateur",
+        "roleInGroup": "Rôle dans groupe",
+        "joinedAt": "Rejoint le",
+        "actions": "Actions"
+      }
     },
     "courseForm": {
       "createTitle": "Nouveau cours",
