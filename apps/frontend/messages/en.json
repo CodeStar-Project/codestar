@@ -5,6 +5,8 @@
     "signin": "Sign in",
     "sectionsLabel": "Main sections",
     "home": "Home",
+    "catalog": "Catalog",
+    "myCourses": "My courses",
     "teach": "Teach",
     "admin": "Admin"
   },
@@ -170,6 +172,212 @@
   "course": {
     "back": "Back",
     "pageLabel": "Page {number}",
-    "blocksCount": "{count, plural, one {# block} other {# blocks}}"
+    "blocksCount": "{count, plural, one {# block} other {# blocks}}",
+    "intro": {
+      "byAuthor": "by {author}",
+      "lessons": "{count, plural, one {# lesson} other {# lessons}}",
+      "publishedOn": "Published on {date}",
+      "draft": "Draft",
+      "archived": "Archived",
+      "start": "Start",
+      "resume": "Resume",
+      "review": "Review",
+      "progressLabel": "Your progress",
+      "bookmarksTitle": "Your bookmarks in this course",
+      "bookmarksEmpty": "No bookmark yet. Open the reader and tap the bookmark icon on a block.",
+      "openReader": "Open reader",
+      "statsLearners": "enrolled learners",
+      "statsCompletion": "% completion rate",
+      "notFound": "Course not found",
+      "notFoundDesc": "This course does not exist, is not published, or is not accessible to you.",
+      "backToCatalog": "Back to catalog"
+    },
+    "reader": {
+      "kicker": "Reading",
+      "toc": "Contents",
+      "tocMobile": "Contents",
+      "addBookmark": "Add bookmark",
+      "removeBookmark": "Remove bookmark",
+      "viewBookmarks": "My bookmarks",
+      "next": "Next",
+      "prev": "Previous",
+      "empty": "This course has no content yet.",
+      "backToIntro": "Back to overview"
+    },
+    "card": {
+      "view": "View course"
+    }
+  },
+  "catalog": {
+    "title": "Catalog",
+    "kicker": "All courses",
+    "description": "Browse published courses and those assigned to your groups.",
+    "tabs": {
+      "all": "All",
+      "mine": "My groups",
+      "published": "Published"
+    },
+    "search": "Search a course",
+    "empty": "No course yet.",
+    "emptyFiltered": "No course matches your search."
+  },
+  "studentHome": {
+    "kicker": "{date}",
+    "greeting": "Hi {name},",
+    "streak": "{count, plural, one {# day streak.} other {# day streaks.}}",
+    "streakNoStreak": "Start your streak today.",
+    "continue": "Let's keep going.",
+    "statXp": "Total XP",
+    "statRank": "Rank",
+    "resumeTitle": "Resume",
+    "resumeEmpty": "No course in progress. Explore the catalog.",
+    "discoverTitle": "Discover",
+    "discoverDesc": "Curated from your groups.",
+    "browseCta": "See full catalog"
+  },
+  "myCourses": {
+    "title": "My courses",
+    "kicker": "Learning",
+    "description": "All your enrolled courses, by status.",
+    "sections": {
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "toStart": "To start"
+    },
+    "empty": {
+      "inProgress": "No course in progress.",
+      "completed": "You haven't completed any course yet.",
+      "toStart": "No assigned course to start."
+    },
+    "ctaStart": "Start",
+    "ctaResume": "Resume",
+    "ctaReview": "Review"
+  },
+  "bookmarks": {
+    "title": "My bookmarks",
+    "kicker": "Bookmarks",
+    "description": "All your bookmarks, grouped by course.",
+    "empty": "No bookmark yet. Tap the bookmark icon while reading a course.",
+    "viewBlock": "Open in course",
+    "remove": "Remove",
+    "bookmarksCount": "{count, plural, one {# bookmark} other {# bookmarks}}"
+  },
+  "dash": {
+    "title": "My progress",
+    "kicker": "Dashboard",
+    "description": "Your learning at a glance.",
+    "stats": {
+      "completed": "Completed",
+      "inProgress": "In progress",
+      "discover": "To discover",
+      "xp": "Total XP",
+      "rank": "Rank",
+      "streak": "Streak"
+    },
+    "activityTitle": "Activity (last 30 days)",
+    "activitySoon": "Soon — activity chart",
+    "badgesTitle": "Badges",
+    "badgesSoon": "Soon — badge collection",
+    "resumeTitle": "Resume"
+  },
+  "admin": {
+    "kicker": "Admin · {name}",
+    "kickerTeacher": "Teacher space · {name}",
+    "title": "Your courses, at a glance.",
+    "titleTeacher": "Your courses and groups.",
+    "newCourse": "New course",
+    "exportCsv": "Export CSV",
+    "stats": {
+      "totalCourses": "Total courses",
+      "myCourses": "My courses",
+      "published": "Published",
+      "drafts": "Drafts",
+      "students": "Active students",
+      "groups": "Groups"
+    },
+    "recentTitle": "Recent courses",
+    "groupsTitle": "My groups",
+    "groupsManage": "Manage curriculum",
+    "noGroups": "No group.",
+    "table": {
+      "title": "Title",
+      "category": "Category",
+      "level": "Level",
+      "status": "Status",
+      "author": "Author",
+      "updated": "Updated",
+      "actions": "Actions",
+      "empty": "No course yet. Create your first one.",
+      "edit": "Edit",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "archive": "Archive",
+      "delete": "Delete",
+      "confirmDelete": "Delete this course permanently?"
+    },
+    "courseForm": {
+      "createTitle": "New course",
+      "editTitle": "Edit course",
+      "kicker": "Course",
+      "title": "Title",
+      "titlePlaceholder": "Introduction to React",
+      "slug": "Slug",
+      "slugHelper": "URL identifier. Lowercase letters, digits and dashes only. Locked after creation.",
+      "slugPlaceholder": "introduction-to-react",
+      "description": "Description",
+      "category": "Category",
+      "categoryPlaceholder": "Programming",
+      "level": "Level",
+      "levelEmpty": "— None —",
+      "levelBeginner": "Beginner",
+      "levelIntermediate": "Intermediate",
+      "levelAdvanced": "Advanced",
+      "submitCreate": "Create course",
+      "submitUpdate": "Save",
+      "cancel": "Cancel",
+      "required": "Title required.",
+      "editBlocks": "Edit content",
+      "editNotice": "Edit metadata here. For content (course blocks), use the blocks editor."
+    },
+    "blocksEditor": {
+      "title": "Course content",
+      "description": "Minimalist editor — add, reorder and edit blocks.",
+      "preview": "Preview",
+      "addBlock": "Add",
+      "kind": "Type",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved",
+      "empty": "No block. Add your first one below.",
+      "emptyError": "Course must contain at least one block.",
+      "fieldText": "Text",
+      "fieldCode": "Code",
+      "fieldLanguage": "Language (e.g. js, py)",
+      "fieldSrc": "URL (https://…)",
+      "fieldAlt": "Alt text",
+      "fieldTone": "Tone",
+      "fieldQuestion": "Question",
+      "fieldOptions": "Options",
+      "fieldOptionsHelper": "One option per line.",
+      "toneNeutral": "Neutral",
+      "toneWarning": "Warning",
+      "toneDanger": "Danger"
+    },
+    "curriculum": {
+      "kicker": "Curriculum · {group}",
+      "title": "Courses assigned to this group",
+      "description": "Select the courses to include in this group's curriculum.",
+      "searchPlaceholder": "Search a course…",
+      "selected": "Selected",
+      "available": "Available",
+      "empty": "No assigned course.",
+      "emptyAvailable": "No available course.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved"
+    }
   }
 }

@@ -40,6 +40,7 @@ public class CourseService {
         this.coursePermissions = coursePermissions;
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getAllPublishedCourses() {
         return courseRepository.findByStatus(CourseStatus.PUBLISHED)
                 .stream()
@@ -47,6 +48,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getAllCourses() {
         return courseRepository.findAll()
                 .stream()
@@ -54,6 +56,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CourseSummaryDto> getCoursesAuthoredBy(UUID authorId) {
         return courseRepository.findByAuthorId(authorId)
                 .stream()
@@ -61,6 +64,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CourseBlockDto> getBlocks(UUID courseId, AuthenticatedUser principal) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
@@ -73,6 +77,7 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CourseDto getCourseBySlug(String slug, AuthenticatedUser principal) {
         Course course = courseRepository.findBySlug(slug)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + slug));
