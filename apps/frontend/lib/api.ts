@@ -124,3 +124,50 @@ export async function apiFetch<T>(
 
   return parsed.data as T;
 }
+
+/**
+ * Raw text fetch (no ApiResponse unwrap). For non-JSON endpoints (CSV, etc.).
+ */
+export async function apiFetchText(
+  path: string,
+  { withAuth = true, timeoutMs = DEFAULT_TIMEOUT_MS, ...rest }: {
+    withAuth?: boolean;
+    timeoutMs?: number;
+  } & RequestInit = {}
+): Promise<string> {
+  const finalHeaders = new Headers(rest.headers);
+  if (withAuth) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(authCookieName())?.value;
+    if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
+  }
+
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+
+  const signal = rest.signal
+    ? AbortSignal.any([rest.signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  let res: Response;
+  try {
+    res = await fetch(`${apiUrl()}${path}`, {
+      ...rest,
+      cache: "no-store",
+      headers: finalHeaders,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(408, "Request timeout");
+    }
+    throw new ApiError(0, "Network error");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, `HTTP error ${res.status}`);
+  }
+  return await res.text();
+}

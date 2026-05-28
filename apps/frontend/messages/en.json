@@ -300,6 +300,9 @@
     "groupsManage": "Curriculum",
     "membersLink": "Members",
     "usersLink": "Users",
+    "exportCsvShort": "CSV",
+    "deleteGroup": "Delete",
+    "confirmDeleteGroup": "Delete this group? Members, invitations and curriculum are also removed. Learner enrollments and bookmarks are preserved. This cannot be undone.",
     "noGroups": "No group.",
     "table": {
       "title": "Title",

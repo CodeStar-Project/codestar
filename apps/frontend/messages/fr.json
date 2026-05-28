@@ -300,6 +300,9 @@
     "groupsManage": "Curriculum",
     "membersLink": "Membres",
     "usersLink": "Utilisateurs",
+    "exportCsvShort": "CSV",
+    "deleteGroup": "Supprimer",
+    "confirmDeleteGroup": "Supprimer ce groupe ? Membres, invitations et curriculum sont aussi supprimés. Les inscriptions et favoris des apprenants sont conservés. Action irréversible.",
     "noGroups": "Aucun groupe.",
     "table": {
       "title": "Titre",

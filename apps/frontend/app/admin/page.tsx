@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/courses";
 import { getMyGroups, getAllGroups } from "@/app/actions/groups";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { GroupCardActions } from "@/components/admin/group-card-actions";
 import { requireRole } from "@/components/admin/role-guard";
 import { CourseMeta } from "@/components/course/course-meta";
 import { PageHeader } from "@/components/course/page-header";
@@ -140,11 +141,11 @@ export default async function AdminDashboardPage() {
                 <li key={g.id}>
                   <GlassCard variant="default">
                     <GlassCardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                      <div>
+                      <div className="min-w-0">
                         <div className="font-medium text-text">{g.name}</div>
                         <div className="text-[0.82rem] text-muted">{g.slug}</div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[0.85rem]">
+                      <div className="flex flex-wrap items-center gap-3 text-[0.85rem]">
                         <Link
                           href={`/admin/groups/${g.id}/curriculum`}
                           className="text-[color:var(--color-accent)] hover:underline"
@@ -158,6 +159,16 @@ export default async function AdminDashboardPage() {
                         >
                           {t("membersLink")} →
                         </Link>
+                        <GroupCardActions
+                          groupId={g.id}
+                          groupName={g.name}
+                          canDelete={admin}
+                          labels={{
+                            exportCsv: t("exportCsvShort"),
+                            delete: t("deleteGroup"),
+                            confirmDelete: t("confirmDeleteGroup"),
+                          }}
+                        />
                       </div>
                     </GlassCardContent>
                   </GlassCard>

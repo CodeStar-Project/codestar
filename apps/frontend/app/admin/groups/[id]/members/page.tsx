@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { getGroup, getGroupMembers, getMyGroups } from "@/app/actions/groups";
 import { AdminBreadcrumb, AdminShell } from "@/components/admin/admin-shell";
+import { GroupCardActions } from "@/components/admin/group-card-actions";
 import { MembersTable } from "@/components/admin/members-table";
 import { requireRole } from "@/components/admin/role-guard";
 import { PageHeader } from "@/components/course/page-header";
@@ -21,6 +22,7 @@ export default async function GroupMembersPage({ params }: PageProps) {
   const admin = isAdmin(me.role);
   const locale = (await getLocale()) as "fr" | "en";
   const t = await getTranslations("admin.members");
+  const tAdmin = await getTranslations("admin");
   const tRoles = await getTranslations("groupMemberRoles");
 
   let groupName: string | null = null;
@@ -48,6 +50,18 @@ export default async function GroupMembersPage({ params }: PageProps) {
         kicker={t("kicker", { group: groupName })}
         title={t("title")}
         description={t("description")}
+        actions={
+          <GroupCardActions
+            groupId={id}
+            groupName={groupName}
+            canDelete={admin}
+            labels={{
+              exportCsv: tAdmin("exportCsvShort"),
+              delete: tAdmin("deleteGroup"),
+              confirmDelete: tAdmin("confirmDeleteGroup"),
+            }}
+          />
+        }
         className="mb-8"
       />
       <MembersTable

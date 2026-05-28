@@ -1,6 +1,6 @@
 "use server";
 
-import { ApiError, apiFetch } from "@/lib/api";
+import { ApiError, apiFetch, apiFetchText } from "@/lib/api";
 import type { CourseSummary, GroupResponse, GroupSummary } from "@/lib/types";
 
 export async function getMyGroups(): Promise<GroupSummary[]> {
@@ -103,5 +103,52 @@ export async function updateGroupMemberRole(
     return { ok: true, member: m ?? undefined };
   } catch (e) {
     return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+  }
+}
+
+export async function deleteGroup(
+  id: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await apiFetch<void>(`/api/v1/groups/${id}`, { method: "DELETE" });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+  }
+}
+
+export async function exportGroupStatsCsv(
+  id: string
+): Promise<{ ok: boolean; error?: string; csv?: string }> {
+  try {
+    const csv = await apiFetchText(`/api/v1/groups/${id}/stats/export.csv`);
+    return { ok: true, csv };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+  }
+}
+
+export interface Invitation {
+  id: string;
+  code: string;
+  groupId: string;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: string | null;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export async function getInvitations(
+  groupId: string,
+  includeRevoked = false
+): Promise<Invitation[]> {
+  try {
+    const qs = includeRevoked ? "?includeRevoked=true" : "";
+    return (
+      (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? []
+    );
+  } catch {
+    return [];
   }
 }

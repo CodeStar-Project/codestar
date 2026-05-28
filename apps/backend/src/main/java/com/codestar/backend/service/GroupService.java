@@ -101,6 +101,17 @@ public class GroupService {
                 .orElseThrow(() -> ApiException.notFound("Cannot find group"));
     }
 
+    /**
+     * Enrollments and bookmarks survive because they are anchored to courses, not groups.
+     */
+    @Transactional
+    public void delete(UUID id) {
+        if (!groups.existsById(id)) {
+            throw ApiException.notFound("Cannot find group");
+        }
+        groups.deleteById(id);
+    }
+
     // helpers
     private static GroupResponseDto toDto(Group g) {
         return new GroupResponseDto(
