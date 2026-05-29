@@ -24,6 +24,7 @@ export default async function GroupMembersPage({ params }: PageProps) {
   const t = await getTranslations("admin.members");
   const tAdmin = await getTranslations("admin");
   const tRoles = await getTranslations("groupMemberRoles");
+  const tErrors = await getTranslations("errors");
 
   let groupName: string | null = null;
   if (admin) {
@@ -75,6 +76,7 @@ export default async function GroupMembersPage({ params }: PageProps) {
           remove: t("remove"),
           confirmRemove: t("confirmRemove"),
           empty: t("empty"),
+          errorUnknown: tErrors("unknown"),
           columns: {
             user: t("columns.user"),
             roleInGroup: t("columns.roleInGroup"),

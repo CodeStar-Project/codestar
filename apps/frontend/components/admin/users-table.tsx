@@ -37,6 +37,7 @@ interface Labels {
   confirmEnable: string;
   empty: string;
   self: string;
+  errorUnknown: string;
   columns: {
     user: string;
     role: string;
@@ -107,7 +108,7 @@ export function UsersTable({
     start(async () => {
       const r = await updateUserRole(user.id, newRole);
       if (!r.ok || !r.user) {
-        setErrorMsg(r.error ?? "Erreur");
+        setErrorMsg(r.error ?? labels.errorUnknown);
         return;
       }
       setUsers((prev) => prev.map((u) => (u.id === user.id ? r.user! : u)));
@@ -122,7 +123,7 @@ export function UsersTable({
     start(async () => {
       const r = await setUserDisabled(user.id, willDisable);
       if (!r.ok || !r.user) {
-        setErrorMsg(r.error ?? "Erreur");
+        setErrorMsg(r.error ?? labels.errorUnknown);
         return;
       }
       setUsers((prev) => prev.map((u) => (u.id === user.id ? r.user! : u)));

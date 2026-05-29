@@ -151,9 +151,10 @@ export async function apiFetchText(
 
   let res: Response;
   try {
+    const authDefault: RequestInit = withAuth ? { cache: "no-store"} : {};
     res = await fetch(`${apiUrl()}${path}`, {
+      ...authDefault,
       ...rest,
-      cache: "no-store",
       headers: finalHeaders,
       signal,
     });
@@ -166,8 +167,26 @@ export async function apiFetchText(
     clearTimeout(timeoutId);
   }
 
+  const contentType = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+
   if (!res.ok) {
-    throw new ApiError(res.status, `HTTP error ${res.status}`);
+    let message = `HTTP error ${res.status}`;
+    if (text.trim()) {
+      if (contentType.includes("application/json")) {
+        try {
+          message =
+            (JSON.parse(text) as { message?: string }).message ?? message;
+        } catch {
+          message = text;
+        }
+      } else {
+        message = text;
+      }
+    }
+
+    throw new ApiError(res.status, message);
   }
-  return await res.text();
+
+  return text;
 }

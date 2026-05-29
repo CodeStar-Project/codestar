@@ -83,7 +83,7 @@ public class CourseController {
     }
 
     @PostMapping("/{id}/duplicate")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN') and @coursePermissionService.canReadCourse(principal, #id)")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN') and @coursePermissionService.canEditCourse(principal, #id)")
     public ResponseEntity<ApiResponseDto<CourseDto>> duplicateCourse(@PathVariable UUID id, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         CourseDto course = courseService.duplicateCourse(id, principal.getId());

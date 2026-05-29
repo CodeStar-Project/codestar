@@ -162,7 +162,8 @@
     "title": "Une erreur est survenue",
     "description": "Une erreur inattendue s'est produite. Réessayez ou revenez à l'accueil.",
     "retry": "Réessayer",
-    "home": "Retour à l'accueil"
+    "home": "Retour à l'accueil",
+    "unknown": "Erreur inconnue."
   },
   "notFound": {
     "title": "Page introuvable",

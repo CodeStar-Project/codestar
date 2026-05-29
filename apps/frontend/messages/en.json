@@ -162,7 +162,8 @@
     "title": "Something went wrong",
     "description": "An unexpected error occurred. Try again or head back home.",
     "retry": "Try again",
-    "home": "Back home"
+    "home": "Back home",
+    "unknown": "Unknown error."
   },
   "notFound": {
     "title": "Page not found",

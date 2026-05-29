@@ -34,6 +34,7 @@ interface Labels extends BlockEditLabels {
   saved: string;
   empty: string;
   emptyError: string;
+  errorUnknown: string;
 }
 
 interface BlocksEditorProps {
@@ -127,7 +128,7 @@ export function BlocksEditor({
     start(async () => {
       const r = await saveCourseBlocks(courseId, payload);
       if (!r.ok) {
-        setError(r.error ?? "Erreur");
+        setError(r.error ?? labels.errorUnknown);
         return;
       }
       setSavedAt(Date.now());

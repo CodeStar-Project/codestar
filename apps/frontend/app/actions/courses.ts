@@ -37,29 +37,21 @@ function buildFilterQuery(filters: CourseFilters | undefined, all: boolean): str
 }
 
 export async function getPublishedCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
-  try {
-    return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, false)}`)) ?? [];
-  } catch {
-    return [];
-  }
+  return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, false)}`)) ?? [];
 }
 
 export async function getAllCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
-  try {
-    return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, true)}`)) ?? [];
-  } catch {
-    return [];
-  }
+  return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, true)}`)) ?? [];
 }
 
 export async function getMyAuthoredCourses(): Promise<CourseSummary[]> {
-  try {
-    return (await apiFetch<CourseSummary[]>("/api/v1/courses/mine")) ?? [];
-  } catch {
-    return [];
-  }
+  return (await apiFetch<CourseSummary[]>("/api/v1/courses/mine")) ?? [];
 }
 
+/**
+ * 404/403 = legitimate "not visible" → null (caller calls notFound()).
+ * Other errors propagate to the route error boundary.
+ */
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
   try {
     return (await apiFetch<Course>(`/api/v1/courses/${slug}`)) ?? null;
@@ -71,13 +63,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 }
 
 export async function getCourseBlocks(courseId: string): Promise<CourseBlock[]> {
-  try {
-    return (
-      (await apiFetch<CourseBlock[]>(`/api/v1/courses/${courseId}/blocks`)) ?? []
-    );
-  } catch {
-    return [];
-  }
+  return (await apiFetch<CourseBlock[]>(`/api/v1/courses/${courseId}/blocks`)) ?? [];
 }
 
 export async function saveCourseBlocks(
@@ -166,8 +152,8 @@ export async function duplicateCourse(
   }
 }
 
-function errMsg(e: unknown): string {
+function errMsg(e: unknown): string | undefined {
   if (e instanceof ApiError) return e.message;
   if (e instanceof Error) return e.message;
-  return "Erreur inconnue";
+  return undefined;
 }

@@ -22,11 +22,7 @@ export async function getAllUsers(filters?: {
   if (filters?.disabled !== undefined) params.set("disabled", String(filters.disabled));
   if (filters?.q) params.set("q", filters.q);
   const qs = params.toString();
-  try {
-    return (await apiFetch<UserSummary[]>(`/api/v1/users${qs ? `?${qs}` : ""}`)) ?? [];
-  } catch {
-    return [];
-  }
+  return (await apiFetch<UserSummary[]>(`/api/v1/users${qs ? `?${qs}` : ""}`)) ?? [];
 }
 
 export async function updateUserRole(
@@ -40,7 +36,7 @@ export async function updateUserRole(
     });
     return { ok: true, user: u ?? undefined };
   } catch (e) {
-    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
   }
 }
 
@@ -55,6 +51,6 @@ export async function setUserDisabled(
     );
     return { ok: true, user: u ?? undefined };
   } catch (e) {
-    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
   }
 }

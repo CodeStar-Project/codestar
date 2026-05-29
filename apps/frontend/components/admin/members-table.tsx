@@ -20,6 +20,7 @@ interface Labels {
   remove: string;
   confirmRemove: string;
   empty: string;
+  errorUnknown: string;
   columns: {
     user: string;
     roleInGroup: string;
@@ -64,7 +65,7 @@ export function MembersTable({
     start(async () => {
       const r = await updateGroupMemberRole(groupId, m.userId, newRole);
       if (!r.ok || !r.member) {
-        setErrorMsg(r.error ?? "Erreur");
+        setErrorMsg(r.error ?? labels.errorUnknown);
         return;
       }
       setMembers((prev) =>
@@ -79,7 +80,7 @@ export function MembersTable({
     start(async () => {
       const r = await removeGroupMember(groupId, m.userId);
       if (!r.ok) {
-        setErrorMsg(r.error ?? "Erreur");
+        setErrorMsg(r.error ?? labels.errorUnknown);
         return;
       }
       setMembers((prev) => prev.filter((x) => x.userId !== m.userId));

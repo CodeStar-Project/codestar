@@ -57,16 +57,19 @@ public class BlockPayloadValidator {
     }
 
     private Map<String, Object> validateHeading(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("text"));
         String text = requireString(p, "text", HEADING_MAX);
         return Map.of("text", text);
     }
 
     private Map<String, Object> validateParagraph(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("text"));
         String text = requireString(p, "text", TEXT_MAX);
         return Map.of("text", text);
     }
 
     private Map<String, Object> validateCallout(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("text", "tone"));
         String text = requireString(p, "text", TEXT_MAX);
         String tone = optionalString(p, "tone", 20);
         if (tone == null || tone.isBlank()) tone = "neutral";
@@ -77,6 +80,7 @@ public class BlockPayloadValidator {
     }
 
     private Map<String, Object> validateCode(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("code", "language"));
         String code = requireString(p, "code", CODE_MAX);
         String language = optionalString(p, "language", LANGUAGE_MAX);
         if (language == null) language = "";
@@ -84,6 +88,7 @@ public class BlockPayloadValidator {
     }
 
     private Map<String, Object> validateImage(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("src", "alt"));
         String src = requireUrl(p, "src");
         String alt = optionalString(p, "alt", ALT_MAX);
         if (alt == null) alt = "";
@@ -91,11 +96,13 @@ public class BlockPayloadValidator {
     }
 
     private Map<String, Object> validateMedia(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("src"));
         String src = requireUrl(p, "src");
         return Map.of("src", src);
     }
 
     private Map<String, Object> validateQuiz(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("question", "options"));
         String question = requireString(p, "question", QUESTION_MAX);
         Object rawOptions = p.get("options");
         if (!(rawOptions instanceof List<?> list)) {
@@ -140,6 +147,17 @@ public class BlockPayloadValidator {
             throw ApiException.badRequest(key + " exceeds " + max + " characters");
         }
         return s;
+    }
+
+    /**
+     * Throws badRequest if {@code p} contains any key not listed in {@code allowed}.
+     */
+    private static void rejectUnknown(Map<String, Object> p, Set<String> allowed) {
+        for (String key : p.keySet()) {
+            if (!allowed.contains(key)) {
+                throw ApiException.badRequest("unknown payload key: " + key);
+            }
+        }
     }
 
     private static String requireUrl(Map<String, Object> p, String key) {

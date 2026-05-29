@@ -12,25 +12,17 @@ interface BookmarkResponse {
 }
 
 export async function getMyBookmarks(): Promise<BookmarkEnriched[]> {
-  try {
-    return (await apiFetch<BookmarkEnriched[]>("/api/v1/bookmarks/mine")) ?? [];
-  } catch {
-    return [];
-  }
+  return (await apiFetch<BookmarkEnriched[]>("/api/v1/bookmarks/mine")) ?? [];
 }
 
 export async function getCourseBookmarks(
   courseId: string
 ): Promise<BookmarkEnriched[]> {
-  try {
-    return (
-      (await apiFetch<BookmarkEnriched[]>(
-        `/api/v1/bookmarks?courseId=${encodeURIComponent(courseId)}`
-      )) ?? []
-    );
-  } catch {
-    return [];
-  }
+  return (
+    (await apiFetch<BookmarkEnriched[]>(
+      `/api/v1/bookmarks?courseId=${encodeURIComponent(courseId)}`
+    )) ?? []
+  );
 }
 
 export async function createBookmark(
@@ -44,7 +36,7 @@ export async function createBookmark(
     });
     return { ok: true, id: data?.id };
   } catch (e) {
-    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
   }
 }
 
@@ -55,6 +47,6 @@ export async function deleteBookmark(
     await apiFetch<void>(`/api/v1/bookmarks/${id}`, { method: "DELETE" });
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof ApiError ? e.message : "Erreur" };
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
   }
 }

@@ -28,6 +28,7 @@ export default async function CourseBlocksPage({ params }: PageProps) {
   const admin = isAdmin(me.role);
   const tAdmin = await getTranslations("admin");
   const t = await getTranslations("admin.blocksEditor");
+  const tErrors = await getTranslations("errors");
 
   const list = admin ? await getAllCourses() : await getMyAuthoredCourses();
   const course = list.find((c) => c.id === id);
@@ -89,6 +90,7 @@ export default async function CourseBlocksPage({ params }: PageProps) {
           toneNeutral: t("toneNeutral"),
           toneWarning: t("toneWarning"),
           toneDanger: t("toneDanger"),
+          errorUnknown: tErrors("unknown"),
         }}
       />
     </AdminShell>

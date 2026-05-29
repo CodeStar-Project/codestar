@@ -16,9 +16,10 @@ export default async function AdminUsersPage() {
   const me = await requireRole("ADMIN");
   const locale = (await getLocale()) as "fr" | "en";
 
-  const [t, tRoles, users] = await Promise.all([
+  const [t, tRoles, tErrors, users] = await Promise.all([
     getTranslations("admin.users"),
     getTranslations("roles"),
+    getTranslations("errors"),
     getAllUsers(),
   ]);
 
@@ -53,6 +54,7 @@ export default async function AdminUsersPage() {
           confirmEnable: t("confirmEnable"),
           empty: t("empty"),
           self: t("self"),
+          errorUnknown: tErrors("unknown"),
           columns: {
             user: t("columns.user"),
             role: t("columns.role"),
