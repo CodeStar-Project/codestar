@@ -116,7 +116,7 @@ public class CourseController {
     public ResponseEntity<ApiResponseDto<Void>> deleteCourse(@PathVariable UUID id) {
 
         courseService.deleteCourse(id);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course deleted", null));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course archived", null));
     }
 
     @PutMapping("/{id}/blocks")
