@@ -39,6 +39,7 @@ interface Labels {
   submitUpdate: string;
   cancel: string;
   required: string;
+  errorUnknown: string;
 }
 
 interface CourseFormProps {
@@ -95,7 +96,7 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
         };
         const r = await updateCourse(course.id, body);
         if (!r.ok) {
-          setError(r.error ?? "Erreur");
+          setError(r.error ?? labels.errorUnknown);
           return;
         }
       } else {
@@ -108,7 +109,7 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
         };
         const r = await createCourse(body);
         if (!r.ok || !r.course) {
-          setError(r.error ?? "Erreur");
+          setError(r.error ?? labels.errorUnknown);
           return;
         }
       }

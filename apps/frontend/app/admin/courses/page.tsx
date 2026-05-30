@@ -136,6 +136,7 @@ export default async function AdminCoursesPage() {
                           unpublish: t("table.unpublish"),
                           archive: t("table.archive"),
                           delete: t("table.delete"),
+                          duplicate: t("table.duplicate"),
                           confirmDelete: t("table.confirmDelete"),
                         }}
                       />

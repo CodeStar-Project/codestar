@@ -15,7 +15,9 @@ import com.codestar.backend.model.InvitationCode;
 import com.codestar.backend.repository.IInvitationCodeRepository;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.GroupCurriculumService;
+import com.codestar.backend.service.GroupMemberService;
 import com.codestar.backend.service.GroupService;
+import com.codestar.backend.service.GroupStatsService;
 import com.codestar.backend.service.InvitationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,12 +40,16 @@ public class GroupController {
     private final InvitationService invitationService;
     private final IInvitationCodeRepository invitations;
     private final GroupCurriculumService curriculumService;
+    private final GroupMemberService memberService;
+    // private final GroupStatsService statsService;
 
-    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService) {
+    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService, GroupMemberService memberService, GroupStatsService statsService) {
         this.groupService = groupService;
         this.invitationService = invitationService;
         this.invitations = invitations;
         this.curriculumService = curriculumService;
+        this.memberService = memberService;
+        // this.statsService = statsService;
     }
 
     @GetMapping
@@ -68,14 +74,20 @@ public class GroupController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponseDto<GroupResponseDto>> create(@Valid @RequestBody CreateGroupRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         GroupResponseDto created = groupService.create(request, principal.getId());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseDto<>(true, "Group created", created));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseDto<>(true, "Group created", created));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponseDto<GroupResponseDto>> update(@PathVariable UUID id, @Valid @RequestBody UpdateGroupRequestDto request) {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Group updated", groupService.update(id, request)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponseDto<Void>> delete(@PathVariable UUID id) {
+        groupService.delete(id);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Group deleted", null));
     }
 
     @PostMapping("/join")
@@ -96,13 +108,11 @@ public class GroupController {
 
     @GetMapping("/{groupId}/invitations")
     @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
-    public ResponseEntity<ApiResponseDto<List<InvitationResponseDto>>> listInvitations(@PathVariable UUID groupId) {
-        List<InvitationResponseDto> body = invitations
-                .findByGroupIdAndRevokedAtIsNull(groupId)
-                .stream()
+    public ResponseEntity<ApiResponseDto<List<InvitationResponseDto>>> listInvitations(@PathVariable UUID groupId, @RequestParam(value = "includeRevoked", defaultValue = "false") boolean includeRevoked) {
+        List<InvitationCode> rows = includeRevoked ? invitations.findByGroupId(groupId) : invitations.findByGroupIdAndRevokedAtIsNull(groupId);
+        List<InvitationResponseDto> body = rows.stream()
                 .map(GroupController::toDto)
                 .toList();
-    
         return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", body));
     }
 
@@ -117,9 +127,41 @@ public class GroupController {
     public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> replaceCurriculum(
             @PathVariable UUID groupId,
             @Valid @RequestBody UpdateCurriculumRequestDto request) {
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Curriculum updated",
-                curriculumService.replaceCurriculum(groupId, request)));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Curriculum updated", curriculumService.replaceCurriculum(groupId, request)));
     }
+
+    @GetMapping("/{groupId}/members")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<List<com.codestar.backend.dto.GroupMemberDto>>> listMembers(@PathVariable UUID groupId) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", memberService.list(groupId)));
+    }
+
+    @DeleteMapping("/{groupId}/members/{userId}")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<Void>> removeMember(
+            @PathVariable UUID groupId, @PathVariable UUID userId) {
+        memberService.remove(groupId, userId);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Member removed", null));
+    }
+
+    @PatchMapping("/{groupId}/members/{userId}")
+    @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    public ResponseEntity<ApiResponseDto<com.codestar.backend.dto.GroupMemberDto>> updateMemberRole(
+            @PathVariable UUID groupId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody com.codestar.backend.dto.UpdateGroupMemberRoleRequestDto request) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Member role updated", memberService.updateRole(groupId, userId, request.getRoleInGroup())));
+    }
+
+    // TODO : add stats to groups, courses and users
+    // @GetMapping(value = "/{groupId}/stats/export.csv", produces = "text/csv; charset=utf-8")
+    // @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
+    // public ResponseEntity<String> exportStatsCsv(@PathVariable UUID groupId) {
+    //     String csv = statsService.exportCsv(groupId);
+    //     return ResponseEntity.ok()
+    //             .header("Content-Disposition", "attachment; filename=\"group-" + groupId + "-stats.csv\"")
+    //             .body(csv);
+    // }
 
     // helper
     private static InvitationResponseDto toDto(InvitationCode i) {

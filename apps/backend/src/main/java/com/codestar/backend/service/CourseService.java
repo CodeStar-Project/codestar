@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,12 +33,14 @@ public class CourseService {
     private final ICourseBlockRepository blockRepository;
     private final IUserRepository userRepository;
     private final CoursePermissionService coursePermissions;
+    private final BlockPayloadValidator blockPayloadValidator;
 
-    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository, CoursePermissionService coursePermissions) {
+    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator) {
         this.courseRepository = courseRepository;
         this.blockRepository = blockRepository;
         this.userRepository = userRepository;
         this.coursePermissions = coursePermissions;
+        this.blockPayloadValidator = blockPayloadValidator;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +58,29 @@ public class CourseService {
                 .map(CourseService::toSummaryDto)
                 .collect(Collectors.toList());
     }
+
+
+    @Transactional(readOnly = true)
+    public List<CourseSummaryDto> searchCourses(CourseSearchFilters filters, boolean includeAll) {
+        org.springframework.data.jpa.domain.Specification<Course> statusSpec;
+        if (includeAll) {
+            statusSpec = filters.status() == null ? null : CourseSpecifications.byStatus(parseStatus(filters.status()));
+        } else {
+            statusSpec = CourseSpecifications.byStatus(CourseStatus.PUBLISHED);
+        }
+        org.springframework.data.jpa.domain.Specification<Course> spec = CourseSpecifications.all(
+                statusSpec,
+                CourseSpecifications.byCategory(filters.category()),
+                CourseSpecifications.byLevel(filters.level()),
+                CourseSpecifications.byAuthorId(filters.authorId()),
+                CourseSpecifications.byQuery(filters.q())
+        );
+        return courseRepository.findAll(spec).stream()
+                .map(CourseService::toSummaryDto)
+                .collect(Collectors.toList());
+    }
+
+    public record CourseSearchFilters(String status, String category, String level, UUID authorId, String q) {}
 
     @Transactional(readOnly = true)
     public List<CourseSummaryDto> getCoursesAuthoredBy(UUID authorId) {
@@ -85,6 +111,51 @@ public class CourseService {
             throw ApiException.notFound("Course not found: " + slug);
         }
         return toDto(course);
+    }
+
+    @Transactional
+    public CourseDto duplicateCourse(UUID sourceId, UUID newAuthorId) {
+        Course source = courseRepository.findById(sourceId)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + sourceId));
+        User newAuthor = userRepository.findById(newAuthorId)
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+
+        Course copy = new Course();
+        copy.setTitle(source.getTitle() + " (copy)");
+        copy.setSlug(generateUniqueSlug(source.getSlug()));
+        copy.setDescription(source.getDescription());
+        copy.setCategory(source.getCategory());
+        copy.setLevel(source.getLevel());
+        copy.setAuthor(newAuthor);
+        copy.setStatus(CourseStatus.DRAFT);
+        Course savedCopy = courseRepository.save(copy);
+
+        List<CourseBlock> sourceBlocks = blockRepository.findByCourseIdOrderByOrderIndexAsc(sourceId);
+        List<CourseBlock> newBlocks = new java.util.ArrayList<>(sourceBlocks.size());
+        for (CourseBlock src : sourceBlocks) {
+            CourseBlock b = new CourseBlock();
+            b.setCourse(savedCopy);
+            b.setKind(src.getKind());
+            b.setOrderIndex(src.getOrderIndex());
+            b.setPayload(src.getPayload() == null ? null : new java.util.HashMap<>(src.getPayload()));
+            newBlocks.add(b);
+        }
+        blockRepository.saveAll(newBlocks);
+
+        return toDto(savedCopy);
+    }
+
+    private String generateUniqueSlug(String base) {
+        String candidate = base + "-copy";
+        int n = 1;
+        while (courseRepository.existsBySlug(candidate)) {
+            n++;
+            candidate = base + "-copy-" + n;
+            if (n > 100) {
+                throw ApiException.conflict("Cannot generate unique slug from: " + base);
+            }
+        }
+        return candidate;
     }
 
     @Transactional
@@ -164,10 +235,12 @@ public class CourseService {
 
     @Transactional
     public void deleteCourse(UUID id) {
-        if (!courseRepository.existsById(id)) {
-            throw ApiException.notFound("Course not found: " + id);
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
+        if (course.getStatus() != CourseStatus.ARCHIVED) {
+            course.setStatus(CourseStatus.ARCHIVED);
+            courseRepository.save(course);
         }
-        courseRepository.deleteById(id);
     }
 
     @Transactional
@@ -179,10 +252,13 @@ public class CourseService {
             throw ApiException.badRequest("blocks is required");
         }
         List<SaveBlocksRequestDto.BlockInput> inputs = request.getBlocks();
-        for (SaveBlocksRequestDto.BlockInput input : inputs) {
+        List<Map<String, Object>> validatedPayloads = new java.util.ArrayList<>(inputs.size());
+        for (int i = 0; i < inputs.size(); i++) {
+            SaveBlocksRequestDto.BlockInput input = inputs.get(i);
             if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
                 throw ApiException.badRequest("Invalid block kind: " + input.getKind());
             }
+            validatedPayloads.add(blockPayloadValidator.validate(input.getKind(), input.getPayload(), i));
         }
 
         blockRepository.deleteByCourseId(courseId);
@@ -194,7 +270,7 @@ public class CourseService {
             block.setCourse(course);
             block.setKind(input.getKind());
             block.setOrderIndex(i);
-            block.setPayload(input.getPayload());
+            block.setPayload(validatedPayloads.get(i));
             newBlocks.add(block);
         }
 

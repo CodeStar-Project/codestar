@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/courses";
 import { getMyGroups, getAllGroups } from "@/app/actions/groups";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { GroupCardActions } from "@/components/admin/group-card-actions";
 import { requireRole } from "@/components/admin/role-guard";
 import { CourseMeta } from "@/components/course/course-meta";
 import { PageHeader } from "@/components/course/page-header";
@@ -69,6 +70,11 @@ export default async function AdminDashboardPage() {
             <GlassButton asChild variant="ghost">
               <Link href="/admin/courses">{t("recentTitle")}</Link>
             </GlassButton>
+            {admin && (
+              <GlassButton asChild variant="ghost">
+                <Link href="/admin/users">{t("usersLink")}</Link>
+              </GlassButton>
+            )}
           </>
         }
         className="mb-10"
@@ -133,22 +139,39 @@ export default async function AdminDashboardPage() {
             <ul className="space-y-2">
               {groups.map((g) => (
                 <li key={g.id}>
-                  <Link
-                    href={`/admin/groups/${g.id}/curriculum`}
-                    className="block focus-visible:outline-none"
-                  >
-                    <GlassCard variant="default" interactive>
-                      <GlassCardContent className="flex items-center justify-between gap-3 p-4">
-                        <div>
-                          <div className="font-medium text-text">{g.name}</div>
-                          <div className="text-[0.82rem] text-muted">{g.slug}</div>
-                        </div>
-                        <span className="text-[0.85rem] text-[color:var(--color-accent)]">
+                  <GlassCard variant="default">
+                    <GlassCardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                      <div className="min-w-0">
+                        <div className="font-medium text-text">{g.name}</div>
+                        <div className="text-[0.82rem] text-muted">{g.slug}</div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-[0.85rem]">
+                        <Link
+                          href={`/admin/groups/${g.id}/curriculum`}
+                          className="text-[color:var(--color-accent)] hover:underline"
+                        >
                           {t("groupsManage")} →
-                        </span>
-                      </GlassCardContent>
-                    </GlassCard>
-                  </Link>
+                        </Link>
+                        <span aria-hidden className="text-muted">·</span>
+                        <Link
+                          href={`/admin/groups/${g.id}/members`}
+                          className="text-[color:var(--color-accent)] hover:underline"
+                        >
+                          {t("membersLink")} →
+                        </Link>
+                        <GroupCardActions
+                          groupId={g.id}
+                          groupName={g.name}
+                          canDelete={admin}
+                          labels={{
+                            exportCsv: t("exportCsvShort"),
+                            delete: t("deleteGroup"),
+                            confirmDelete: t("confirmDeleteGroup"),
+                          }}
+                        />
+                      </div>
+                    </GlassCardContent>
+                  </GlassCard>
                 </li>
               ))}
             </ul>

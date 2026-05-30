@@ -124,3 +124,69 @@ export async function apiFetch<T>(
 
   return parsed.data as T;
 }
+
+/**
+ * Raw text fetch (no ApiResponse unwrap). For non-JSON endpoints (CSV, etc.).
+ */
+export async function apiFetchText(
+  path: string,
+  { withAuth = true, timeoutMs = DEFAULT_TIMEOUT_MS, ...rest }: {
+    withAuth?: boolean;
+    timeoutMs?: number;
+  } & RequestInit = {}
+): Promise<string> {
+  const finalHeaders = new Headers(rest.headers);
+  if (withAuth) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(authCookieName())?.value;
+    if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
+  }
+
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeoutMs);
+
+  const signal = rest.signal
+    ? AbortSignal.any([rest.signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  let res: Response;
+  try {
+    const authDefault: RequestInit = withAuth ? { cache: "no-store"} : {};
+    res = await fetch(`${apiUrl()}${path}`, {
+      ...authDefault,
+      ...rest,
+      headers: finalHeaders,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(408, "Request timeout");
+    }
+    throw new ApiError(0, "Network error");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+
+  if (!res.ok) {
+    let message = `HTTP error ${res.status}`;
+    if (text.trim()) {
+      if (contentType.includes("application/json")) {
+        try {
+          message =
+            (JSON.parse(text) as { message?: string }).message ?? message;
+        } catch {
+          message = text;
+        }
+      } else {
+        message = text;
+      }
+    }
+
+    throw new ApiError(res.status, message);
+  }
+
+  return text;
+}

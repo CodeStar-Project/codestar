@@ -17,6 +17,8 @@ public interface IInvitationCodeRepository extends JpaRepository<InvitationCode,
 
     List<InvitationCode> findByGroupIdAndRevokedAtIsNull(UUID groupId);
 
+    List<InvitationCode> findByGroupId(UUID groupId);
+
     /**
      * Returns the number of rows updated (1 = consumed, 0 = no longer usable).
      */

@@ -26,6 +26,7 @@ export default async function EditCoursePage({ params }: PageProps) {
   const { id } = await params;
   const admin = isAdmin(me.role);
   const t = await getTranslations("admin.courseForm");
+  const tErrors = await getTranslations("errors");
 
   const list = admin ? await getAllCourses() : await getMyAuthoredCourses();
   const course = list.find((c) => c.id === id);
@@ -83,6 +84,7 @@ export default async function EditCoursePage({ params }: PageProps) {
               submitUpdate: t("submitUpdate"),
               cancel: t("cancel"),
               required: t("required"),
+              errorUnknown: tErrors("unknown"),
             }}
           />
         </div>

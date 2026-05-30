@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import {
   changeCourseStatus,
   deleteCourse,
+  duplicateCourse,
 } from "@/app/actions/courses";
 import { GlassButton } from "@/components/ui/glass-button";
 import {
@@ -14,6 +15,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   PencilIcon,
+  PlusIcon,
   TrashIcon,
 } from "@/components/ui/icons";
 import type { CourseStatus, CourseSummary } from "@/lib/types";
@@ -24,6 +26,7 @@ interface Labels {
   unpublish: string;
   archive: string;
   delete: string;
+  duplicate: string;
   confirmDelete: string;
 }
 
@@ -48,6 +51,16 @@ export function CourseRowActions({ course, labels }: CourseRowActionsProps) {
     start(async () => {
       await deleteCourse(course.id);
       router.refresh();
+    });
+  }
+
+  function duplicate() {
+    start(async () => {
+      const r = await duplicateCourse(course.id);
+      if (r.ok && r.course) {
+        router.push(`/admin/courses/${r.course.id}`);
+        router.refresh();
+      }
     });
   }
 
@@ -77,6 +90,17 @@ export function CourseRowActions({ course, labels }: CourseRowActionsProps) {
         <a href={`/admin/courses/${course.id}/blocks`}>
           <CodeIcon size={14} />
         </a>
+      </GlassButton>
+
+      <GlassButton
+        variant="ghost"
+        size="sm"
+        onClick={duplicate}
+        disabled={pending}
+        aria-label={`${labels.duplicate} ${course.title}`}
+      >
+        <PlusIcon size={14} />
+        <span className="hidden sm:inline">{labels.duplicate}</span>
       </GlassButton>
 
       {!isArchived && (

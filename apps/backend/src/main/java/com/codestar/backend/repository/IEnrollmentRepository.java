@@ -15,6 +15,8 @@ public interface IEnrollmentRepository extends JpaRepository<Enrollment, Enrollm
 
     List<Enrollment> findByIdUserIdOrderByLastActivityAtDesc(UUID userId);
 
+    List<Enrollment> findByIdUserIdInAndIdCourseIdIn(java.util.Collection<UUID> userIds, java.util.Collection<UUID> courseIds);
+
     @Modifying
     @Query(value = """
             INSERT INTO enrollments (user_id, course_id, progress, last_block_id, completed_at)

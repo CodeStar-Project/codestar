@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "Nouveau cours" };
 export default async function NewCoursePage() {
   await requireRole("TEACHER");
   const t = await getTranslations("admin.courseForm");
+  const tErrors = await getTranslations("errors");
 
   return (
     <AdminShell>
@@ -46,6 +47,7 @@ export default async function NewCoursePage() {
             submitUpdate: t("submitUpdate"),
             cancel: t("cancel"),
             required: t("required"),
+            errorUnknown: tErrors("unknown"),
           }}
         />
       </div>
