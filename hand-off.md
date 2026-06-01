@@ -1,6 +1,50 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-05-09
+> Dernière mise à jour : 2026-06-01
+
+---
+
+## 0. État d'avancement (au 2026-06-01)
+
+Branche active : `dev`. Phase v1 **terminée**, phase v2 **largement avancée** (backend + frontend des cours, progression, bookmarks, curriculum, gestion users/groupes, branding API). Restent surtout : page UI branding, tests, et toute la phase v3.
+
+### Backend — fait
+
+- Migration Flyway `V001.sql` (fichier unique, **pas** split par PR comme prévu) : `users`, `groups`, `group_memberships`, `invitation_codes`, `courses`, `course_blocks`, `group_curriculum`, `enrollments`, `bookmarks`.
+- Spring Security : JWT (`JwtAuthenticationFilter`, `JwtUtils`), `@PreAuthorize` par rôle, services de permission programmatiques (`CoursePermissionService`, `GroupPermissionService`, `InvitationPermissionService`), bootstrap super-admin (`SuperAdminBootstrap`).
+- Auth : `POST /auth/{login,register,logout}`, `GET /auth/me`.
+- Groupes : CRUD complet + `join` + invitations (create/list) + curriculum (get/put) + membres (list/delete/patch rôle).
+- Invitations : `DELETE /invitations/{id}` (permission créateur/admin).
+- Cours : list / mine / slug / blocks / create / **duplicate** / patch / status / delete / put-blocks. Validation payload via `BlockPayloadValidator`, filtres via `CourseSpecifications`.
+- Enrollments : `GET /mine`, `POST /{courseId}/progress` (upsert).
+- Bookmarks : post / delete / mine / get.
+- Instance branding : `GET` + `PATCH /instance/branding`.
+- **Users (admin)** : `GET /users`, `PATCH /{id}/role`, `POST /{id}/{disable,enable}` — hors roadmap initiale, anticipe `/admin/users`.
+- OpenAPI/Swagger (`OpenApiConfig`).
+
+### Backend — reste à faire
+
+- **Notes** : aucun modèle ni endpoint (`/notes/*` de la roadmap v2 non implémenté).
+- **Export CSV stats** : `GroupStatsService` existe mais endpoint `GET /groups/{id}/stats/export.csv` commenté (TODO).
+- **Gamification v3** : quiz attempts, leaderboard, XP, streak — rien.
+- **OAuth v3** : Google/GitHub — rien.
+- **Tests** : seulement `BackendApplicationTests` (smoke). Pas de Testcontainers, pas de tests Auth/Group/Invitation/Permission.
+
+### Frontend — fait
+
+- Tokens Liquid Glass dans `globals.css` + `<MeshBackground>` + lib composants glass (`GlassCard/Button/Input/Chip/Nav`).
+- i18n `next-intl` opérationnel : `messages/en.json` + `messages/fr.json`, `i18n/{request,routing}.ts`, `<LocaleSwitcher>`.
+- Providers : `auth-provider`, `branding-provider`. Server actions pour toutes les ressources (`app/actions/*`).
+- Pages : `/` (landing), `/login` (signin/signup/join), `/home`, `/courses`, `/courses/[slug]`, `/courses/[slug]/read` (lecteur), `/my-courses`, `/me/dash`, `/bookmarks`.
+- Admin : `/admin` (dashboard), `/admin/courses` (list/new/[id]/[id]/blocks), `/admin/groups/[id]/{members,curriculum}`, `/admin/users`. `role-guard` côté front.
+- Rendu des blocs : callout / code / heading / image / media / paragraph / quiz.
+
+### Frontend — reste à faire
+
+- **Page `/admin/branding`** (live preview) : absente, alors que l'API `PATCH /branding` existe.
+- **`/leaderboard`** (v3).
+- **Éditeur drag-drop complet** : `blocks-editor` actuel est minimaliste (pas de DnD/inspector/autosave de l'écran 9).
+- **Tests Playwright** : aucun sur `dev` (présents sur la branche séparée `add-playwright-tests`, non mergée).
 
 ---
 
@@ -15,7 +59,7 @@
 
 ### Principes design (fixes)
 
-1. **Liquid Glass complet** — vitres translucides (`backdrop-filter: blur`), palette pastel iOS, accents doux. Abandon de l'accent `#F28022` unique défini dans `apps/frontend/CLAUDE.md` (à mettre à jour dans la même PR que la nouvelle HomePage).
+1. **Liquid Glass complet** — vitres translucides (`backdrop-filter: blur`), palette pastel iOS, accents doux.
 2. **Chaleureux + professionnel** — pas de néon, pas de flat brutalisme. Référence : Apple Vision OS, Linear, Arc Browser.
 3. **Mobile-first dès v1** sur toutes les pages.
 4. **Accessibilité WCAG AA** — contraste vérifié sur palette pastel, focus visibles, ARIA correct.
@@ -101,7 +145,9 @@ Légende : ✅ = autorisé · ⚠️ = autorisé sur ses propres ressources · �
 
 ---
 
-## 4. Modèle de données (entités v1 + v2 + v3) à déterminer
+## 4. Modèle de données (entités v1 + v2 + v3)
+
+> Implémenté en une seule migration `V001.sql` (v1 + v2). `Note` non implémentée. v3 (gamification) pas encore en DB. Champs réels ajoutés vs draft : `enrollments.last_block_id`, `enrollments.last_activity_at`, contrainte unique `bookmarks (user_id, block_id)`.
 
 ### v1 (auth + groupes)
 
@@ -233,9 +279,14 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 
 ---
 
-## 5. API REST attendue à déterminer
+## 5. API REST
 
-Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseDto<T> { success, message, data }` (déjà existant).
+Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseDto<T> { success, message, data }` (déjà existant). v1 et v2 implémentées (sauf `/notes/*`). Endpoints réels supplémentaires non listés dans le tableau d'origine :
+
+- `GET /courses/mine`, `POST /courses/{id}/duplicate`, `POST /courses/{id}/status`, `DELETE /courses/{id}`
+- `GET /bookmarks`, `GET /bookmarks/mine`
+- `GET /groups/{id}/invitations`, `GET/DELETE/PATCH /groups/{groupId}/members[/{userId}]`
+- `GET /users`, `PATCH /users/{id}/role`, `POST /users/{id}/{disable,enable}`
 
 ### v1 — Auth & groupes
 
@@ -479,7 +530,7 @@ body {
 
 ## 8. Roadmap phasée
 
-### Phase v1 — Socle auth + landing
+### Phase v1 — Socle auth + landing ✅ TERMINÉE
 
 **Objectif** : un visiteur peut découvrir Codestar, créer un compte, rejoindre un groupe avec un code. Les rôles existent en DB. Pas de cours, pas de gamification.
 
@@ -529,21 +580,27 @@ body {
 - D4 — Créer CONTRIBUTING.md
 - D5 — Créer SECURITY.md
 
-### Phase v2 — Cours + dashboards + branding UI (cible : 8–10 semaines)
+### Phase v2 — Cours + dashboards + branding UI (cible : 8–10 semaines) — 🟡 EN COURS
 
-| # | Tâche | Dépend | Effort |
-|---|---|---|---|
-| 2.1 | Migrations Course + CourseBlock + GroupCurriculum + Enrollment + Bookmark + Note | 1.1 | L |
-| 2.2 | Endpoints `/courses/*` + `/blocks/*` + `/enrollments/*` + `/bookmarks/*` + `/notes/*` | 2.1 | L |
-| 2.3 | Page `/home` étudiant (hero + reprendre + découvrir) | 1.9, 2.2 | M |
-| 2.4 | Page `/courses/{slug}` lecteur 3 colonnes + responsive bottom-sheet TOC | 2.2 | XL |
-| 2.5 | Page `/my-courses` étudiant | 2.2 | M |
-| 2.6 | Page `/me/dash` Dashboard étudiant | 2.2 | M |
-| 2.7 | Page `/admin` Dashboard admin (KPI, table cours) | 2.2 | M |
-| 2.8 | Stockage médias : choix MinIO vs filesystem (décision à reprendre v2) | — | M |
-| 2.9 | Endpoint `PATCH /instance/branding` + page `/admin/branding` (avec live preview) | 1.5 | L |
-| 2.10 | Bottom-sheet mobile pour TOC, gestes drawer | 2.4 | M |
-| 2.11 | Tests Playwright : flows lecture cours, progression, branding update | 2.4, 2.9 | M |
+Statut : ✅ fait · 🟡 partiel · ❌ à faire
+
+| # | Tâche | Dépend | Effort | Statut |
+|---|---|---|---|---|
+| 2.1 | Migrations Course + CourseBlock + GroupCurriculum + Enrollment + Bookmark + Note | 1.1 | L | 🟡 tout sauf `Note` (table absente) |
+| 2.2 | Endpoints `/courses/*` + `/blocks/*` + `/enrollments/*` + `/bookmarks/*` + `/notes/*` | 2.1 | L | 🟡 `/notes/*` manquant, reste fait |
+| 2.3 | Page `/home` étudiant (hero + reprendre + découvrir) | 1.9, 2.2 | M | ✅ |
+| 2.4 | Page `/courses/{slug}` lecteur 3 colonnes + responsive bottom-sheet TOC | 2.2 | XL | ✅ (`/courses/[slug]` + `/read`, `mobile-toc`) |
+| 2.5 | Page `/my-courses` étudiant | 2.2 | M | ✅ |
+| 2.6 | Page `/me/dash` Dashboard étudiant | 2.2 | M | ✅ |
+| 2.7 | Page `/admin` Dashboard admin (KPI, table cours) | 2.2 | M | ✅ |
+| 2.8 | Stockage médias : choix MinIO vs filesystem (décision à reprendre v2) | — | M | ❌ non tranché |
+| 2.9 | Endpoint `PATCH /instance/branding` + page `/admin/branding` (avec live preview) | 1.5 | L | 🟡 API faite, **page UI manquante** |
+| 2.10 | Bottom-sheet mobile pour TOC, gestes drawer | 2.4 | M | ✅ (`mobile-toc`) |
+| 2.11 | Tests Playwright : flows lecture cours, progression, branding update | 2.4, 2.9 | M | ❌ (branche `add-playwright-tests` non mergée) |
+| 2.12 | **(ajouté)** Gestion users admin : `/users/*` + page `/admin/users` | 1.6 | M | ✅ |
+| 2.13 | **(ajouté)** Gestion membres groupe : list/remove/patch-rôle + page `/admin/groups/[id]/members` | 1.4 | M | ✅ |
+| 2.14 | **(ajouté)** Duplication de cours (`POST /courses/{id}/duplicate`) | 2.2 | S | ✅ |
+| 2.15 | Export CSV stats groupe (`GroupStatsService` + endpoint) | 2.2 | M | 🟡 service présent, endpoint commenté (TODO) |
 
 ### Phase v3 — Éditeur + gamification + OAuth (cible : 10–12 semaines)
 
