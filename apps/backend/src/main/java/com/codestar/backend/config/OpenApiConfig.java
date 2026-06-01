@@ -13,9 +13,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                // 1. Applique la sécurité globalement à tous les endpoints de l'UI
                 .addSecurityItem(new SecurityRequirement().addList("BearerAuth"))
-                // 2. Définir le type de sécurité (ici Bearer Token JWT)
                 .components(new Components()
                         .addSecuritySchemes("BearerAuth",
                                 new SecurityScheme()
@@ -23,6 +21,6 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Saisis directement ton token JWT (sans le mot 'Bearer')")));
+                                        .description("Enter your JWT token directly (without the word 'Bearer')")));
     }
 }
