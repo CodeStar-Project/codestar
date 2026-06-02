@@ -17,7 +17,7 @@ import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.GroupCurriculumService;
 import com.codestar.backend.service.GroupMemberService;
 import com.codestar.backend.service.GroupService;
-import com.codestar.backend.service.GroupStatsService;
+// import com.codestar.backend.service.GroupStatsService;
 import com.codestar.backend.service.InvitationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -43,7 +43,7 @@ public class GroupController {
     private final GroupMemberService memberService;
     // private final GroupStatsService statsService;
 
-    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService, GroupMemberService memberService, GroupStatsService statsService) {
+    public GroupController(GroupService groupService, InvitationService invitationService, IInvitationCodeRepository invitations, GroupCurriculumService curriculumService, GroupMemberService memberService) {
         this.groupService = groupService;
         this.invitationService = invitationService;
         this.invitations = invitations;
