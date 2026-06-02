@@ -1,6 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-06-01
+> Dernière mise à jour : 2026-06-02
 
 ---
 
@@ -211,8 +211,8 @@ CourseBlock
  ├── id (UUID)
  ├── course_id (FK Course)
  ├── order_index (int)
- ├── kind (enum: H1, H2, H3, P, CODE, IMAGE, AUDIO, VIDEO, QUIZ, CALLOUT)
- ├── payload (JSONB) — contenu spécifique au kind
+ ├── kind (enum: H1, H2, H3, P, CODE, CALLOUT, QUOTE, IMAGE, IFRAME, TABLE, QUIZ, SANDBOX)
+ ├── payload (JSONB) — contenu spécifique au kind (cf. §11 Course Builder)
  └── created_at
 
 GroupCurriculum
@@ -670,6 +670,90 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 10. ☐ Tests Playwright des 3 flows critiques.
 11. ☐ Audit Lighthouse + axe-core, corrections.
 12. ☐ PR récapitulative + démo.
+
+---
+
+## 11. Course Builder — blocs, payloads, import/export
+
+> Point critique du produit. Si l'édition est pénible, l'utilisateur ne revient pas. Priorité UX/UX max.
+> L'éditeur minimaliste existe déjà (`components/admin/blocks-editor.tsx`, registry `components/block-kinds/`). Cette section décrit la cible.
+
+### 11.1 Décisions d'architecture
+
+| Sujet | Décision | Raison |
+|---|---|---|
+| warning / error / validation / green / tip | **1 seul kind `CALLOUT`** + champ `tone`. Pas 5 kinds. | `tone` vit dans `payload` JSONB → réutilise l'infra, surfacé comme 5 boutons distincts dans la palette d'insertion. |
+| quote / iframe / table / sandbox | **4 nouveaux kinds** | schémas payload distincts. |
+| AUDIO / VIDEO | **retirés** du builder (décision validée) | vidéo via `IFRAME` (youtube/vimeo). |
+| quiz | ajout `correctIndex` (+ `explanation` optionnel) | l'actuel ne stocke pas la bonne réponse → quiz inexploitable. |
+| table | payload structuré `{ header[], rows[][] }`, **jamais de HTML brut** | rendu sûr, zéro XSS. |
+| iframe | `src` https + **allowlist de domaines** | iframe arbitraire = XSS / clickjacking. |
+| sandbox | v1 = stockage + rendu read-only ; **exécution = v2** | payload conçu pour brancher un moteur après (Pyodide/WebContainers client *ou* Judge0/conteneur serveur — à trancher). |
+| Migration | **éditer `V001.sql` en place** (pas de déploiement → on peut casser le SQL) | pas de `V002` pour l'instant. |
+| Tests unitaires | **reportés** | hors scope de cette PR. |
+
+### 11.2 Liste finale des kinds + schéma payload
+
+JSONB par bloc, clés strictes (le validateur rejette toute clé inconnue). Volontairement simple : reproductible par une IA, lisible par un humain.
+
+```
+H1 / H2 / H3   { text }
+P              { text }
+CODE           { code, language }
+CALLOUT        { text, tone }          tone ∈ neutral | warning | danger | success | green | tip
+QUOTE          { text, author?, source? }
+IMAGE          { src(https), alt }
+IFRAME         { src(https + allowlist), title, height? }
+TABLE          { header: string[], rows: string[][] }   // lignes rectangulaires, taille max
+QUIZ           { question, options: string[2..10], correctIndex: int, explanation? }
+SANDBOX        { language, code, readonly?, expectedOutput? }   // pas d'exec en v1
+```
+
+Mapping UI palette → kind/tone : Vigilance ⚠️ (`CALLOUT/warning`, orange) · Erreur ⛔ (`CALLOUT/danger`, rouge) · Validé ✅ (`CALLOUT/success`, vert) · Green IT 🌱 (`CALLOUT/green`) · Astuce 💡 (`CALLOUT/tip`, jaune) · Note (`CALLOUT/neutral`).
+
+### 11.3 Schéma JSON import / export (versionné)
+
+Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.6). Contrat unique = garde-fou unique.
+
+```json
+{
+  "version": 1,
+  "course": { "title", "slug", "description", "category", "level" },
+  "blocks": [ { "kind", "payload" } ]
+}
+```
+
+### 11.4 TODO Backend (à faire en premier)
+
+- [ ] `V001.sql` (édité en place) : CHECK `course_blocks.kind` → `H1,H2,H3,P,CODE,CALLOUT,QUOTE,IMAGE,IFRAME,TABLE,QUIZ,SANDBOX` (retire AUDIO/VIDEO).
+- [ ] `CourseBlockType` : aligner l'enum (ajout QUOTE,IFRAME,TABLE,SANDBOX ; retrait AUDIO,VIDEO).
+- [ ] `BlockPayloadValidator` :
+  - [ ] `ALLOWED_TONES` → `neutral, warning, danger, success, green, tip`.
+  - [ ] `validateQuiz` : `correctIndex` (0 ≤ idx < options) + `explanation` optionnel.
+  - [ ] `validateQuote`, `validateIframe` (https + allowlist), `validateTable` (rectangulaire + limites), `validateSandbox` (stockage seul).
+  - [ ] retirer `validateMedia` (AUDIO/VIDEO).
+- [ ] `GET /courses/{id}/export` → JSON §11.3.
+- [ ] `POST /courses/import` (Teacher+) → re-valide chaque bloc via `BlockPayloadValidator`, crée Course `DRAFT`, gère collision de slug.
+
+### 11.5 TODO Frontend (1 composant Next par kind)
+
+- [ ] `lib/types.ts` : aligner `CourseBlockKind`.
+- [ ] Un module par kind dans `components/block-kinds/` (`Render` + `Edit` + `defaultPayload` + `normalize`), enregistré dans `BLOCK_REGISTRY` :
+  - [ ] `quote.tsx`, `iframe.tsx`, `table.tsx` (éditeur add/remove ligne+colonne), `sandbox.tsx` (Render read-only + bouton « Exécuter » désactivé, placeholder `SandboxRunner`).
+  - [ ] `quiz.tsx` : sélection bonne réponse + explication + feedback lecteur.
+  - [ ] `callout.tsx` : tones étendus + icônes.
+- [ ] **Live preview** : split-pane Édition / Aperçu / Côte-à-côte (réutilise les `Render`).
+- [ ] **Palette d'insertion** groupée (Texte / Mise en avant / Média / Interactif) + icônes ; les 5 callouts en entrées distinctes (préremplit `tone`).
+- [ ] **Drag-drop** réordonnancement (remplace flèches).
+- [ ] **Autosave** debounced 1.5s → `PUT /courses/{id}/blocks` + indicateur.
+- [ ] Boutons **Importer / Exporter JSON** dans la toolbar.
+- [ ] i18n `messages/{en,fr}.json` : labels blocs + palette.
+
+### 11.6 Plus tard (hors PR) — génération IA
+
+- L'IA renvoie **le JSON §11.3** → passe par `POST /courses/import` → validation déjà en place = garde-fou.
+- Front : bouton « Générer avec IA » → modal prompt → stream → preview avant insertion.
+- À préparer dès cette PR : schéma JSON stable + validation stricte. Rien d'autre à coder maintenant.
 
 ---
 
