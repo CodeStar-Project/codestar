@@ -328,6 +328,9 @@
       "viewBookmarks": "Mes favoris",
       "next": "Suivant",
       "prev": "Précédent",
+      "finish": "Terminer",
+      "pageLabel": "Page {current} / {total}",
+      "pagesTitle": "Pages",
       "empty": "Ce cours n'a pas encore de contenu.",
       "backToIntro": "Retour à l'aperçu"
     },

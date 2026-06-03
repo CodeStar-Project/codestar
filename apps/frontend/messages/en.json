@@ -328,6 +328,9 @@
       "viewBookmarks": "My bookmarks",
       "next": "Next",
       "prev": "Previous",
+      "finish": "Finish",
+      "pageLabel": "Page {current} / {total}",
+      "pagesTitle": "Pages",
       "empty": "This course has no content yet.",
       "backToIntro": "Back to overview"
     },
