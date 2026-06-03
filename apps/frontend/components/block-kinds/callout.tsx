@@ -1,51 +1,61 @@
-import { GlassCard } from "@/components/ui/glass-card";
+import { useTranslations } from "next-intl";
+
 import { GlassSelect, GlassTextarea } from "@/components/ui/glass-input";
 
+import { TONE_ORDER, toneSpec } from "./tones";
 import type { BlockKindModule } from "./types";
 import { getStr } from "./utils";
 
-const TONE_BG: Record<string, string> = {
-  warning: "color-mix(in oklab, var(--color-warning) 14%, transparent)",
-  danger: "color-mix(in oklab, var(--color-danger) 14%, transparent)",
-};
-
 export const CalloutModule: BlockKindModule = {
   Render({ block, id }) {
-    const tone = getStr(block.payload, "tone");
+    const spec = toneSpec(getStr(block.payload, "tone"));
+    const Icon = spec.icon;
     return (
-      <GlassCard
+      <aside
         id={id}
-        variant="tinted"
-        className="my-6 p-5"
-        style={{ background: TONE_BG[tone] ?? "var(--color-accent-soft)" }}
+        className="my-6 flex gap-3 rounded-[var(--r-lg)] border p-5 backdrop-blur-md"
+        style={{
+          borderColor: `color-mix(in oklab, ${spec.color} 45%, transparent)`,
+          background: `color-mix(in oklab, ${spec.color} 12%, var(--glass-bg))`,
+        }}
       >
+        <span className="mt-0.5 shrink-0" style={{ color: spec.color }} aria-hidden>
+          <Icon size={20} />
+        </span>
         <div className="text-[0.95rem] leading-relaxed text-text">
           {getStr(block.payload, "text")}
         </div>
-      </GlassCard>
+      </aside>
     );
   },
-  Edit({ payload, labels, onPatch }) {
+  Edit({ payload, onPatch }) {
+    const t = useTranslations("courseBuilder");
     return (
       <div className="space-y-2">
         <GlassTextarea
           rows={3}
           value={getStr(payload, "text")}
           onChange={(e) => onPatch({ text: e.target.value })}
-          placeholder={labels.fieldText}
-          aria-label={labels.fieldText}
+          placeholder={t("field.text")}
+          aria-label={t("field.text")}
         />
         <GlassSelect
           value={getStr(payload, "tone") || "neutral"}
           onChange={(e) => onPatch({ tone: e.target.value })}
-          aria-label={labels.fieldTone}
+          aria-label={t("field.tone")}
         >
-          <option value="neutral">{labels.toneNeutral}</option>
-          <option value="warning">{labels.toneWarning}</option>
-          <option value="danger">{labels.toneDanger}</option>
+          {TONE_ORDER.map((tone) => (
+            <option key={tone} value={tone}>
+              {toneSpec(tone).emoji} {t(`tone.${tone}`)}
+            </option>
+          ))}
         </GlassSelect>
       </div>
     );
   },
   defaultPayload: () => ({ text: "", tone: "neutral" }),
+  normalize(payload) {
+    const tone = getStr(payload, "tone") || "neutral";
+    return { text: getStr(payload, "text"), tone };
+  },
 };

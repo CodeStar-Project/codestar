@@ -132,10 +132,7 @@ export async function getMe(): Promise<MeResponse | null> {
   }
 }
 
-function errorMessage(
-  e: unknown,
-  t: (key: "network" | "unknown" | "backendInvalid") => string
-): string {
+function errorMessage(e: unknown, t: (key: "network" | "unknown" | "backendInvalid") => string): string {
   if (e instanceof ApiError) return e.message;
   if (e instanceof Error) return e.message;
   return t("network");

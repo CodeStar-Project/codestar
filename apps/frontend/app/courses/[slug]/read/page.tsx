@@ -44,9 +44,14 @@ export default async function CourseReaderPage({ params }: PageProps) {
     bookmarks.map((b) => [b.blockId, b.id])
   );
 
-  const blocks = [...(course.blocks ?? [])].sort(
-    (a, b) => a.orderIndex - b.orderIndex
-  );
+  const pages = [...(course.pages ?? [])]
+    .sort((a, b) => a.orderIndex - b.orderIndex)
+    .map((p) => ({
+      ...p,
+      blocks: [...p.blocks].sort((a, b) => a.orderIndex - b.orderIndex),
+    }));
+  // Flat list for the TOC / mobile TOC (headings across all pages).
+  const blocks = pages.flatMap((p) => p.blocks);
 
   return (
     <StudentShell maxWidth="wide" className="md:py-12">
@@ -101,29 +106,43 @@ export default async function CourseReaderPage({ params }: PageProps) {
               </GlassCardContent>
             </GlassCard>
           ) : (
-            <div className="space-y-2">
-              {blocks.map((b) => (
-                <div key={b.id} className="group relative">
-                  <div className="absolute -left-12 top-1 hidden opacity-0 transition-opacity group-hover:opacity-100 lg:block">
-                    <BookmarkButton
-                      courseId={course.id}
-                      blockId={b.id}
-                      initialId={bookmarkMap.get(b.id) ?? null}
-                      labelAdd={t("addBookmark")}
-                      labelRemove={t("removeBookmark")}
-                    />
+            <div className="space-y-12">
+              {pages.map((page) => (
+                <section key={page.id} aria-label={page.title ?? undefined}>
+                  {page.title && (
+                    <h2
+                      id={`page-${page.id}`}
+                      className="mb-4 scroll-mt-24 font-display text-[clamp(1.4rem,2.5vw,2rem)] leading-tight text-text"
+                    >
+                      {page.title}
+                    </h2>
+                  )}
+                  <div className="space-y-2">
+                    {page.blocks.map((b) => (
+                      <div key={b.id} className="group relative">
+                        <div className="absolute -left-12 top-1 hidden opacity-0 transition-opacity group-hover:opacity-100 lg:block">
+                          <BookmarkButton
+                            courseId={course.id}
+                            blockId={b.id}
+                            initialId={bookmarkMap.get(b.id) ?? null}
+                            labelAdd={t("addBookmark")}
+                            labelRemove={t("removeBookmark")}
+                          />
+                        </div>
+                        <BlockRenderer block={b} id={blockSlug(b)} />
+                        <div className="mt-1 lg:hidden">
+                          <BookmarkButton
+                            courseId={course.id}
+                            blockId={b.id}
+                            initialId={bookmarkMap.get(b.id) ?? null}
+                            labelAdd={t("addBookmark")}
+                            labelRemove={t("removeBookmark")}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <BlockRenderer block={b} id={blockSlug(b)} />
-                  <div className="mt-1 lg:hidden">
-                    <BookmarkButton
-                      courseId={course.id}
-                      blockId={b.id}
-                      initialId={bookmarkMap.get(b.id) ?? null}
-                      labelAdd={t("addBookmark")}
-                      labelRemove={t("removeBookmark")}
-                    />
-                  </div>
-                </div>
+                </section>
               ))}
             </div>
           )}

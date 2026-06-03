@@ -1,8 +1,8 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.BookmarkDto;
-import com.codestar.backend.dto.BookmarkEnrichedDto;
-import com.codestar.backend.dto.CreateBookmarkRequestDto;
+import com.codestar.backend.dto.bookmark.BookmarkDto;
+import com.codestar.backend.dto.bookmark.BookmarkEnrichedDto;
+import com.codestar.backend.dto.bookmark.CreateBookmarkRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Bookmark;
 import com.codestar.backend.model.Course;

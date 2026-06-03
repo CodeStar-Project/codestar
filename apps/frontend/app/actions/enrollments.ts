@@ -7,18 +7,13 @@ export async function getMyEnrollments(): Promise<Enrollment[]> {
   return (await apiFetch<Enrollment[]>("/api/v1/enrollments/mine")) ?? [];
 }
 
-export async function updateProgress(
-  courseId: string,
-  progress: number,
-  lastBlockId?: string
-): Promise<{ ok: boolean; error?: string; enrollment?: Enrollment }> {
+export async function updateProgress(courseId: string, progress: number, lastBlockId?: string): Promise<{ ok: boolean; error?: string; enrollment?: Enrollment }> {
   if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
     return { ok: false, error: "Progress must be between 0 and 100" };
   }
   
   try {
-    const data = await apiFetch<Enrollment>(
-      `/api/v1/enrollments/${courseId}/progress`,
+    const data = await apiFetch<Enrollment>(`/api/v1/enrollments/${courseId}/progress`,
       {
         method: "POST",
         body: { progress: progress.toFixed(2), lastBlockId },

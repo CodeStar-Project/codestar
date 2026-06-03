@@ -1,7 +1,7 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.InstanceBrandingDto;
-import com.codestar.backend.dto.UpdateBrandingRequestDto;
+import com.codestar.backend.dto.instance.InstanceBrandingDto;
+import com.codestar.backend.dto.instance.UpdateBrandingRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

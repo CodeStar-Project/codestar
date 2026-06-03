@@ -1,14 +1,14 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.CreateGroupRequestDto;
-import com.codestar.backend.dto.CreateInvitationRequestDto;
-import com.codestar.backend.dto.GroupResponseDto;
-import com.codestar.backend.dto.GroupSummaryDto;
-import com.codestar.backend.dto.InvitationResponseDto;
-import com.codestar.backend.dto.JoinGroupRequestDto;
-import com.codestar.backend.dto.UpdateCurriculumRequestDto;
-import com.codestar.backend.dto.UpdateGroupRequestDto;
+import com.codestar.backend.dto.group.CreateGroupRequestDto;
+import com.codestar.backend.dto.group.CreateInvitationRequestDto;
+import com.codestar.backend.dto.group.GroupResponseDto;
+import com.codestar.backend.dto.group.GroupSummaryDto;
+import com.codestar.backend.dto.group.InvitationResponseDto;
+import com.codestar.backend.dto.group.JoinGroupRequestDto;
+import com.codestar.backend.dto.group.UpdateCurriculumRequestDto;
+import com.codestar.backend.dto.group.UpdateGroupRequestDto;
 import com.codestar.backend.dto.course.CourseSummaryDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.InvitationCode;
@@ -132,7 +132,7 @@ public class GroupController {
 
     @GetMapping("/{groupId}/members")
     @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
-    public ResponseEntity<ApiResponseDto<List<com.codestar.backend.dto.GroupMemberDto>>> listMembers(@PathVariable UUID groupId) {
+    public ResponseEntity<ApiResponseDto<List<com.codestar.backend.dto.group.GroupMemberDto>>> listMembers(@PathVariable UUID groupId) {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", memberService.list(groupId)));
     }
 
@@ -146,10 +146,10 @@ public class GroupController {
 
     @PatchMapping("/{groupId}/members/{userId}")
     @PreAuthorize("@groupPermissionService.canManageGroup(principal, #groupId)")
-    public ResponseEntity<ApiResponseDto<com.codestar.backend.dto.GroupMemberDto>> updateMemberRole(
+    public ResponseEntity<ApiResponseDto<com.codestar.backend.dto.group.GroupMemberDto>> updateMemberRole(
             @PathVariable UUID groupId,
             @PathVariable UUID userId,
-            @Valid @RequestBody com.codestar.backend.dto.UpdateGroupMemberRoleRequestDto request) {
+            @Valid @RequestBody com.codestar.backend.dto.group.UpdateGroupMemberRoleRequestDto request) {
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Member role updated", memberService.updateRole(groupId, userId, request.getRoleInGroup())));
     }
 

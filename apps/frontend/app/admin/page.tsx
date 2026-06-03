@@ -75,6 +75,11 @@ export default async function AdminDashboardPage() {
                 <Link href="/admin/users">{t("usersLink")}</Link>
               </GlassButton>
             )}
+            {admin && (
+              <GlassButton asChild variant="ghost">
+                <Link href="/admin/settings">{t("settingsLink")}</Link>
+              </GlassButton>
+            )}
           </>
         }
         className="mb-10"

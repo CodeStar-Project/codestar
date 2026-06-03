@@ -35,9 +35,7 @@ public class CourseController {
             @RequestParam(value = "q", required = false) String q,
             @AuthenticationPrincipal AuthenticatedUser principal) {
 
-        if (all && (principal == null
-                || !(principal.getRole() == com.codestar.backend.model.Role.ADMIN
-                  || principal.getRole() == com.codestar.backend.model.Role.SUPER_ADMIN))) {
+        if (all && (principal == null || !(principal.getRole() == com.codestar.backend.model.Role.ADMIN || principal.getRole() == com.codestar.backend.model.Role.SUPER_ADMIN))) {
             throw ApiException.forbidden("Only ADMIN+ can list all courses");
         }
 
@@ -49,33 +47,25 @@ public class CourseController {
 
     @GetMapping("/mine")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getMyCourses(
-            @AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<ApiResponseDto<List<CourseSummaryDto>>> getMyCourses(@AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK",
-                courseService.getCoursesAuthoredBy(principal.getId())));
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", courseService.getCoursesAuthoredBy(principal.getId())));
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(
-            @PathVariable String slug,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<ApiResponseDto<CourseDto>> getCourseBySlug(@PathVariable String slug, @AuthenticationPrincipal AuthenticatedUser principal) {
         CourseDto course = courseService.getCourseBySlug(slug, principal);
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Course retrieved", course));
     }
 
-    @GetMapping("/{id}/blocks")
-    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> getBlocks(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", courseService.getBlocks(id, principal)));
+    @GetMapping("/{id}/pages")
+    public ResponseEntity<ApiResponseDto<List<CoursePageDto>>> getPages(@PathVariable UUID id, @AuthenticationPrincipal AuthenticatedUser principal) {
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "OK", courseService.getPages(id, principal)));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(
-            @Valid @RequestBody CreateCourseRequestDto request,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<ApiResponseDto<CourseDto>> createCourse(@Valid @RequestBody CreateCourseRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
 
         CourseDto course = courseService.createCourse(request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -93,20 +83,14 @@ public class CourseController {
 
     @PatchMapping("/{id}")
     @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
-    public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateCourseRequestDto request) {
-
+    public ResponseEntity<ApiResponseDto<CourseDto>> updateCourse(@PathVariable UUID id, @Valid @RequestBody UpdateCourseRequestDto request) {
         CourseDto course = courseService.updateCourse(id, request);
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Course updated", course));
     }
 
     @PostMapping("/{id}/status")
     @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
-    public ResponseEntity<ApiResponseDto<CourseDto>> changeStatus(
-            @PathVariable UUID id,
-            @Valid @RequestBody UpdateCourseStatusRequestDto request) {
-
+    public ResponseEntity<ApiResponseDto<CourseDto>> changeStatus(@PathVariable UUID id, @Valid @RequestBody UpdateCourseStatusRequestDto request) {
         CourseDto course = courseService.changeStatus(id, request.getStatus());
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Course status updated to " + course.getStatus(), course));
     }
@@ -114,18 +98,30 @@ public class CourseController {
     @DeleteMapping("/{id}")
     @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
     public ResponseEntity<ApiResponseDto<Void>> deleteCourse(@PathVariable UUID id) {
-
         courseService.deleteCourse(id);
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Course archived", null));
     }
 
-    @PutMapping("/{id}/blocks")
+    @PutMapping("/{id}/pages")
     @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
-    public ResponseEntity<ApiResponseDto<List<CourseBlockDto>>> saveBlocks(
-            @PathVariable UUID id,
-            @Valid @RequestBody SaveBlocksRequestDto request) {
+    public ResponseEntity<ApiResponseDto<List<CoursePageDto>>> savePages(@PathVariable UUID id, @Valid @RequestBody SavePagesRequestDto request) {
+        List<CoursePageDto> pages = courseService.savePages(id, request);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Pages saved", pages));
+    }
 
-        List<CourseBlockDto> blocks = courseService.saveBlocks(id, request);
-        return ResponseEntity.ok(new ApiResponseDto<>(true, "Blocks saved", blocks));
+    @GetMapping("/{id}/export")
+    @PreAuthorize("@coursePermissionService.canEditCourse(principal, #id)")
+    public ResponseEntity<ApiResponseDto<CourseExportDto>> exportCourse(@PathVariable UUID id) {
+        CourseExportDto export = courseService.exportCourse(id);
+        return ResponseEntity.ok(new ApiResponseDto<>(true, "Course exported", export));
+    }
+
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponseDto<CourseDto>> importCourse(@Valid @RequestBody ImportCourseRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
+        if (principal == null) throw ApiException.unauthorized("Unauthenticated");
+        CourseDto course = courseService.importCourse(request, principal.getId());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponseDto<>(true, "Course imported", course));
     }
 }

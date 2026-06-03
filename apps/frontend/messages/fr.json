@@ -165,6 +165,132 @@
     "home": "Retour à l'accueil",
     "unknown": "Erreur inconnue."
   },
+  "courseBuilder": {
+    "title": "Course Builder",
+    "description": "Composez votre cours : palette à gauche, canvas au centre, inspecteur à droite.",
+    "paletteTitle": "Blocs",
+    "group": {
+      "text": "Texte",
+      "highlight": "Mise en avant",
+      "media": "Média",
+      "interactive": "Interactif"
+    },
+    "palette": {
+      "h1": "Titre 1",
+      "h2": "Titre 2",
+      "h3": "Titre 3",
+      "h4": "Titre 4",
+      "h5": "Titre 5",
+      "h6": "Titre 6",
+      "p": "Paragraphe",
+      "quote": "Citation",
+      "code": "Code",
+      "image": "Image",
+      "table": "Tableau",
+      "quiz": "Quiz",
+      "sandbox": "Sandbox"
+    },
+    "tone": {
+      "neutral": "Note",
+      "warning": "Vigilance",
+      "danger": "Erreur",
+      "success": "Validé",
+      "green": "Green IT",
+      "tip": "Astuce"
+    },
+    "field": {
+      "text": "Texte",
+      "language": "Langage (ex. js, py)",
+      "code": "Code",
+      "src": "URL (https://…)",
+      "alt": "Texte alternatif",
+      "tone": "Ton",
+      "quoteText": "Citation",
+      "author": "Auteur (optionnel)",
+      "source": "Source (optionnel)",
+      "tableHeader": "Colonne",
+      "tableCell": "Cellule",
+      "addRow": "Ajouter une ligne",
+      "addColumn": "Ajouter une colonne",
+      "removeRow": "Supprimer la ligne",
+      "removeColumn": "Supprimer la colonne",
+      "question": "Question",
+      "options": "Options (une par ligne)",
+      "optionsHelper": "Une option par ligne, 2 à 10 options.",
+      "correctAnswer": "Bonne réponse",
+      "correctAnswerNone": "— Choisir —",
+      "explanation": "Explication (optionnel)",
+      "expectedOutput": "Sortie attendue (optionnel)",
+      "readonly": "Lecture seule",
+      "courseTitle": "Titre du cours",
+      "pageTitle": "Titre de la page (optionnel)"
+    },
+    "pages": {
+      "add": "Page",
+      "delete": "Supprimer la page",
+      "moveLeft": "Déplacer à gauche",
+      "moveRight": "Déplacer à droite",
+      "untitled": "Page {n}",
+      "full": "Page pleine : max {max} blocs. Ajoutez une nouvelle page."
+    },
+    "sandbox": {
+      "run": "Exécuter",
+      "soon": "Bientôt",
+      "codeLabel": "code"
+    },
+    "quiz": {
+      "correct": "Bonne réponse !",
+      "wrong": "Pas tout à fait."
+    },
+    "statusLabel": "Statut",
+    "status": {
+      "DRAFT": "Brouillon",
+      "PUBLISHED": "Publié",
+      "ARCHIVED": "Archivé"
+    },
+    "view": {
+      "edit": "Édition",
+      "split": "Côte à côte",
+      "preview": "Aperçu"
+    },
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "✓ Enregistré",
+    "unsaved": "Modifications non enregistrées",
+    "openReader": "Lecteur",
+    "import": {
+      "button": "Importer",
+      "invalidJson": "Fichier JSON invalide.",
+      "invalidShape": "Format invalide : champs « course » et « pages » requis."
+    },
+    "export": {
+      "button": "Exporter"
+    },
+    "canvasEmpty": "Aucun bloc. Cliquez un bloc dans la palette pour commencer.",
+    "previewEmpty": "L'aperçu apparaîtra ici.",
+    "inspectorTitle": "Inspecteur",
+    "inspectorEmpty": "Sélectionnez un bloc pour l'éditer.",
+    "statsTitle": "Statistiques",
+    "stats": {
+      "pages": "Pages",
+      "blocks": "Blocs",
+      "words": "Mots",
+      "minutes": "Min"
+    },
+    "deleteBlock": "Supprimer le bloc",
+    "dragHandle": "Déplacer le bloc"
+  },
+  "adminSettings": {
+    "kicker": "ADMIN · PARAMÈTRES",
+    "title": "Paramètres",
+    "description": "Réglages de l'instance, modifiables par les administrateurs.",
+    "courseBuilderSection": "Course Builder",
+    "maxBlocksLabel": "Nombre max de blocs par page",
+    "maxBlocksHelper": "Entre {min} et {max}. Limite le nombre de blocs autorisés par page de cours.",
+    "maxBlocksRange": "La valeur doit être un entier entre {min} et {max}.",
+    "save": "Enregistrer",
+    "saved": "✓ Enregistré"
+  },
   "notFound": {
     "title": "Page introuvable",
     "description": "La page demandée n'existe pas ou a été déplacée.",
@@ -301,6 +427,7 @@
     "groupsManage": "Curriculum",
     "membersLink": "Membres",
     "usersLink": "Utilisateurs",
+    "settingsLink": "Paramètres",
     "exportCsvShort": "CSV",
     "deleteGroup": "Supprimer",
     "confirmDeleteGroup": "Supprimer ce groupe ? Membres, invitations et curriculum sont aussi supprimés. Les inscriptions et favoris des apprenants sont conservés. Action irréversible.",

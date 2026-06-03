@@ -1,9 +1,9 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.CreateGroupRequestDto;
-import com.codestar.backend.dto.GroupResponseDto;
-import com.codestar.backend.dto.GroupSummaryDto;
-import com.codestar.backend.dto.UpdateGroupRequestDto;
+import com.codestar.backend.dto.group.CreateGroupRequestDto;
+import com.codestar.backend.dto.group.GroupResponseDto;
+import com.codestar.backend.dto.group.GroupSummaryDto;
+import com.codestar.backend.dto.group.UpdateGroupRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Group;
 import com.codestar.backend.model.GroupMemberRole;

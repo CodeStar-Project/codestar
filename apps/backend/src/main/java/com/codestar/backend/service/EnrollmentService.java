@@ -1,7 +1,7 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.EnrollmentDto;
-import com.codestar.backend.dto.UpdateProgressRequestDto;
+import com.codestar.backend.dto.enrollment.EnrollmentDto;
+import com.codestar.backend.dto.enrollment.UpdateProgressRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.CourseBlock;
 import com.codestar.backend.model.Enrollment;

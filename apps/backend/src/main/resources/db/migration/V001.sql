@@ -109,25 +109,42 @@ CREATE INDEX idx_courses_author    ON courses (author_id);
 CREATE INDEX idx_courses_status    ON courses (status);
 CREATE INDEX idx_courses_slug      ON courses (slug);
 
--- COURSE_BLOCKS
--- kinds supported : H1, H2, H3, P, CODE, IMAGE, AUDIO, VIDEO, QUIZ, CALLOUT
+-- COURSE_PAGES — a course is an ordered list of pages, each page an ordered list of blocks
+CREATE TABLE course_pages (
+    id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id       UUID            NOT NULL,
+    order_index     INTEGER         NOT NULL DEFAULT 0,
+    title           VARCHAR(200)    NULL,
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    CONSTRAINT course_pages_course_fk
+        FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT course_pages_order_chk
+        CHECK (order_index >= 0)
+);
+
+CREATE INDEX idx_course_pages_course ON course_pages (course_id, order_index);
+
+-- COURSE_BLOCKS - kinds supported : H1..H6, P, CODE, CALLOUT, QUOTE, IMAGE, TABLE, QUIZ, SANDBOX
 CREATE TABLE course_blocks (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     course_id       UUID            NOT NULL,
+    page_id         UUID            NOT NULL,
     order_index     INTEGER         NOT NULL DEFAULT 0,
     kind            VARCHAR(20)     NOT NULL,
     payload         JSONB           NOT NULL DEFAULT '{}',
     created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     CONSTRAINT course_blocks_course_fk
         FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
+    CONSTRAINT course_blocks_page_fk
+        FOREIGN KEY (page_id) REFERENCES course_pages (id) ON DELETE CASCADE,
     CONSTRAINT course_blocks_kind_chk
-        CHECK (kind IN ('H1','H2','H3','P','CODE','IMAGE','AUDIO','VIDEO','QUIZ','CALLOUT')),
+        CHECK (kind IN ('H1','H2','H3','H4','H5','H6','P','CODE','CALLOUT','QUOTE','IMAGE','TABLE','QUIZ','SANDBOX')),
     CONSTRAINT course_blocks_order_chk
         CHECK (order_index >= 0)
 );
 
 CREATE INDEX idx_course_blocks_course       ON course_blocks (course_id);
-CREATE INDEX idx_course_blocks_order        ON course_blocks (course_id, order_index);
+CREATE INDEX idx_course_blocks_page         ON course_blocks (page_id, order_index);
 CREATE INDEX idx_course_blocks_payload      ON course_blocks USING gin (payload);
 
 -- GROUP_CURRICULUM — N:N group ↔ course (courses assigned to a group)
@@ -185,3 +202,16 @@ CREATE TABLE bookmarks (
 );
 
 CREATE INDEX idx_bookmarks_user_course ON bookmarks (user_id, course_id);
+
+-- APP_SETTINGS — runtime, instance-wide settings editable by ADMIN+ (key/value)
+CREATE TABLE app_settings (
+    key         VARCHAR(64)     PRIMARY KEY,
+    value       TEXT            NOT NULL,
+    updated_at  TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    updated_by  UUID            NULL,
+    CONSTRAINT app_settings_updated_by_fk
+        FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE SET NULL
+);
+
+-- Default editorial limit: max blocks per course page.
+INSERT INTO app_settings (key, value) VALUES ('max_blocks_per_page', '50');

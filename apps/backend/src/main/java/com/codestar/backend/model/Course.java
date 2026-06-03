@@ -53,30 +53,30 @@ public class Course {
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("orderIndex ASC")
-    private List<CourseBlock> blocks = new ArrayList<>();
+    private List<CoursePage> pages = new ArrayList<>();
 
     public Course() {}
 
-    public UUID getId()                  { return id; }
-    public String getSlug()              { return slug; }
-    public String getTitle()             { return title; }
-    public String getDescription()       { return description; }
-    public String getCategory()          { return category; }
-    public String getLevel()             { return level; }
-    public User getAuthor()              { return author; }
-    public CourseStatus getStatus()      { return status; }
+    public UUID getId() { return id; }
+    public String getSlug() { return slug; }
+    public String getTitle() { return title; }
+    public String getDescription() { return description; }
+    public String getCategory() { return category; }
+    public String getLevel() { return level; }
+    public User getAuthor() { return author; }
+    public CourseStatus getStatus() { return status; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
-    public OffsetDateTime getPublishedAt(){ return publishedAt; }
-    public List<CourseBlock> getBlocks() { return blocks; }
+    public OffsetDateTime getPublishedAt() { return publishedAt; }
+    public List<CoursePage> getPages() { return pages; }
 
-    public void setSlug(String slug)                     { this.slug = slug; }
-    public void setTitle(String title)                   { this.title = title; }
-    public void setDescription(String description)       { this.description = description; }
-    public void setCategory(String category)             { this.category = category; }
-    public void setLevel(String level)                   { this.level = level; }
-    public void setAuthor(User author)                   { this.author = author; }
-    public void setStatus(CourseStatus status)           { this.status = status; }
-    public void setPublishedAt(OffsetDateTime publishedAt){ this.publishedAt = publishedAt; }
-    public void setBlocks(List<CourseBlock> blocks)      { this.blocks = blocks; }
+    public void setSlug(String slug) { this.slug = slug; }
+    public void setTitle(String title) { this.title = title; }
+    public void setDescription(String description) { this.description = description; }
+    public void setCategory(String category) { this.category = category; }
+    public void setLevel(String level) { this.level = level; }
+    public void setAuthor(User author) { this.author = author; }
+    public void setStatus(CourseStatus status) { this.status = status; }
+    public void setPublishedAt(OffsetDateTime publishedAt) { this.publishedAt = publishedAt; }
+    public void setPages(List<CoursePage> pages) { this.pages = pages; }
 }

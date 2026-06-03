@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { GlassTextarea } from "@/components/ui/glass-input";
 
 import type { BlockKindModule } from "./types";
@@ -11,14 +13,15 @@ export const ParagraphModule: BlockKindModule = {
       </p>
     );
   },
-  Edit({ payload, labels, onPatch }) {
+  Edit({ payload, onPatch }) {
+    const t = useTranslations("courseBuilder");
     return (
       <GlassTextarea
-        rows={3}
+        rows={4}
         value={getStr(payload, "text")}
         onChange={(e) => onPatch({ text: e.target.value })}
-        placeholder={labels.fieldText}
-        aria-label={labels.fieldText}
+        placeholder={t("field.text")}
+        aria-label={t("field.text")}
       />
     );
   },

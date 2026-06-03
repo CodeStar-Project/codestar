@@ -1,6 +1,6 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.UserSummaryDto;
+import com.codestar.backend.dto.user.UserSummaryDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;

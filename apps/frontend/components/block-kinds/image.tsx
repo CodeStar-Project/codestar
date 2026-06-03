@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { GlassInput } from "@/components/ui/glass-input";
 
 import type { BlockKindModule } from "./types";
@@ -29,21 +31,22 @@ export const ImageModule: BlockKindModule = {
       </figure>
     );
   },
-  Edit({ payload, labels, onPatch }) {
+  Edit({ payload, onPatch }) {
+    const t = useTranslations("courseBuilder");
     return (
       <div className="space-y-2">
         <GlassInput
           type="url"
           value={getStr(payload, "src")}
           onChange={(e) => onPatch({ src: e.target.value })}
-          placeholder={labels.fieldSrc}
-          aria-label={labels.fieldSrc}
+          placeholder={t("field.src")}
+          aria-label={t("field.src")}
         />
         <GlassInput
           value={getStr(payload, "alt")}
           onChange={(e) => onPatch({ alt: e.target.value })}
-          placeholder={labels.fieldAlt}
-          aria-label={labels.fieldAlt}
+          placeholder={t("field.alt")}
+          aria-label={t("field.alt")}
         />
       </div>
     );

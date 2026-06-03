@@ -4,16 +4,20 @@ import com.codestar.backend.dto.course.*;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
+import com.codestar.backend.model.CoursePage;
 import com.codestar.backend.model.CourseStatus;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.ICourseBlockRepository;
+import com.codestar.backend.repository.ICoursePageRepository;
 import com.codestar.backend.repository.ICourseRepository;
 import com.codestar.backend.repository.IUserRepository;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.security.CoursePermissionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.util.ArrayList;
 import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -28,19 +32,24 @@ public class CourseService {
     private static final Set<String> ALLOWED_LEVELS = Set.of("BEGINNER", "INTERMEDIATE", "ADVANCED");
     private static final Set<String> ALLOWED_BLOCK_KINDS = EnumSet.allOf(CourseBlockType.class)
             .stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
+    private static final int MAX_PAGES = 200;
 
     private final ICourseRepository courseRepository;
     private final ICourseBlockRepository blockRepository;
+    private final ICoursePageRepository pageRepository;
     private final IUserRepository userRepository;
     private final CoursePermissionService coursePermissions;
     private final BlockPayloadValidator blockPayloadValidator;
+    private final SettingsService settingsService;
 
-    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator) {
+    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService) {
         this.courseRepository = courseRepository;
         this.blockRepository = blockRepository;
+        this.pageRepository = pageRepository;
         this.userRepository = userRepository;
         this.coursePermissions = coursePermissions;
         this.blockPayloadValidator = blockPayloadValidator;
+        this.settingsService = settingsService;
     }
 
     @Transactional(readOnly = true)
@@ -62,13 +71,13 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public List<CourseSummaryDto> searchCourses(CourseSearchFilters filters, boolean includeAll) {
-        org.springframework.data.jpa.domain.Specification<Course> statusSpec;
+        Specification<Course> statusSpec;
         if (includeAll) {
             statusSpec = filters.status() == null ? null : CourseSpecifications.byStatus(parseStatus(filters.status()));
         } else {
             statusSpec = CourseSpecifications.byStatus(CourseStatus.PUBLISHED);
         }
-        org.springframework.data.jpa.domain.Specification<Course> spec = CourseSpecifications.all(
+        Specification<Course> spec = CourseSpecifications.all(
                 statusSpec,
                 CourseSpecifications.byCategory(filters.category()),
                 CourseSpecifications.byLevel(filters.level()),
@@ -91,15 +100,15 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourseBlockDto> getBlocks(UUID courseId, AuthenticatedUser principal) {
+    public List<CoursePageDto> getPages(UUID courseId, AuthenticatedUser principal) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
         if (!coursePermissions.canReadCourse(principal, course)) {
             throw ApiException.notFound("Course not found: " + courseId);
         }
-        return blockRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
+        return pageRepository.findByCourseIdOrderByOrderIndexAsc(courseId)
                 .stream()
-                .map(this::toBlockDto)
+                .map(this::toPageDto)
                 .collect(Collectors.toList());
     }
 
@@ -130,17 +139,28 @@ public class CourseService {
         copy.setStatus(CourseStatus.DRAFT);
         Course savedCopy = courseRepository.save(copy);
 
-        List<CourseBlock> sourceBlocks = blockRepository.findByCourseIdOrderByOrderIndexAsc(sourceId);
-        List<CourseBlock> newBlocks = new java.util.ArrayList<>(sourceBlocks.size());
-        for (CourseBlock src : sourceBlocks) {
-            CourseBlock b = new CourseBlock();
-            b.setCourse(savedCopy);
-            b.setKind(src.getKind());
-            b.setOrderIndex(src.getOrderIndex());
-            b.setPayload(src.getPayload() == null ? null : new java.util.HashMap<>(src.getPayload()));
-            newBlocks.add(b);
+        List<CoursePage> sourcePages = pageRepository.findByCourseIdOrderByOrderIndexAsc(sourceId);
+        List<CoursePage> newPages = new ArrayList<>(sourcePages.size());
+        for (CoursePage srcPage : sourcePages) {
+            CoursePage page = new CoursePage();
+            page.setCourse(savedCopy);
+            page.setOrderIndex(srcPage.getOrderIndex());
+            page.setTitle(srcPage.getTitle());
+
+            List<CourseBlock> newBlocks = new ArrayList<>(srcPage.getBlocks().size());
+            for (CourseBlock src : srcPage.getBlocks()) {
+                CourseBlock b = new CourseBlock();
+                b.setCourse(savedCopy);
+                b.setPage(page);
+                b.setKind(src.getKind());
+                b.setOrderIndex(src.getOrderIndex());
+                b.setPayload(src.getPayload() == null ? null : new java.util.HashMap<>(src.getPayload()));
+                newBlocks.add(b);
+            }
+            page.setBlocks(newBlocks);
+            newPages.add(page);
         }
-        blockRepository.saveAll(newBlocks);
+        pageRepository.saveAll(newPages); // cascades blocks
 
         return toDto(savedCopy);
     }
@@ -244,41 +264,203 @@ public class CourseService {
     }
 
     @Transactional
-    public List<CourseBlockDto> saveBlocks(UUID courseId, SaveBlocksRequestDto request) {
+    public List<CoursePageDto> savePages(UUID courseId, SavePagesRequestDto request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
 
-        if (request.getBlocks() == null || request.getBlocks().isEmpty()) {
-            throw ApiException.badRequest("blocks is required");
+        List<SavePagesRequestDto.PageInput> pageInputs = request.getPages();
+        if (pageInputs == null || pageInputs.isEmpty()) {
+            throw ApiException.badRequest("pages is required");
         }
-        List<SaveBlocksRequestDto.BlockInput> inputs = request.getBlocks();
-        List<Map<String, Object>> validatedPayloads = new java.util.ArrayList<>(inputs.size());
-        for (int i = 0; i < inputs.size(); i++) {
-            SaveBlocksRequestDto.BlockInput input = inputs.get(i);
-            if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
-                throw ApiException.badRequest("Invalid block kind: " + input.getKind());
+        if (pageInputs.size() > MAX_PAGES) {
+            throw ApiException.badRequest("A course cannot exceed " + MAX_PAGES + " pages");
+        }
+        int maxBlocksPerPage = settingsService.getMaxBlocksPerPage();
+
+        List<List<Map<String, Object>>> validatedByPage = new ArrayList<>(pageInputs.size());
+        for (int pi = 0; pi < pageInputs.size(); pi++) {
+            List<SavePagesRequestDto.BlockInput> blocks = pageInputs.get(pi).getBlocks();
+            if (blocks == null) {
+                throw ApiException.badRequest("Page " + pi + ": blocks is required");
             }
-            validatedPayloads.add(blockPayloadValidator.validate(input.getKind(), input.getPayload(), i));
+            if (blocks.size() > maxBlocksPerPage) {
+                throw ApiException.badRequest(
+                        "Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
+            }
+            List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
+            for (int bi = 0; bi < blocks.size(); bi++) {
+                SavePagesRequestDto.BlockInput input = blocks.get(bi);
+                if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
+                    throw ApiException.badRequest("Page " + pi + " block " + bi + ": invalid kind: " + input.getKind());
+                }
+                validated.add(blockPayloadValidator.validate(input.getKind(), input.getPayload(), bi));
+            }
+            validatedByPage.add(validated);
         }
 
         blockRepository.deleteByCourseId(courseId);
+        pageRepository.deleteByCourseId(courseId);
 
-        List<CourseBlock> newBlocks = new java.util.ArrayList<>(inputs.size());
-        for (int i = 0; i < inputs.size(); i++) {
-            SaveBlocksRequestDto.BlockInput input = inputs.get(i);
-            CourseBlock block = new CourseBlock();
-            block.setCourse(course);
-            block.setKind(input.getKind());
-            block.setOrderIndex(i);
-            block.setPayload(validatedPayloads.get(i));
-            newBlocks.add(block);
+        List<CoursePage> savedPages = new ArrayList<>(pageInputs.size());
+        for (int pi = 0; pi < pageInputs.size(); pi++) {
+            SavePagesRequestDto.PageInput pageInput = pageInputs.get(pi);
+            CoursePage page = new CoursePage();
+            page.setCourse(course);
+            page.setOrderIndex(pi);
+            page.setTitle(blankToNull(pageInput.getTitle()));
+
+            List<Map<String, Object>> validated = validatedByPage.get(pi);
+            List<CourseBlock> blocks = new ArrayList<>(validated.size());
+            for (int bi = 0; bi < validated.size(); bi++) {
+                CourseBlock block = new CourseBlock();
+                block.setCourse(course);
+                block.setPage(page);
+                block.setKind(pageInput.getBlocks().get(bi).getKind());
+                block.setOrderIndex(bi);
+                block.setPayload(validated.get(bi));
+                blocks.add(block);
+            }
+            page.setBlocks(blocks);
+            savedPages.add(pageRepository.save(page)); // cascades blocks
         }
 
-        blockRepository.saveAll(newBlocks);
+        return savedPages.stream().map(this::toPageDto).collect(Collectors.toList());
+    }
 
-        return newBlocks.stream()
-                .map(this::toBlockDto)
+    @Transactional(readOnly = true)
+    public CourseExportDto exportCourse(UUID courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> ApiException.notFound("Course not found: " + courseId));
+
+        List<CourseExportDto.PageExport> pages = pageRepository
+                .findByCourseIdOrderByOrderIndexAsc(courseId)
+                .stream()
+                .map(p -> new CourseExportDto.PageExport(
+                        p.getTitle(),
+                        p.getBlocks().stream()
+                                .map(b -> new CourseExportDto.BlockExport(b.getKind(), b.getPayload()))
+                                .collect(Collectors.toList())))
                 .collect(Collectors.toList());
+
+        CourseExportDto.CourseMeta meta = new CourseExportDto.CourseMeta(
+                course.getTitle(),
+                course.getSlug(),
+                course.getDescription(),
+                course.getCategory(),
+                course.getLevel());
+
+        return new CourseExportDto(CourseExportDto.CURRENT_VERSION, meta, pages);
+    }
+
+    private record ImportPage(String title, List<ImportCourseRequestDto.BlockInput> blocks) {}
+
+    @Transactional
+    public CourseDto importCourse(ImportCourseRequestDto request, UUID authorId) {
+        ImportCourseRequestDto.CourseMetaInput meta = request.getCourse();
+        if (meta == null || meta.getTitle() == null || meta.getTitle().isBlank()) {
+            throw ApiException.badRequest("course.title is required");
+        }
+        if (request.getVersion() != null && request.getVersion() != CourseExportDto.CURRENT_VERSION) {
+            throw ApiException.badRequest("Unsupported import version: " + request.getVersion() + " (expected " + CourseExportDto.CURRENT_VERSION + ")");
+        }
+
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> ApiException.unauthorized("User not found"));
+
+        String level = meta.getLevel() != null ? meta.getLevel() : "BEGINNER";
+        if (!ALLOWED_LEVELS.contains(level)) {
+            throw ApiException.badRequest("Invalid level: " + level);
+        }
+
+        if (request.getPages() == null || request.getPages().isEmpty()) {
+            throw ApiException.badRequest("pages is required");
+        }
+        List<ImportPage> importPages = new ArrayList<>();
+        for (ImportCourseRequestDto.PageInput p : request.getPages()) {
+            importPages.add(new ImportPage(p.getTitle(), p.getBlocks() != null ? p.getBlocks() : List.of()));
+        }
+        if (importPages.size() > MAX_PAGES) {
+            throw ApiException.badRequest("A course cannot exceed " + MAX_PAGES + " pages");
+        }
+        int maxBlocksPerPage = settingsService.getMaxBlocksPerPage();
+
+        List<List<Map<String, Object>>> validatedByPage = new ArrayList<>(importPages.size());
+        for (int pi = 0; pi < importPages.size(); pi++) {
+            List<ImportCourseRequestDto.BlockInput> blocks = importPages.get(pi).blocks();
+            if (blocks.size() > maxBlocksPerPage) {
+                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
+            }
+            List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
+            for (int bi = 0; bi < blocks.size(); bi++) {
+                ImportCourseRequestDto.BlockInput input = blocks.get(bi);
+                if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
+                    throw ApiException.badRequest("Page " + pi + " block " + bi + ": invalid kind: " + input.getKind());
+                }
+                validated.add(blockPayloadValidator.validate(input.getKind(), input.getPayload(), bi));
+            }
+            validatedByPage.add(validated);
+        }
+
+        Course course = new Course();
+        course.setTitle(meta.getTitle());
+        course.setSlug(resolveImportSlug(meta.getSlug(), meta.getTitle()));
+        course.setDescription(meta.getDescription());
+        course.setCategory(meta.getCategory());
+        course.setLevel(level);
+        course.setAuthor(author);
+        course.setStatus(CourseStatus.DRAFT);
+        Course saved = courseRepository.save(course);
+
+        List<CoursePage> newPages = new ArrayList<>(importPages.size());
+        for (int pi = 0; pi < importPages.size(); pi++) {
+            ImportPage importPage = importPages.get(pi);
+            CoursePage page = new CoursePage();
+            page.setCourse(saved);
+            page.setOrderIndex(pi);
+            page.setTitle(blankToNull(importPage.title()));
+
+            List<Map<String, Object>> validated = validatedByPage.get(pi);
+            List<CourseBlock> newBlocks = new ArrayList<>(validated.size());
+            for (int bi = 0; bi < validated.size(); bi++) {
+                CourseBlock block = new CourseBlock();
+                block.setCourse(saved);
+                block.setPage(page);
+                block.setKind(importPage.blocks().get(bi).getKind());
+                block.setOrderIndex(bi);
+                block.setPayload(validated.get(bi));
+                newBlocks.add(block);
+            }
+            page.setBlocks(newBlocks);
+            newPages.add(page);
+        }
+        pageRepository.saveAll(newPages); // cascades blocks
+
+        return toDto(saved);
+    }
+
+    private String resolveImportSlug(String candidate, String title) {
+        String base = slugify(candidate != null && !candidate.isBlank() ? candidate : title);
+        if (base.isEmpty()) base = "course";
+        String slug = base;
+        int n = 1;
+        while (courseRepository.existsBySlug(slug)) {
+            n++;
+            slug = base + "-" + n;
+            if (n > 1000) {
+                throw ApiException.conflict("Cannot generate unique slug from: " + base);
+            }
+        }
+        return slug;
+    }
+
+    private static String slugify(String raw) {
+        if (raw == null) return "";
+        String s = java.text.Normalizer.normalize(raw, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-+)|(-+$)", "");
+        return s.length() > 120 ? s.substring(0, 120).replaceAll("-+$", "") : s;
     }
 
     // helpers
@@ -293,9 +475,9 @@ public class CourseService {
     }
 
     private CourseDto toDto(Course course) {
-        List<CourseBlockDto> blocks = course.getBlocks()
+        List<CoursePageDto> pages = course.getPages()
                 .stream()
-                .map(this::toBlockDto)
+                .map(this::toPageDto)
                 .collect(Collectors.toList());
 
         return new CourseDto(
@@ -310,8 +492,22 @@ public class CourseService {
                 course.getCreatedAt(),
                 course.getUpdatedAt(),
                 course.getPublishedAt(),
-                blocks
+                pages
         );
+    }
+
+    private CoursePageDto toPageDto(CoursePage page) {
+        List<CourseBlockDto> blocks = page.getBlocks()
+                .stream()
+                .map(this::toBlockDto)
+                .collect(Collectors.toList());
+        return new CoursePageDto(page.getId(), page.getOrderIndex(), page.getTitle(), blocks);
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
     }
 
     private static CourseSummaryDto toSummaryDto(Course c) {

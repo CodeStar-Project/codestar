@@ -1,8 +1,8 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.EnrollmentDto;
-import com.codestar.backend.dto.UpdateProgressRequestDto;
+import com.codestar.backend.dto.enrollment.EnrollmentDto;
+import com.codestar.backend.dto.enrollment.UpdateProgressRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.EnrollmentService;

@@ -9,20 +9,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Validates and normalizes the {@code payload} map of a course block per kind.
- * <p>
- * Enforces:
- * <ul>
- *   <li>Required fields per kind</li>
- *   <li>Type checks (string / list / etc.)</li>
- *   <li>Size limits (text length, list size)</li>
- *   <li>URL safety for media (http/https only)</li>
- *   <li>Unknown keys rejected (clean schema)</li>
- * </ul>
+ * Validates and normalizes the {@code payload} map of a course block per kind
  */
 @Component
 public class BlockPayloadValidator {
-
     private static final int TEXT_MAX = 4000;
     private static final int HEADING_MAX = 200;
     private static final int CODE_MAX = 16_000;
@@ -32,23 +22,31 @@ public class BlockPayloadValidator {
     private static final int OPTION_MAX = 200;
     private static final int OPTIONS_MIN = 2;
     private static final int OPTIONS_MAX = 10;
-    private static final Set<String> ALLOWED_TONES = Set.of("neutral", "warning", "danger");
+    private static final int EXPLANATION_MAX = 1000;
+    private static final int AUTHOR_MAX = 160;
+    private static final int SOURCE_MAX = 300;
+    private static final int CELL_MAX = 500;
+    private static final int TABLE_COLS_MAX = 12;
+    private static final int TABLE_ROWS_MAX = 100;
+    private static final int EXPECTED_OUTPUT_MAX = 4000;
+    private static final Set<String> ALLOWED_TONES = Set.of("neutral", "warning", "danger", "success", "green", "tip");
 
     /**
      * Returns a normalized payload (only the allowed keys, with their values).
-     * Throws {@link ApiException#badRequest} if the payload is invalid for the given kind.
      */
     public Map<String, Object> validate(String kind, Map<String, Object> raw, int index) {
         Map<String, Object> payload = raw == null ? Map.of() : raw;
         try {
             return switch (kind) {
-                case "H1", "H2", "H3" -> validateHeading(payload);
+                case "H1", "H2", "H3", "H4", "H5", "H6" -> validateHeading(payload);
                 case "P" -> validateParagraph(payload);
                 case "CALLOUT" -> validateCallout(payload);
+                case "QUOTE" -> validateQuote(payload);
                 case "CODE" -> validateCode(payload);
                 case "IMAGE" -> validateImage(payload);
-                case "AUDIO", "VIDEO" -> validateMedia(payload);
+                case "TABLE" -> validateTable(payload);
                 case "QUIZ" -> validateQuiz(payload);
+                case "SANDBOX" -> validateSandbox(payload);
                 default -> throw ApiException.badRequest("Unknown block kind: " + kind);
             };
         } catch (ApiException e) {
@@ -95,14 +93,58 @@ public class BlockPayloadValidator {
         return Map.of("src", src, "alt", alt);
     }
 
-    private Map<String, Object> validateMedia(Map<String, Object> p) {
-        rejectUnknown(p, Set.of("src"));
-        String src = requireUrl(p, "src");
-        return Map.of("src", src);
+    private Map<String, Object> validateQuote(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("text", "author", "source"));
+        String text = requireString(p, "text", TEXT_MAX);
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        out.put("text", text);
+        String author = optionalString(p, "author", AUTHOR_MAX);
+        if (author != null && !author.isBlank()) out.put("author", author.trim());
+        String source = optionalString(p, "source", SOURCE_MAX);
+        if (source != null && !source.isBlank()) out.put("source", source.trim());
+        return out;
+    }
+
+    private Map<String, Object> validateTable(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("header", "rows"));
+        List<String> header = requireStringList(p, "header", "header");
+        if (header.isEmpty() || header.size() > TABLE_COLS_MAX) {
+            throw ApiException.badRequest("header must contain 1 to " + TABLE_COLS_MAX + " columns");
+        }
+        int cols = header.size();
+
+        Object rawRows = p.get("rows");
+        if (!(rawRows instanceof List<?> list)) {
+            throw ApiException.badRequest("rows must be a list of rows");
+        }
+        if (list.size() > TABLE_ROWS_MAX) {
+            throw ApiException.badRequest("rows must not exceed " + TABLE_ROWS_MAX + " entries");
+        }
+        List<List<String>> rows = new java.util.ArrayList<>(list.size());
+        for (Object rawRow : list) {
+            if (!(rawRow instanceof List<?> rowList)) {
+                throw ApiException.badRequest("each row must be a list of cells");
+            }
+            if (rowList.size() != cols) {
+                throw ApiException.badRequest("each row must have exactly " + cols + " cells (header width)");
+            }
+            List<String> row = new java.util.ArrayList<>(cols);
+            for (Object cell : rowList) {
+                if (!(cell instanceof String s)) {
+                    throw ApiException.badRequest("table cells must be strings");
+                }
+                if (s.length() > CELL_MAX) {
+                    throw ApiException.badRequest("table cell exceeds " + CELL_MAX + " characters");
+                }
+                row.add(s);
+            }
+            rows.add(row);
+        }
+        return Map.of("header", header, "rows", rows);
     }
 
     private Map<String, Object> validateQuiz(Map<String, Object> p) {
-        rejectUnknown(p, Set.of("question", "options"));
+        rejectUnknown(p, Set.of("question", "options", "correctIndex", "explanation"));
         String question = requireString(p, "question", QUESTION_MAX);
         Object rawOptions = p.get("options");
         if (!(rawOptions instanceof List<?> list)) {
@@ -121,7 +163,32 @@ public class BlockPayloadValidator {
             }
             options.add(s.trim());
         }
-        return Map.of("question", question, "options", options);
+        int correctIndex = requireInt(p, "correctIndex");
+        if (correctIndex < 0 || correctIndex >= options.size()) {
+            throw ApiException.badRequest("correctIndex must be between 0 and " + (options.size() - 1));
+        }
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        out.put("question", question);
+        out.put("options", options);
+        out.put("correctIndex", correctIndex);
+        String explanation = optionalString(p, "explanation", EXPLANATION_MAX);
+        if (explanation != null && !explanation.isBlank()) out.put("explanation", explanation.trim());
+        return out;
+    }
+
+    private Map<String, Object> validateSandbox(Map<String, Object> p) {
+        rejectUnknown(p, Set.of("language", "code", "readonly", "expectedOutput"));
+        String language = requireString(p, "language", LANGUAGE_MAX);
+        String code = requireString(p, "code", CODE_MAX);
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        out.put("language", language);
+        out.put("code", code);
+        out.put("readonly", optionalBool(p, "readonly", true));
+        String expectedOutput = optionalString(p, "expectedOutput", EXPECTED_OUTPUT_MAX);
+        if (expectedOutput != null && !expectedOutput.isBlank()) {
+            out.put("expectedOutput", expectedOutput);
+        }
+        return out;
     }
 
     // helpers
@@ -158,6 +225,42 @@ public class BlockPayloadValidator {
                 throw ApiException.badRequest("unknown payload key: " + key);
             }
         }
+    }
+
+    private static int requireInt(Map<String, Object> p, String key) {
+        Object v = p.get(key);
+        if (v instanceof Integer i) return i;
+        if (v instanceof Long l) return Math.toIntExact(l);
+        // JSON numbers may deserialize as Number / Double; accept only integral values.
+        if (v instanceof Number n && n.doubleValue() == Math.floor(n.doubleValue()) && !Double.isInfinite(n.doubleValue())) {
+            return n.intValue();
+        }
+        throw ApiException.badRequest(key + " must be an integer");
+    }
+
+    private static boolean optionalBool(Map<String, Object> p, String key, boolean def) {
+        Object v = p.get(key);
+        if (v == null) return def;
+        if (v instanceof Boolean b) return b;
+        throw ApiException.badRequest(key + " must be a boolean");
+    }
+
+    private static List<String> requireStringList(Map<String, Object> p, String key, String label) {
+        Object v = p.get(key);
+        if (!(v instanceof List<?> list)) {
+            throw ApiException.badRequest(label + " must be a list of strings");
+        }
+        List<String> out = new java.util.ArrayList<>(list.size());
+        for (Object o : list) {
+            if (!(o instanceof String s)) {
+                throw ApiException.badRequest(label + " entries must be strings");
+            }
+            if (s.length() > CELL_MAX) {
+                throw ApiException.badRequest(label + " entry exceeds " + CELL_MAX + " characters");
+            }
+            out.add(s);
+        }
+        return out;
     }
 
     private static String requireUrl(Map<String, Object> p, String key) {
