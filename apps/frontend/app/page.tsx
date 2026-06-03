@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { getMe } from "@/app/actions/auth";
 import { getInstanceBranding } from "@/app/actions/instance";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
@@ -23,11 +24,13 @@ import { getPublishedCourses } from "@/app/actions/courses";
 import type { CourseSummary } from "@/lib/types";
 
 export default async function HomePage() {
-  const [tInstance, branding, courses] = await Promise.all([
+  const [tInstance, branding, me] = await Promise.all([
     getTranslations("instance"),
     getInstanceBranding(),
-    getPublishedCourses(),
+    getMe(),
   ]);
+
+  const courses = me ? await getPublishedCourses() : [];
 
   const heroTitle = branding.heroTitle ?? tInstance("heroTitle");
   const heroSubtitle = branding.heroSubtitle ?? tInstance("heroSubtitle");

@@ -35,12 +35,7 @@ function buildFilterQuery(filters: CourseFilters | undefined, all: boolean): str
 }
 
 export async function getPublishedCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
-  try {
-    return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, false)}`)) ?? [];
-  } catch (e) {
-    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) return [];
-    throw e;
-  }
+  return (await apiFetch<CourseSummary[]>(`/api/v1/courses${buildFilterQuery(filters, false)}`)) ?? [];
 }
 
 export async function getAllCourses(filters?: CourseFilters): Promise<CourseSummary[]> {
