@@ -3,6 +3,7 @@ package com.codestar.backend.service;
 import com.codestar.backend.dto.enrollment.EnrollmentDto;
 import com.codestar.backend.dto.enrollment.UpdateProgressRequestDto;
 import com.codestar.backend.exception.ApiException;
+import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
 import com.codestar.backend.model.Enrollment;
 import com.codestar.backend.model.EnrollmentId;
@@ -58,7 +59,8 @@ public class EnrollmentService {
         if (request.getLastBlockId() != null) {
             CourseBlock block = blocks.findById(request.getLastBlockId())
                     .orElseThrow(() -> ApiException.notFound("Block not found: " + request.getLastBlockId()));
-            if (block.getCourse() == null || !block.getCourse().getId().equals(courseId)) {
+            Course blockCourse = block.getPage() != null ? block.getPage().getCourse() : null;
+            if (blockCourse == null || !blockCourse.getId().equals(courseId)) {
                 throw ApiException.badRequest("lastBlockId does not belong to the given course");
             }
             validatedBlockId = block.getId();

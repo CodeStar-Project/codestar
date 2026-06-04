@@ -7,7 +7,6 @@ import com.codestar.backend.model.CourseBlock;
 import com.codestar.backend.model.CoursePage;
 import com.codestar.backend.model.CourseStatus;
 import com.codestar.backend.model.User;
-import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICoursePageRepository;
 import com.codestar.backend.repository.ICourseRepository;
 import com.codestar.backend.repository.IUserRepository;
@@ -35,16 +34,14 @@ public class CourseService {
     private static final int MAX_PAGES = 200;
 
     private final ICourseRepository courseRepository;
-    private final ICourseBlockRepository blockRepository;
     private final ICoursePageRepository pageRepository;
     private final IUserRepository userRepository;
     private final CoursePermissionService coursePermissions;
     private final BlockPayloadValidator blockPayloadValidator;
     private final SettingsService settingsService;
 
-    public CourseService(ICourseRepository courseRepository, ICourseBlockRepository blockRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService) {
+    public CourseService(ICourseRepository courseRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService) {
         this.courseRepository = courseRepository;
-        this.blockRepository = blockRepository;
         this.pageRepository = pageRepository;
         this.userRepository = userRepository;
         this.coursePermissions = coursePermissions;
@@ -150,7 +147,6 @@ public class CourseService {
             List<CourseBlock> newBlocks = new ArrayList<>(srcPage.getBlocks().size());
             for (CourseBlock src : srcPage.getBlocks()) {
                 CourseBlock b = new CourseBlock();
-                b.setCourse(savedCopy);
                 b.setPage(page);
                 b.setKind(src.getKind());
                 b.setOrderIndex(src.getOrderIndex());
@@ -284,8 +280,7 @@ public class CourseService {
                 throw ApiException.badRequest("Page " + pi + ": blocks is required");
             }
             if (blocks.size() > maxBlocksPerPage) {
-                throw ApiException.badRequest(
-                        "Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
+                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
             }
             List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
             for (int bi = 0; bi < blocks.size(); bi++) {
@@ -298,7 +293,6 @@ public class CourseService {
             validatedByPage.add(validated);
         }
 
-        blockRepository.deleteByCourseId(courseId);
         pageRepository.deleteByCourseId(courseId);
 
         List<CoursePage> savedPages = new ArrayList<>(pageInputs.size());
@@ -313,7 +307,6 @@ public class CourseService {
             List<CourseBlock> blocks = new ArrayList<>(validated.size());
             for (int bi = 0; bi < validated.size(); bi++) {
                 CourseBlock block = new CourseBlock();
-                block.setCourse(course);
                 block.setPage(page);
                 block.setKind(pageInput.getBlocks().get(bi).getKind());
                 block.setOrderIndex(bi);
@@ -376,8 +369,13 @@ public class CourseService {
             throw ApiException.badRequest("pages is required");
         }
         List<ImportPage> importPages = new ArrayList<>();
-        for (ImportCourseRequestDto.PageInput p : request.getPages()) {
-            importPages.add(new ImportPage(p.getTitle(), p.getBlocks() != null ? p.getBlocks() : List.of()));
+        List<ImportCourseRequestDto.PageInput> pageInputs = request.getPages();
+        for (int pi = 0; pi < pageInputs.size(); pi++) {
+            ImportCourseRequestDto.PageInput p = pageInputs.get(pi);
+            if (p.getBlocks() == null) {
+                throw ApiException.badRequest("Page " + pi + ": blocks is required");
+            }
+            importPages.add(new ImportPage(p.getTitle(), p.getBlocks()));
         }
         if (importPages.size() > MAX_PAGES) {
             throw ApiException.badRequest("A course cannot exceed " + MAX_PAGES + " pages");
@@ -423,7 +421,6 @@ public class CourseService {
             List<CourseBlock> newBlocks = new ArrayList<>(validated.size());
             for (int bi = 0; bi < validated.size(); bi++) {
                 CourseBlock block = new CourseBlock();
-                block.setCourse(saved);
                 block.setPage(page);
                 block.setKind(importPage.blocks().get(bi).getKind());
                 block.setOrderIndex(bi);

@@ -7,6 +7,7 @@ import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Bookmark;
 import com.codestar.backend.model.Course;
 import com.codestar.backend.model.CourseBlock;
+import com.codestar.backend.model.CoursePage;
 import com.codestar.backend.repository.IBookmarkRepository;
 import com.codestar.backend.repository.ICourseBlockRepository;
 import com.codestar.backend.repository.ICourseRepository;
@@ -45,7 +46,8 @@ public class BookmarkService {
         CourseBlock block = blocks.findById(request.getBlockId())
                 .orElseThrow(() -> ApiException.notFound("Block not found"));
 
-        Course course = block.getCourse();
+        CoursePage page = block.getPage();
+        Course course = page != null ? page.getCourse() : null;
         if (course == null || !course.getId().equals(request.getCourseId())) {
             throw ApiException.badRequest("block does not belong to the given course");
         }

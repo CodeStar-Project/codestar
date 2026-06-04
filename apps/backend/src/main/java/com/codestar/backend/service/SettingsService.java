@@ -3,14 +3,12 @@ package com.codestar.backend.service;
 import com.codestar.backend.dto.settings.SettingsDto;
 import com.codestar.backend.dto.settings.UpdateSettingsRequestDto;
 import com.codestar.backend.exception.ApiException;
-import com.codestar.backend.model.AppSetting;
 import com.codestar.backend.repository.IAppSettingRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Service
@@ -53,12 +51,7 @@ public class SettingsService {
         if (value < MIN_MAX_BLOCKS_PER_PAGE || value > MAX_MAX_BLOCKS_PER_PAGE) {
             throw ApiException.badRequest("maxBlocksPerPage must be between " + MIN_MAX_BLOCKS_PER_PAGE + " and " + MAX_MAX_BLOCKS_PER_PAGE);
         }
-        AppSetting setting = repository.findById(KEY_MAX_BLOCKS_PER_PAGE)
-                .orElseGet(() -> new AppSetting(KEY_MAX_BLOCKS_PER_PAGE, String.valueOf(value)));
-        setting.setValue(String.valueOf(value));
-        setting.setUpdatedAt(OffsetDateTime.now());
-        setting.setUpdatedBy(userId);
-        repository.save(setting);
+        repository.upsert(KEY_MAX_BLOCKS_PER_PAGE, String.valueOf(value), userId);
     }
 
     private int parseOrDefault(String raw) {

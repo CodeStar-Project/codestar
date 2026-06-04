@@ -44,5 +44,14 @@ public class CoursePage {
     public void setCourse(Course course) { this.course = course; }
     public void setOrderIndex(int orderIndex) { this.orderIndex = orderIndex; }
     public void setTitle(String title) { this.title = title; }
-    public void setBlocks(List<CourseBlock> blocks) { this.blocks = blocks; }
+    
+    public void setBlocks(List<CourseBlock> blocks) {
+        this.blocks.clear();
+        if (blocks == null) return;
+        
+        for (CourseBlock block : blocks) {
+            block.setPage(this);
+            this.blocks.add(block);
+        }
+    }
 }

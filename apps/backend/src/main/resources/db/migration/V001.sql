@@ -127,14 +127,11 @@ CREATE INDEX idx_course_pages_course ON course_pages (course_id, order_index);
 -- COURSE_BLOCKS - kinds supported : H1..H6, P, CODE, CALLOUT, QUOTE, IMAGE, TABLE, QUIZ, SANDBOX
 CREATE TABLE course_blocks (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
-    course_id       UUID            NOT NULL,
     page_id         UUID            NOT NULL,
     order_index     INTEGER         NOT NULL DEFAULT 0,
     kind            VARCHAR(20)     NOT NULL,
     payload         JSONB           NOT NULL DEFAULT '{}',
     created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    CONSTRAINT course_blocks_course_fk
-        FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE,
     CONSTRAINT course_blocks_page_fk
         FOREIGN KEY (page_id) REFERENCES course_pages (id) ON DELETE CASCADE,
     CONSTRAINT course_blocks_kind_chk
@@ -143,7 +140,6 @@ CREATE TABLE course_blocks (
         CHECK (order_index >= 0)
 );
 
-CREATE INDEX idx_course_blocks_course       ON course_blocks (course_id);
 CREATE INDEX idx_course_blocks_page         ON course_blocks (page_id, order_index);
 CREATE INDEX idx_course_blocks_payload      ON course_blocks USING gin (payload);
 

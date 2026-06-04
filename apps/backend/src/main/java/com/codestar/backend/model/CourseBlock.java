@@ -17,10 +17,6 @@ public class CourseBlock {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id", nullable = false)
     private CoursePage page;
 
@@ -41,14 +37,12 @@ public class CourseBlock {
     public CourseBlock() {}
 
     public UUID getId() { return id; }
-    public Course getCourse() { return course; }
     public CoursePage getPage() { return page; }
     public int getOrderIndex() { return orderIndex; }
     public String getKind() { return kind; }
     public Map<String, Object> getPayload() { return payload; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
 
-    public void setCourse(Course course) { this.course = course; }
     public void setPage(CoursePage page) { this.page = page; }
     public void setOrderIndex(int orderIndex) { this.orderIndex = orderIndex; }
     public void setKind(String kind) { this.kind = kind; }

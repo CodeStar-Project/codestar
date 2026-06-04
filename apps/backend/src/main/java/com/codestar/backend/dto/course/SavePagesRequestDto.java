@@ -14,7 +14,7 @@ public class SavePagesRequestDto {
     public static class BlockInput {
 
         @NotNull
-        @Pattern(regexp = "^(H1|H2|H3|H4|H5|H6|P|CODE|CALLOUT|QUOTE|IMAGE|TABLE|QUIZ|SANDBOX)$",
+        @Pattern(regexp = CourseBlockType.VALIDATION_PATTERN,
                 message = "kind must be one of H1, H2, H3, H4, H5, H6, P, CODE, CALLOUT, QUOTE, IMAGE, TABLE, QUIZ, SANDBOX")
         private String kind;
 
