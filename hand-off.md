@@ -676,7 +676,7 @@ SIGNUP_OPEN=false   # si false, code invitation obligatoire
 ## 11. Course Builder — blocs, payloads, import/export
 
 > Point critique du produit. Si l'édition est pénible, l'utilisateur ne revient pas. Priorité UX/UX max.
-> L'éditeur minimaliste existe déjà (`components/admin/blocks-editor.tsx`, registry `components/block-kinds/`). Cette section décrit la cible.
+> ✅ Livré (PR `feat/course-builder`) : éditeur 3 colonnes `components/admin/course-editor.tsx` + registry `components/block-kinds/`. Cf. §11.4/§11.5 (statut) et §11.4bis (notes).
 
 ### 11.1 Décisions d'architecture
 
@@ -723,31 +723,54 @@ Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.
 }
 ```
 
-### 11.4 TODO Backend (à faire en premier)
+### 11.4 TODO Backend (à faire en premier) — ✅ FAIT (PR `feat/course-builder`)
 
-- [ ] `V001.sql` (édité en place) : CHECK `course_blocks.kind` → `H1,H2,H3,P,CODE,CALLOUT,QUOTE,IMAGE,IFRAME,TABLE,QUIZ,SANDBOX` (retire AUDIO/VIDEO).
-- [ ] `CourseBlockType` : aligner l'enum (ajout QUOTE,IFRAME,TABLE,SANDBOX ; retrait AUDIO,VIDEO).
-- [ ] `BlockPayloadValidator` :
-  - [ ] `ALLOWED_TONES` → `neutral, warning, danger, success, green, tip`.
-  - [ ] `validateQuiz` : `correctIndex` (0 ≤ idx < options) + `explanation` optionnel.
-  - [ ] `validateQuote`, `validateIframe` (https + allowlist), `validateTable` (rectangulaire + limites), `validateSandbox` (stockage seul).
-  - [ ] retirer `validateMedia` (AUDIO/VIDEO).
-- [ ] `GET /courses/{id}/export` → JSON §11.3.
-- [ ] `POST /courses/import` (Teacher+) → re-valide chaque bloc via `BlockPayloadValidator`, crée Course `DRAFT`, gère collision de slug.
+- [x] `V001.sql` (édité en place) : CHECK `course_blocks.kind` → `H1,H2,H3,P,CODE,CALLOUT,QUOTE,IMAGE,TABLE,QUIZ,SANDBOX` (retire AUDIO/VIDEO). **IFRAME retiré du scope** (décision : trop de surface d'attaque ; pas de vidéo en v1).
+- [x] `CourseBlockType` : enum aligné (ajout QUOTE,TABLE,SANDBOX ; retrait AUDIO,VIDEO). Idem `SaveBlocksRequestDto` (regex `@Pattern`).
+- [x] `BlockPayloadValidator` :
+  - [x] `ALLOWED_TONES` → `neutral, warning, danger, success, green, tip`.
+  - [x] `validateQuiz` : `correctIndex` (0 ≤ idx < options) + `explanation` optionnel.
+  - [x] `validateQuote` ({text, author?, source?}), `validateTable` (rectangulaire, ≤12 col / ≤100 lignes), `validateSandbox` ({language, code, readonly?, expectedOutput?}, stockage seul).
+  - [x] `validateMedia` retiré (AUDIO/VIDEO). `validateIframe` non implémenté (kind hors scope).
+- [x] `GET /courses/{id}/export` → JSON §11.3 (`CourseExportDto`, perm `canEditCourse`).
+- [x] `POST /courses/import` (Teacher+, `ImportCourseRequestDto`) → re-valide chaque bloc, crée Course `DRAFT`, slugify + collision de slug.
 
-### 11.5 TODO Frontend (1 composant Next par kind)
+### 11.5 TODO Frontend (1 composant Next par kind) — ✅ FAIT
 
-- [ ] `lib/types.ts` : aligner `CourseBlockKind`.
-- [ ] Un module par kind dans `components/block-kinds/` (`Render` + `Edit` + `defaultPayload` + `normalize`), enregistré dans `BLOCK_REGISTRY` :
-  - [ ] `quote.tsx`, `iframe.tsx`, `table.tsx` (éditeur add/remove ligne+colonne), `sandbox.tsx` (Render read-only + bouton « Exécuter » désactivé, placeholder `SandboxRunner`).
-  - [ ] `quiz.tsx` : sélection bonne réponse + explication + feedback lecteur.
-  - [ ] `callout.tsx` : tones étendus + icônes.
-- [ ] **Live preview** : split-pane Édition / Aperçu / Côte-à-côte (réutilise les `Render`).
-- [ ] **Palette d'insertion** groupée (Texte / Mise en avant / Média / Interactif) + icônes ; les 5 callouts en entrées distinctes (préremplit `tone`).
-- [ ] **Drag-drop** réordonnancement (remplace flèches).
-- [ ] **Autosave** debounced 1.5s → `PUT /courses/{id}/blocks` + indicateur.
-- [ ] Boutons **Importer / Exporter JSON** dans la toolbar.
-- [ ] i18n `messages/{en,fr}.json` : labels blocs + palette.
+- [x] `lib/types.ts` : `CourseBlockKind` aligné + `CalloutTone` + `CourseExport`.
+- [x] Un module par kind dans `components/block-kinds/` (`Render` + `Edit` + `defaultPayload` + `normalize`), enregistré dans `BLOCK_REGISTRY` :
+  - [x] `quote.tsx`, `table.tsx` (éditeur add/remove ligne+colonne), `sandbox.tsx` (Render read-only + bouton « Run » désactivé, placeholder `SandboxRunner`). `iframe.tsx` **non créé** (kind hors scope).
+  - [x] `quiz.tsx` : sélection bonne réponse + explication + feedback lecteur (`quiz-player.tsx` client).
+  - [x] `callout.tsx` : 6 tones + icônes (`tones.ts`, tokens CSS `--color-green/--color-tip`).
+  - Note : les `Edit` consomment `useTranslations("courseBuilder")` directement (plus de prop `labels`).
+- [x] **Live preview** : toggle Édition / Côte-à-côte / Aperçu (réutilise les `Render`).
+- [x] **Palette d'insertion** groupée (Texte / Mise en avant / Média / Interactif) + icônes ; les 6 callouts en entrées distinctes (`palette.ts`, préremplit `tone`).
+- [x] **Drag-drop** réordonnancement via **`@dnd-kit`** (remplace flèches).
+- [x] **Autosave** debounced 1.5s → `PUT /courses/{id}/blocks` + indicateur (saving / non enregistré / ✓).
+- [x] Boutons **Importer / Exporter JSON** dans la toolbar.
+- [x] i18n `messages/{en,fr}.json` : namespace `courseBuilder` (labels blocs + palette + toolbar).
+
+### 11.4bis Décisions & notes d'implémentation (PR `feat/course-builder`)
+
+- **Éditeur 3 colonnes** (écran 9 : palette / canvas dnd / inspector + stats) livré comme `components/admin/course-editor.tsx`, monté sur la route existante `/admin/courses/[id]/blocks` (garde chargement cours + permissions + breadcrumb). `blocks-editor.tsx` minimaliste supprimé.
+- **IFRAME** abandonné (pas de vidéo v1) → la décision §11.1 « vidéo via IFRAME » est caduque tant que le kind n'est pas réintroduit (avec allowlist).
+- **Migration** : `V001.sql` édité en place → checksum Flyway modifié. Sur une DB déjà initialisée, **reset** requis (`flyway clean` / volume neuf), conforme à §11.1.
+- **Autosave all-or-nothing** : un bloc à champ requis vide (IMAGE.src, SANDBOX.code…) fait échouer la sauvegarde du cours entier (400 affiché) jusqu'à complétion — comportement du validateur strict.
+- Vérifs : `mvnw compile` ✅ · `tsc --noEmit` ✅ · `eslint` ✅ · `next build` ✅. Tests unitaires reportés (§11.1).
+
+### 11.4ter Structure en pages + limite configurable (PR `feat/course-builder`, 2ᵉ itération)
+
+- **Modèle Course → Page → Bloc** (au lieu de Course → Bloc plat). Nouvelle table `course_pages` ; `course_blocks` gagne `page_id` (FK CASCADE) tout en gardant `course_id` dénormalisé (bookmarks/enrollment inchangés, cohérence garantie par les écritures full-replace).
+  - Entités `CoursePage`, `CourseBlock.page`, `Course.pages`. Repo `ICoursePageRepository`.
+  - API : `GET/PUT /courses/{id}/pages` (remplacent `/blocks`). DTO `CoursePageDto`, `SavePagesRequestDto` (`pages[].{title?, blocks[]}`). `CourseDto.pages`.
+  - Export/import **v2 uniquement** : `{ version:2, course, pages:[{title?, blocks}] }`. Pas de rétrocompat v1 (`blocks` plat rejeté ; `pages` requis).
+  - Front : `course-editor.tsx` = barre de pages (ajout / renommer / réordonner ◀▶ / supprimer) + canvas par page ; reader `/courses/[slug]/read` rend les pages en sections titrées ; intro cours compte les pages comme leçons.
+- **`max_blocks_per_page` configurable ADMIN/SUPER_ADMIN** : table `app_settings` (key/value, seed `50`). `SettingsService` + `GET /settings` (TEACHER+, l'éditeur le lit) + `PATCH /settings` (ADMIN+). Page `/admin/settings` (form). Borne 1–1000. Plafond aussi appliqué côté `savePages` et `importCourse` (+ `MAX_PAGES = 200`). L'éditeur désactive la palette quand la page est pleine.
+- **i18n** : tous les strings introduits passés en `messages/{fr,en}.json` (namespaces `courseBuilder` étendu + `adminSettings`, `admin.settingsLink`) ; `sandbox.tsx` (« Run » / « Bientôt ») et titres de page i18n.
+- **Garde unsaved** : `beforeunload` averti quand modifs non sauvegardées.
+- **Note bookmarks** : sauvegarder le contenu remplace tous les blocs → les favoris pointant d'anciens blocs sont supprimés (cascade FK). Comportement pré-existant, à adresser (réconciliation par contenu) plus tard.
+- **Migration** : V001 toujours édité en place → reset DB requis (cf. ci-dessus).
+- Vérifs 2ᵉ itération : `mvnw compile` ✅ · `tsc` ✅ · `eslint` ✅ · `next build` ✅ (routes `/admin/settings` + `/admin/courses/[id]/blocks`).
 
 ### 11.6 Plus tard (hors PR) — génération IA
 

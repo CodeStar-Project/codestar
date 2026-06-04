@@ -213,3 +213,99 @@ export const QuoteIcon = (props: IconProps) => (
     <path d="M7 13c0 3-2 4-2 4M13 13c0 3-2 4-2 4" />
   </svg>
 );
+
+export const AlertTriangleIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 3l9 16H3z" />
+    <path d="M12 10v4M12 17h.01" />
+  </svg>
+);
+
+export const AlertCircleIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8v5M12 16h.01" />
+  </svg>
+);
+
+export const CheckCircleIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+  </svg>
+);
+
+export const InfoIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 8h.01" />
+  </svg>
+);
+
+export const LeafIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M5 19c0-8 5-13 14-13 0 9-5 14-14 13z" />
+    <path d="M5 19c3-4 6-6 10-7" />
+  </svg>
+);
+
+export const LightbulbIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M9 18h6M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-4 10c.7.7 1 1.4 1 2h6c0-.6.3-1.3 1-2a6 6 0 0 0-4-10z" />
+  </svg>
+);
+
+export const GripVerticalIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="9" cy="6" r="1" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="9" cy="18" r="1" />
+    <circle cx="15" cy="6" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <circle cx="15" cy="18" r="1" />
+  </svg>
+);
+
+export const DownloadIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 3v12" />
+    <path d="M7 11l5 5 5-5" />
+    <path d="M4 20h16" />
+  </svg>
+);
+
+export const UploadIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M12 21V9" />
+    <path d="M7 13l5-5 5 5" />
+    <path d="M4 4h16" />
+  </svg>
+);
+
+export const TableIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18M3 15h18M9 4v16M15 4v16" />
+  </svg>
+);
+
+export const TerminalIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M7 9l3 3-3 3M13 15h4" />
+  </svg>
+);
+
+export const TypeIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M4 7V5h16v2M9 5v14M7 19h4" />
+  </svg>
+);
+
+export const HelpCircleIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
+  </svg>
+);

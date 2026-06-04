@@ -48,19 +48,38 @@ export type CourseBlockKind =
   | "H1"
   | "H2"
   | "H3"
+  | "H4"
+  | "H5"
+  | "H6"
   | "P"
   | "CODE"
+  | "CALLOUT"
+  | "QUOTE"
   | "IMAGE"
-  | "AUDIO"
-  | "VIDEO"
+  | "TABLE"
   | "QUIZ"
-  | "CALLOUT";
+  | "SANDBOX";
+
+export type CalloutTone =
+  | "neutral"
+  | "warning"
+  | "danger"
+  | "success"
+  | "green"
+  | "tip";
 
 export interface CourseBlock {
   id: string;
   kind: CourseBlockKind;
   orderIndex: number;
   payload: Record<string, unknown>;
+}
+
+export interface CoursePage {
+  id: string;
+  orderIndex: number;
+  title: string | null;
+  blocks: CourseBlock[];
 }
 
 export interface CourseSummary {
@@ -78,7 +97,7 @@ export interface CourseSummary {
 }
 
 export interface Course extends CourseSummary {
-  blocks: CourseBlock[];
+  pages: CoursePage[];
 }
 
 export interface Enrollment {
@@ -94,6 +113,27 @@ export interface Enrollment {
 export interface BlockInput {
   kind: CourseBlockKind;
   payload: Record<string, unknown>;
+}
+
+export interface PageInput {
+  title?: string | null;
+  blocks: BlockInput[];
+}
+
+export interface CourseExport {
+  version: number;
+  course: {
+    title: string;
+    slug?: string | null;
+    description?: string | null;
+    category?: string | null;
+    level?: CourseLevel | null;
+  };
+  pages: PageInput[];
+}
+
+export interface InstanceSettings {
+  maxBlocksPerPage: number;
 }
 
 export interface CourseMutationResult {

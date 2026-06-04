@@ -12,11 +12,7 @@ export interface UserSummary {
   disabledAt: string | null;
 }
 
-export async function getAllUsers(filters?: {
-  role?: Role;
-  disabled?: boolean;
-  q?: string;
-}): Promise<UserSummary[]> {
+export async function getAllUsers(filters?: {role?: Role; disabled?: boolean; q?: string;}): Promise<UserSummary[]> {
   const params = new URLSearchParams();
   if (filters?.role) params.set("role", filters.role);
   if (filters?.disabled !== undefined) params.set("disabled", String(filters.disabled));
@@ -25,10 +21,7 @@ export async function getAllUsers(filters?: {
   return (await apiFetch<UserSummary[]>(`/api/v1/users${qs ? `?${qs}` : ""}`)) ?? [];
 }
 
-export async function updateUserRole(
-  id: string,
-  role: Role
-): Promise<{ ok: boolean; error?: string; user?: UserSummary }> {
+export async function updateUserRole(id: string, role: Role): Promise<{ ok: boolean; error?: string; user?: UserSummary }> {
   try {
     const u = await apiFetch<UserSummary>(`/api/v1/users/${id}/role`, {
       method: "PATCH",
@@ -40,10 +33,7 @@ export async function updateUserRole(
   }
 }
 
-export async function setUserDisabled(
-  id: string,
-  disabled: boolean
-): Promise<{ ok: boolean; error?: string; user?: UserSummary }> {
+export async function setUserDisabled(id: string, disabled: boolean): Promise<{ ok: boolean; error?: string; user?: UserSummary }> {
   try {
     const u = await apiFetch<UserSummary>(
       `/api/v1/users/${id}/${disabled ? "disable" : "enable"}`,

@@ -165,6 +165,132 @@
     "home": "Back home",
     "unknown": "Unknown error."
   },
+  "courseBuilder": {
+    "title": "Course Builder",
+    "description": "Compose your course: palette on the left, canvas in the middle, inspector on the right.",
+    "paletteTitle": "Blocks",
+    "group": {
+      "text": "Text",
+      "highlight": "Highlight",
+      "media": "Media",
+      "interactive": "Interactive"
+    },
+    "palette": {
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "h4": "Heading 4",
+      "h5": "Heading 5",
+      "h6": "Heading 6",
+      "p": "Paragraph",
+      "quote": "Quote",
+      "code": "Code",
+      "image": "Image",
+      "table": "Table",
+      "quiz": "Quiz",
+      "sandbox": "Sandbox"
+    },
+    "tone": {
+      "neutral": "Note",
+      "warning": "Caution",
+      "danger": "Error",
+      "success": "Valid",
+      "green": "Green IT",
+      "tip": "Tip"
+    },
+    "field": {
+      "text": "Text",
+      "language": "Language (e.g. js, py)",
+      "code": "Code",
+      "src": "URL (https://…)",
+      "alt": "Alt text",
+      "tone": "Tone",
+      "quoteText": "Quote",
+      "author": "Author (optional)",
+      "source": "Source (optional)",
+      "tableHeader": "Column",
+      "tableCell": "Cell",
+      "addRow": "Add row",
+      "addColumn": "Add column",
+      "removeRow": "Remove row",
+      "removeColumn": "Remove column",
+      "question": "Question",
+      "options": "Options (one per line)",
+      "optionsHelper": "One option per line, 2 to 10 options.",
+      "correctAnswer": "Correct answer",
+      "correctAnswerNone": "— Choose —",
+      "explanation": "Explanation (optional)",
+      "expectedOutput": "Expected output (optional)",
+      "readonly": "Read-only",
+      "courseTitle": "Course title",
+      "pageTitle": "Page title (optional)"
+    },
+    "pages": {
+      "add": "Page",
+      "delete": "Delete page",
+      "moveLeft": "Move left",
+      "moveRight": "Move right",
+      "untitled": "Page {n}",
+      "full": "Page is full: max {max} blocks. Add a new page."
+    },
+    "sandbox": {
+      "run": "Run",
+      "soon": "Soon",
+      "codeLabel": "code"
+    },
+    "quiz": {
+      "correct": "Correct!",
+      "wrong": "Not quite."
+    },
+    "statusLabel": "Status",
+    "status": {
+      "DRAFT": "Draft",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    },
+    "view": {
+      "edit": "Edit",
+      "split": "Side by side",
+      "preview": "Preview"
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "✓ Saved",
+    "unsaved": "Unsaved changes",
+    "openReader": "Reader",
+    "import": {
+      "button": "Import",
+      "invalidJson": "Invalid JSON file.",
+      "invalidShape": "Invalid format: \"course\" and \"pages\" fields are required."
+    },
+    "export": {
+      "button": "Export"
+    },
+    "canvasEmpty": "No blocks yet. Click a block in the palette to start.",
+    "previewEmpty": "The preview will appear here.",
+    "inspectorTitle": "Inspector",
+    "inspectorEmpty": "Select a block to edit it.",
+    "statsTitle": "Statistics",
+    "stats": {
+      "pages": "Pages",
+      "blocks": "Blocks",
+      "words": "Words",
+      "minutes": "Min"
+    },
+    "deleteBlock": "Delete block",
+    "dragHandle": "Move block"
+  },
+  "adminSettings": {
+    "kicker": "ADMIN · SETTINGS",
+    "title": "Settings",
+    "description": "Instance settings, editable by administrators.",
+    "courseBuilderSection": "Course Builder",
+    "maxBlocksLabel": "Max blocks per page",
+    "maxBlocksHelper": "Between {min} and {max}. Caps how many blocks a course page may hold.",
+    "maxBlocksRange": "Value must be an integer between {min} and {max}.",
+    "save": "Save",
+    "saved": "✓ Saved"
+  },
   "notFound": {
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist or has moved.",
@@ -202,6 +328,9 @@
       "viewBookmarks": "My bookmarks",
       "next": "Next",
       "prev": "Previous",
+      "finish": "Finish",
+      "pageLabel": "Page {current} / {total}",
+      "pagesTitle": "Pages",
       "empty": "This course has no content yet.",
       "backToIntro": "Back to overview"
     },
@@ -301,6 +430,7 @@
     "groupsManage": "Curriculum",
     "membersLink": "Members",
     "usersLink": "Users",
+    "settingsLink": "Settings",
     "exportCsvShort": "CSV",
     "deleteGroup": "Delete",
     "confirmDeleteGroup": "Delete this group? Members, invitations and curriculum are also removed. Learner enrollments and bookmarks are preserved. This cannot be undone.",

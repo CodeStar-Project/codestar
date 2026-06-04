@@ -17,8 +17,8 @@ public class CourseBlock {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
+    @JoinColumn(name = "page_id", nullable = false)
+    private CoursePage page;
 
     @Column(name = "order_index", nullable = false)
     private int orderIndex = 0;
@@ -36,15 +36,15 @@ public class CourseBlock {
 
     public CourseBlock() {}
 
-    public UUID getId()                      { return id; }
-    public Course getCourse()                { return course; }
-    public int getOrderIndex()               { return orderIndex; }
-    public String getKind()                  { return kind; }
-    public Map<String, Object> getPayload()  { return payload; }
-    public OffsetDateTime getCreatedAt()     { return createdAt; }
+    public UUID getId() { return id; }
+    public CoursePage getPage() { return page; }
+    public int getOrderIndex() { return orderIndex; }
+    public String getKind() { return kind; }
+    public Map<String, Object> getPayload() { return payload; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
 
-    public void setCourse(Course course)                 { this.course = course; }
-    public void setOrderIndex(int orderIndex)            { this.orderIndex = orderIndex; }
-    public void setKind(String kind)                     { this.kind = kind; }
-    public void setPayload(Map<String, Object> payload)  { this.payload = payload; }
+    public void setPage(CoursePage page) { this.page = page; }
+    public void setOrderIndex(int orderIndex) { this.orderIndex = orderIndex; }
+    public void setKind(String kind) { this.kind = kind; }
+    public void setPayload(Map<String, Object> payload) { this.payload = payload; }
 }

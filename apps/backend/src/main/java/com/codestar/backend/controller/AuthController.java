@@ -1,10 +1,10 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.LoginRequestDto;
-import com.codestar.backend.dto.LoginResponseDto;
-import com.codestar.backend.dto.MeResponseDto;
-import com.codestar.backend.dto.RegisterRequestDto;
+import com.codestar.backend.dto.auth.LoginRequestDto;
+import com.codestar.backend.dto.auth.LoginResponseDto;
+import com.codestar.backend.dto.auth.MeResponseDto;
+import com.codestar.backend.dto.auth.RegisterRequestDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;

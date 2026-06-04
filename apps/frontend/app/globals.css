@@ -23,6 +23,8 @@
   --color-success-raw: #5dc9a8;
   --color-warning-raw: #ffb672;
   --color-danger-raw: #ff8a95;
+  --color-green-raw: #7bc86c;
+  --color-tip-raw: #ffd66b;
 
   --r-sm: 8px;
   --r: 14px;
@@ -63,6 +65,8 @@
   --color-success: var(--color-success-raw);
   --color-warning: var(--color-warning-raw);
   --color-danger: var(--color-danger-raw);
+  --color-green: var(--color-green-raw);
+  --color-tip: var(--color-tip-raw);
 
   --color-background: var(--color-bg-base-raw);
   --color-foreground: var(--color-text-raw);

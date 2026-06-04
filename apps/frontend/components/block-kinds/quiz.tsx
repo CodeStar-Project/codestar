@@ -1,68 +1,108 @@
-import { GlassCard } from "@/components/ui/glass-card";
-import { GlassInput, GlassTextarea } from "@/components/ui/glass-input";
-import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
-import type { BlockKindModule } from "./types";
-import { getStr } from "./utils";
+import { GlassInput, GlassSelect, GlassTextarea } from "@/components/ui/glass-input";
+
+import { QuizPlayer } from "./quiz-player";
+import type { BlockKindModule, BlockPayload } from "./types";
+import { getNum, getStr, getStrArray } from "./utils";
+
+/** Parse the editor-local raw textarea (one option per line) into a clean list. */
+function parseOptions(payload: BlockPayload): string[] {
+  const raw = payload["_optionsRaw"];
+  if (typeof raw === "string") {
+    return raw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  return getStrArray(payload, "options");
+}
 
 export const QuizModule: BlockKindModule = {
   Render({ block, id }) {
-    const question = getStr(block.payload, "question");
-    const opts = block.payload["options"];
-    const options = Array.isArray(opts) ? (opts as unknown[]) : [];
+    const correctIndex = getNum(block.payload, "correctIndex");
+    const explanation = getStr(block.payload, "explanation");
     return (
-      <GlassCard id={id} variant="default" className="my-6 p-5">
-        <div className="font-display text-[1.15rem] text-text">{question}</div>
-        <ul className="mt-4 space-y-2">
-          {options.map((opt, i) => (
-            <li
-              key={i}
-              className={cn(
-                "rounded-[var(--r)] border border-[color:var(--glass-border)] px-4 py-2.5 text-[0.92rem] text-text-soft",
-                "hover:border-[color:var(--color-accent)] hover:bg-[color:var(--color-accent-soft)]"
-              )}
-            >
-              {typeof opt === "string" ? opt : JSON.stringify(opt)}
-            </li>
-          ))}
-        </ul>
-      </GlassCard>
+      <QuizPlayer
+        id={id}
+        question={getStr(block.payload, "question")}
+        options={getStrArray(block.payload, "options")}
+        correctIndex={correctIndex}
+        explanation={explanation || undefined}
+      />
     );
   },
-  Edit({ payload, labels, onPatch }) {
+  Edit({ payload, onPatch }) {
+    const t = useTranslations("courseBuilder");
     const raw =
       (payload["_optionsRaw"] as string | undefined) ??
-      (Array.isArray(payload["options"])
-        ? (payload["options"] as unknown[]).join("\n")
-        : "");
+      getStrArray(payload, "options").join("\n");
+    const options = parseOptions({ ...payload, _optionsRaw: raw });
+    const correctIndex = getNum(payload, "correctIndex");
+
     return (
       <div className="space-y-2">
         <GlassInput
           value={getStr(payload, "question")}
           onChange={(e) => onPatch({ question: e.target.value })}
-          placeholder={labels.fieldQuestion}
-          aria-label={labels.fieldQuestion}
+          placeholder={t("field.question")}
+          aria-label={t("field.question")}
         />
         <GlassTextarea
           rows={4}
           value={raw}
           onChange={(e) => onPatch({ _optionsRaw: e.target.value })}
-          placeholder={labels.fieldOptions}
-          aria-label={labels.fieldOptions}
+          placeholder={t("field.options")}
+          aria-label={t("field.options")}
         />
-        <p className="text-[0.78rem] text-muted">{labels.fieldOptionsHelper}</p>
+        <p className="text-[0.78rem] text-muted">{t("field.optionsHelper")}</p>
+
+        <label className="block text-[0.8rem] font-medium text-text-soft">
+          {t("field.correctAnswer")}
+        </label>
+        <GlassSelect
+          value={correctIndex ?? ""}
+          onChange={(e) =>
+            onPatch({ correctIndex: e.target.value === "" ? null : Number(e.target.value) })
+          }
+          aria-label={t("field.correctAnswer")}
+        >
+          <option value="">{t("field.correctAnswerNone")}</option>
+          {options.map((opt, i) => (
+            <option key={i} value={i}>
+              {i + 1}. {opt.slice(0, 60)}
+            </option>
+          ))}
+        </GlassSelect>
+
+        <GlassTextarea
+          rows={2}
+          value={getStr(payload, "explanation")}
+          onChange={(e) => onPatch({ explanation: e.target.value })}
+          placeholder={t("field.explanation")}
+          aria-label={t("field.explanation")}
+        />
       </div>
     );
   },
-  defaultPayload: () => ({ question: "", options: [], _optionsRaw: "" }),
+  defaultPayload: () => ({
+    question: "",
+    options: [],
+    _optionsRaw: "",
+    correctIndex: null,
+    explanation: "",
+  }),
   normalize(payload) {
-    const raw = getStr(payload, "_optionsRaw");
-    const fallback = Array.isArray(payload["options"])
-      ? (payload["options"] as unknown[]).map(String)
-      : [];
-    const options = raw
-      ? raw.split("\n").map((s) => s.trim()).filter((s) => s.length > 0)
-      : fallback;
-    return { question: getStr(payload, "question"), options };
+    const options = parseOptions(payload);
+    const ci = getNum(payload, "correctIndex");
+    const out: BlockPayload = {
+      question: getStr(payload, "question"),
+      options,
+      // backend requires a valid in-range index; clamp/default to 0 when unset.
+      correctIndex: ci !== null && ci >= 0 && ci < options.length ? ci : 0,
+    };
+    const explanation = getStr(payload, "explanation").trim();
+    if (explanation) out.explanation = explanation;
+    return out;
   },
 };

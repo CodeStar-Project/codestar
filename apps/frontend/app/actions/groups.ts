@@ -27,10 +27,7 @@ export async function getCurriculum(groupId: string): Promise<CourseSummary[]> {
   );
 }
 
-export async function replaceCurriculum(
-  groupId: string,
-  courseIds: string[]
-): Promise<{ ok: boolean; error?: string; courses?: CourseSummary[] }> {
+export async function replaceCurriculum(groupId: string, courseIds: string[]): Promise<{ ok: boolean; error?: string; courses?: CourseSummary[] }> {
   try {
     const data = await apiFetch<CourseSummary[]>(
       `/api/v1/groups/${groupId}/curriculum`,
@@ -59,10 +56,7 @@ export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
   return (await apiFetch<GroupMember[]>(`/api/v1/groups/${groupId}/members`)) ?? [];
 }
 
-export async function removeGroupMember(
-  groupId: string,
-  userId: string
-): Promise<{ ok: boolean; error?: string }> {
+export async function removeGroupMember(groupId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     await apiFetch<void>(`/api/v1/groups/${groupId}/members/${userId}`, {
       method: "DELETE",
@@ -73,11 +67,7 @@ export async function removeGroupMember(
   }
 }
 
-export async function updateGroupMemberRole(
-  groupId: string,
-  userId: string,
-  roleInGroup: "STUDENT" | "TEACHER"
-): Promise<{ ok: boolean; error?: string; member?: GroupMember }> {
+export async function updateGroupMemberRole(groupId: string, userId: string, roleInGroup: "STUDENT" | "TEACHER"): Promise<{ ok: boolean; error?: string; member?: GroupMember }> {
   try {
     const m = await apiFetch<GroupMember>(
       `/api/v1/groups/${groupId}/members/${userId}`,
@@ -92,9 +82,7 @@ export async function updateGroupMemberRole(
   }
 }
 
-export async function deleteGroup(
-  id: string
-): Promise<{ ok: boolean; error?: string }> {
+export async function deleteGroup(id: string): Promise<{ ok: boolean; error?: string }> {
   try {
     await apiFetch<void>(`/api/v1/groups/${id}`, { method: "DELETE" });
     return { ok: true };
@@ -103,9 +91,7 @@ export async function deleteGroup(
   }
 }
 
-export async function exportGroupStatsCsv(
-  id: string
-): Promise<{ ok: boolean; error?: string; csv?: string }> {
+export async function exportGroupStatsCsv(id: string): Promise<{ ok: boolean; error?: string; csv?: string }> {
   try {
     const csv = await apiFetchText(`/api/v1/groups/${id}/stats/export.csv`);
     return { ok: true, csv };
@@ -125,10 +111,7 @@ export interface Invitation {
   revokedAt: string | null;
 }
 
-export async function getInvitations(
-  groupId: string,
-  includeRevoked = false
-): Promise<Invitation[]> {
+export async function getInvitations(groupId: string, includeRevoked = false): Promise<Invitation[]> {
   const qs = includeRevoked ? "?includeRevoked=true" : "";
   return (
     (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? []

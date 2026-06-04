@@ -1,8 +1,8 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.InstanceBrandingDto;
-import com.codestar.backend.dto.UpdateBrandingRequestDto;
+import com.codestar.backend.dto.instance.InstanceBrandingDto;
+import com.codestar.backend.dto.instance.UpdateBrandingRequestDto;
 import com.codestar.backend.service.InstanceBrandingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

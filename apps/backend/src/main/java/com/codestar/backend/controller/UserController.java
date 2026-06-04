@@ -1,8 +1,8 @@
 package com.codestar.backend.controller;
 
 import com.codestar.backend.dto.ApiResponseDto;
-import com.codestar.backend.dto.UpdateUserRoleRequestDto;
-import com.codestar.backend.dto.UserSummaryDto;
+import com.codestar.backend.dto.user.UpdateUserRoleRequestDto;
+import com.codestar.backend.dto.user.UserSummaryDto;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.UserService;
 import jakarta.validation.Valid;

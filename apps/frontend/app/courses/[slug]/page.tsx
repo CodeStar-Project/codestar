@@ -70,11 +70,11 @@ export default async function CourseIntroPage({ params }: PageProps) {
     ? t("resume")
     : t("start");
 
-  const blocksCount = course.blocks?.length ?? 0;
-  const headings = (course.blocks ?? []).filter((b) =>
-    ["H1", "H2"].includes(b.kind)
-  );
-  const lessonCount = headings.length || blocksCount;
+  const allBlocks = (course.pages ?? []).flatMap((p) => p.blocks);
+  const blocksCount = allBlocks.length;
+  const headings = allBlocks.filter((b) => ["H1", "H2"].includes(b.kind));
+  // A page maps to a lesson; fall back to headings/blocks for legacy single-page courses.
+  const lessonCount = (course.pages?.length ?? 0) || headings.length || blocksCount;
 
   return (
     <StudentShell maxWidth="default">

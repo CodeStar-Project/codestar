@@ -1,6 +1,6 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.UpdateCurriculumRequestDto;
+import com.codestar.backend.dto.group.UpdateCurriculumRequestDto;
 import com.codestar.backend.dto.course.CourseSummaryDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.Course;

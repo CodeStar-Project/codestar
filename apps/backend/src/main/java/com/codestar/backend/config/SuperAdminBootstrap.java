@@ -32,8 +32,7 @@ public class SuperAdminBootstrap {
     private String bootstrapDisplayName;
 
     @Bean
-    public CommandLineRunner superAdminRunner(IUserRepository userRepository,
-                                              PasswordEncoder passwordEncoder) {
+    public CommandLineRunner superAdminRunner(IUserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
             if (bootstrapEmail == null || bootstrapEmail.isBlank()) {
                 return;
@@ -47,11 +46,7 @@ public class SuperAdminBootstrap {
             Optional<User> existing = userRepository.findByEmail(normalizedEmail);
 
             if (existing.isEmpty()) {
-                User u = new User(
-                        normalizedEmail,
-                        passwordEncoder.encode(bootstrapPassword),
-                        bootstrapDisplayName,
-                        Role.SUPER_ADMIN);
+                User u = new User(normalizedEmail, passwordEncoder.encode(bootstrapPassword), bootstrapDisplayName, Role.SUPER_ADMIN);
                 userRepository.save(u);
                 log.info("Bootstrap : super-admin created");
                 return;

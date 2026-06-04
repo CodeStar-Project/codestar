@@ -1,20 +1,18 @@
 "use server";
 
-/**
- * Course server actions + fetchers. Callable from server components and client (RPC).
- */
-
 import { ApiError, apiFetch } from "@/lib/api";
 import type {
-  BlockInput,
   Course,
-  CourseBlock,
+  CourseExport,
   CourseMutationResult,
+  CoursePage,
   CourseStatus,
   CourseSummary,
   CreateCoursePayload,
+  PageInput,
   UpdateCoursePayload,
 } from "@/lib/types";
+
 
 export interface CourseFilters {
   status?: string;
@@ -62,31 +60,46 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
   }
 }
 
-export async function getCourseBlocks(courseId: string): Promise<CourseBlock[]> {
-  return (await apiFetch<CourseBlock[]>(`/api/v1/courses/${courseId}/blocks`)) ?? [];
+export async function getCoursePages(courseId: string): Promise<CoursePage[]> {
+  return (await apiFetch<CoursePage[]>(`/api/v1/courses/${courseId}/pages`)) ?? [];
 }
 
-export async function saveCourseBlocks(
-  courseId: string,
-  blocks: BlockInput[]
-): Promise<{ ok: boolean; error?: string; blocks?: CourseBlock[] }> {
+export async function saveCoursePages(courseId: string, pages: PageInput[]): Promise<{ ok: boolean; error?: string; pages?: CoursePage[] }> {
   try {
-    const data = await apiFetch<CourseBlock[]>(
-      `/api/v1/courses/${courseId}/blocks`,
+    const data = await apiFetch<CoursePage[]>(`/api/v1/courses/${courseId}/pages`,
       {
         method: "PUT",
-        body: { blocks },
+        body: { pages },
       }
     );
-    return { ok: true, blocks: data ?? [] };
+    return { ok: true, pages: data ?? [] };
   } catch (e) {
     return { ok: false, error: errMsg(e) };
   }
 }
 
-export async function createCourse(
-  payload: CreateCoursePayload
-): Promise<CourseMutationResult> {
+export async function exportCourse(id: string): Promise<{ ok: boolean; error?: string; data?: CourseExport }> {
+  try {
+    const data = await apiFetch<CourseExport>(`/api/v1/courses/${id}/export`);
+    return { ok: true, data: data ?? undefined };
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
+}
+
+export async function importCourse(payload: CourseExport): Promise<CourseMutationResult> {
+  try {
+    const course = await apiFetch<Course>("/api/v1/courses/import", {
+      method: "POST",
+      body: payload,
+    });
+    return { ok: true, course: course ?? undefined };
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
+}
+
+export async function createCourse(payload: CreateCoursePayload): Promise<CourseMutationResult> {
   try {
     const course = await apiFetch<Course>("/api/v1/courses", {
       method: "POST",
@@ -98,10 +111,7 @@ export async function createCourse(
   }
 }
 
-export async function updateCourse(
-  id: string,
-  payload: UpdateCoursePayload
-): Promise<CourseMutationResult> {
+export async function updateCourse(id: string, payload: UpdateCoursePayload): Promise<CourseMutationResult> {
   try {
     const course = await apiFetch<Course>(`/api/v1/courses/${id}`, {
       method: "PATCH",
@@ -113,10 +123,7 @@ export async function updateCourse(
   }
 }
 
-export async function changeCourseStatus(
-  id: string,
-  status: CourseStatus
-): Promise<CourseMutationResult> {
+export async function changeCourseStatus(id: string, status: CourseStatus): Promise<CourseMutationResult> {
   try {
     const course = await apiFetch<Course>(`/api/v1/courses/${id}/status`, {
       method: "POST",
@@ -128,9 +135,7 @@ export async function changeCourseStatus(
   }
 }
 
-export async function deleteCourse(
-  id: string
-): Promise<{ ok: boolean; error?: string }> {
+export async function deleteCourse(id: string): Promise<{ ok: boolean; error?: string }> {
   try {
     await apiFetch<void>(`/api/v1/courses/${id}`, { method: "DELETE" });
     return { ok: true };
@@ -139,9 +144,7 @@ export async function deleteCourse(
   }
 }
 
-export async function duplicateCourse(
-  id: string
-): Promise<{ ok: boolean; error?: string; course?: Course }> {
+export async function duplicateCourse(id: string): Promise<{ ok: boolean; error?: string; course?: Course }> {
   try {
     const course = await apiFetch<Course>(`/api/v1/courses/${id}/duplicate`, {
       method: "POST",

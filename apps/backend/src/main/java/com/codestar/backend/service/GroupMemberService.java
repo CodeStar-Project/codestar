@@ -1,6 +1,6 @@
 package com.codestar.backend.service;
 
-import com.codestar.backend.dto.GroupMemberDto;
+import com.codestar.backend.dto.group.GroupMemberDto;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.GroupMemberRole;
 import com.codestar.backend.model.GroupMembership;
