@@ -39,9 +39,12 @@ services:
       CODESTAR_BOOTSTRAP_SUPER_ADMIN_PASSWORD: ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_PASSWORD:-}
       CODESTAR_BOOTSTRAP_SUPER_ADMIN_DISPLAY_NAME: ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_DISPLAY_NAME:-Super-admin}
       CODESTAR_INSTANCE_CONFIG_PATH: ${INSTANCE_CONFIG_PATH:-classpath:instance.json}
+      MEDIA_STORAGE_PATH: /app/media
     volumes:
       # ./config with the instance.json file by the INSTANCE_CONFIG_PATH=file:/app/config/instance.json
       - ./config:/app/config:ro
+      # uploaded course images (persisted across restarts)
+      - media_data:/app/media
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     healthcheck:
@@ -79,6 +82,7 @@ services:
 
 volumes:
   postgres_data:
+  media_data:
 
 networks:
   codestar-net:

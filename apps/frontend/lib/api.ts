@@ -16,12 +16,13 @@ function requireEnv(name: string): string {
   return value;
 }
 
-// Lazy memoized so the module can be imported during `next build`'s page-data
-// collection without crashing when env vars aren't set at build time. Throws
-// only on first actual use (request time).
 let _apiUrl: string | undefined;
 function apiUrl(): string {
   return (_apiUrl ??= requireEnv("API_URL").replace(/\/+$/, ""));
+}
+
+export function backendBaseUrl(): string {
+  return apiUrl();
 }
 
 let _authCookieName: string | undefined;
@@ -73,9 +74,7 @@ export async function apiFetch<T>(
     timeoutMs
   );
 
-  const signal = rest.signal
-    ? AbortSignal.any([rest.signal, timeoutController.signal])
-    : timeoutController.signal;
+  const signal = rest.signal ? AbortSignal.any([rest.signal, timeoutController.signal]) : timeoutController.signal;
 
   let res: Response;
   try {
@@ -112,10 +111,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      parsed?.message ?? `HTTP error ${res.status}`
-    );
+    throw new ApiError(res.status, parsed?.message ?? `HTTP error ${res.status}`);
   }
 
   if (!parsed) {
@@ -123,6 +119,54 @@ export async function apiFetch<T>(
   }
 
   return parsed.data as T;
+}
+
+/**
+ * Multipart upload (FormData)
+ */
+export async function apiUpload<T>(path: string, formData: FormData, timeoutMs = 30_000): Promise<T | undefined> {
+  const finalHeaders = new Headers();
+  const cookieStore = await cookies();
+  const token = cookieStore.get(authCookieName())?.value;
+  if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(`${apiUrl()}${path}`, {
+      method: "POST",
+      headers: finalHeaders,
+      body: formData,
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(408, "Request timeout");
+    }
+    throw new ApiError(0, "Network error");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const isJson = (res.headers.get("content-type") ?? "").includes("application/json");
+  let parsed: ApiResponse<T> | null = null;
+
+  if (isJson) {
+    try {
+      parsed = (await res.json()) as ApiResponse<T>;
+    } catch {
+      /* malformed JSON */
+    }
+  }
+
+  if (!res.ok) {
+    throw new ApiError(res.status, parsed?.message ?? `HTTP error ${res.status}`);
+  }
+
+  return parsed?.data as T;
 }
 
 /**

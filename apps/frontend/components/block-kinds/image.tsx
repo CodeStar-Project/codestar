@@ -2,6 +2,7 @@ import { useTranslations } from "next-intl";
 
 import { GlassInput } from "@/components/ui/glass-input";
 
+import { ImageUploader } from "./image-uploader";
 import type { BlockKindModule } from "./types";
 import { getStr, safeUrl } from "./utils";
 
@@ -16,6 +17,8 @@ export const ImageModule: BlockKindModule = {
           <img
             src={src}
             alt={alt}
+            loading="lazy"
+            decoding="async"
             className="w-full rounded-[var(--r-lg)] border border-[color:var(--glass-border)]"
           />
         ) : (
@@ -33,8 +36,24 @@ export const ImageModule: BlockKindModule = {
   },
   Edit({ payload, onPatch }) {
     const t = useTranslations("courseBuilder");
+    const preview = safeUrl(getStr(payload, "src"));
     return (
       <div className="space-y-2">
+        {preview && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={preview}
+            alt=""
+            className="max-h-40 w-full rounded-[var(--r)] border border-[color:var(--glass-border)] object-contain"
+          />
+        )}
+
+        <ImageUploader
+          onUploaded={(url) => onPatch({ src: url })}
+          label={t("field.imageUpload")}
+          errorLabel={t("field.imageUploadError")}
+        />
+
         <GlassInput
           type="url"
           value={getStr(payload, "src")}

@@ -8,6 +8,11 @@ export interface ApiResponse<T> {
   data: T | null;
 }
 
+export interface MediaUpload {
+  id: string;
+  url: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   tokenType: string;
