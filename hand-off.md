@@ -1,6 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-06-02
+> Dernière mise à jour : 2026-06-07
 
 ---
 
@@ -287,6 +287,7 @@ Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseD
 - `GET /bookmarks`, `GET /bookmarks/mine`
 - `GET /groups/{id}/invitations`, `GET/DELETE/PATCH /groups/{groupId}/members[/{userId}]`
 - `GET /users`, `PATCH /users/{id}/role`, `POST /users/{id}/{disable,enable}`
+- `POST /media` (Teacher+), `GET /media/{id}` (public) — upload/download images de cours (cf. §12)
 
 ### v1 — Auth & groupes
 
@@ -593,7 +594,7 @@ Statut : ✅ fait · 🟡 partiel · ❌ à faire
 | 2.5 | Page `/my-courses` étudiant | 2.2 | M | ✅ |
 | 2.6 | Page `/me/dash` Dashboard étudiant | 2.2 | M | ✅ |
 | 2.7 | Page `/admin` Dashboard admin (KPI, table cours) | 2.2 | M | ✅ |
-| 2.8 | Stockage médias : choix MinIO vs filesystem (décision à reprendre v2) | — | M | ❌ non tranché |
+| 2.8 | Stockage médias : choix MinIO vs filesystem | — | M | ✅ **filesystem** + durcissement P0 (volume `media_data`, PR `feat/images-management`) — MinIO/S3 plus tard. Cf. §12 |
 | 2.9 | Endpoint `PATCH /instance/branding` + page `/admin/branding` (avec live preview) | 1.5 | L | 🟡 API faite, **page UI manquante** |
 | 2.10 | Bottom-sheet mobile pour TOC, gestes drawer | 2.4 | M | ✅ (`mobile-toc`) |
 | 2.11 | Tests Playwright : flows lecture cours, progression, branding update | 2.4, 2.9 | M | ❌ (branche `add-playwright-tests` non mergée) |
@@ -780,6 +781,80 @@ Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.
 
 ---
 
+## 12. Médias — upload / download d'images
+
+> Livré (PR `feat/images-management`) : upload/download d'images de cours sur **filesystem** (volume Docker), durci niveau production (P0), intégré au course builder. MinIO/S3 = évolution future, service swappable.
+
+### 12.1 Décision de stockage
+
+Filesystem local — volume Docker `media_data`, `MEDIA_STORAGE_PATH=/app/media`. Choix adapté au modèle single-tenant / petite échelle (50–5 000 apprenants) et au self-hosting (zéro infra externe à provisionner). `MediaStorageService` est isolé → bascule MinIO/S3 ultérieure sans toucher aux contrôleurs (cf. P3 / §12.4).
+
+### 12.2 API
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| POST | `/api/v1/media` | Teacher+ | multipart `file` → `{ id, url }` (`url = /api/v1/media/{uuid.ext}`) |
+| GET | `/api/v1/media/{id}` | Public | sert l'image brute (id opaque `uuid.ext`) |
+
+- Types acceptés : png, jpg, webp, gif. **SVG exclu** (vecteur XSS). Taille ≤ 5 MB.
+- Bloc `IMAGE` : `src` désormais **optionnel** ; accepte une URL https **ou** un chemin média interne `/api/v1/media/{uuid.ext}` (`BlockPayloadValidator`).
+- Le navigateur charge via une route proxy Next `app/api/v1/media/[id]/route.ts` — le backend (`http://backend:8080` en Docker) n'est pas joignable depuis le navigateur.
+- Intégré à l'éditeur : bouton « Téléverser » dans le bloc IMAGE (`components/block-kinds/image-uploader.tsx` + `image.tsx`), preview + saisie URL manuelle conservée.
+
+> **Note déploiement (pas immédiat, à terme).** La route proxy Next fait transiter chaque image par le serveur Node — correct en dev / petite instance Docker, mais Node n'est pas fait pour streamer des fichiers à l'échelle. En prod sérieux, placer un **reverse proxy edge** (nginx / Caddy / Traefik) en origine unique qui route `/api/*` → backend (images servies direct, hors Node) et `/*` → frontend. Même origine donc toujours zéro CORS ; le `cache immutable` posé en §12.3 est compatible CDN. Le proxy Next reste utile en fallback. À consigner dans `DEPLOYMENT.md` (D3 roadmap).
+
+### 12.3 Durcissement P0 (livré)
+
+- **Type réel par magic-bytes** : `MediaStorageService.detectType` ignore le content-type client (spoofable) et identifie le format par signature binaire.
+- **`nosniff` + `Content-Disposition: inline`** sur le GET (backend + proxy) : empêche le MIME-sniffing d'un polyglot en HTML/JS (XSS same-origin).
+- **Garde decompression-bomb** : dimensions lues via header (`ImageIO`, sans décodage complet), rejet > 50 MP / 12 000 px. WebP (pas de reader JDK) retombe sur le cap 5 MB.
+- **Écriture atomique** : fichier temp + `ATOMIC_MOVE` (jamais de fichier tronqué servi).
+- **Cache immutable 1 an + ETag** : id unique par upload → contenu immuable, le navigateur ne revalide jamais (CDN-friendly).
+- **Lecteur** : `<img loading="lazy" decoding="async">`.
+
+### 12.4 Prochaines étapes
+
+Statut : ✅ fait · 🟡 partiel · ❌ à faire · ordre conseillé = P1 → P3.
+
+#### P1 — Anti-abus + durabilité (priorité haute) ✅ FAIT (PR `feat/images-management`)
+
+Débloque le contrôle d'usage.
+
+| # | Tâche | Couche | Effort | Statut / détail |
+|---|---|---|---|---|
+| M1 | Table `media_assets` | back | M | ✅ `id`, `filename`, `owner_id` (FK user, CASCADE), `content_type`, `bytes`, `width`, `height`, `created_at`, `referenced` (bool, pour P2). Index owner + index partiel `WHERE referenced=FALSE`. **Ajoutée dans `V001.sql` en place** (encore en pré-déploiement → reset DB requis) ; passer à une migration versionnée dès qu'on vise prod. Entité `MediaAsset` + `IMediaAssetRepository`. |
+| M2 | Rate-limit upload | back | S | ✅ `UploadRateLimiter` : token-bucket par user, **en mémoire, sans dépendance** (single-instance). Dépassement → 429. Config `codestar.media.rate-limit.{capacity,refill-per-minute}`. Redis = upgrade multi-replica (P3). |
+| M3 | Quota disque | back | S | ✅ Cap par user + par instance (somme `bytes` DB), rejet 413. Config `MEDIA_USER_QUOTA_MB` (100) / `MEDIA_INSTANCE_QUOTA_MB` (5000). |
+| M4 | Sharding répertoire | back | S | ✅ `media/ab/cd/uuid.ext` (préfixe uuid) dans `pathFor`. URL/id inchangés (shard interne). |
+
+Notes : cohérence disque↔DB (delete fichier si l'insert échoue) ; race quota tolérée (pas de lock, léger dépassement possible) ; owner supprimé → row CASCADE → fichier orphelin invisible pour le GC P2 (edge connu).
+
+#### P2 — Garbage collection orphelins ❌
+
+| # | Tâche | Couche | Effort | Détail |
+|---|---|---|---|---|
+| G1 | GC médias non référencés | back | M | À chaque `PUT /courses/{id}/pages`, marquer `media_asset.referenced`. Job `@Scheduled` quotidien : supprime fichier+ligne si `referenced=false AND created_at < now-24h` (grâce 24h pour uploads en cours). Évite la fuite disque (upload abandonné, bloc supprimé). Dépend de M1. |
+
+#### P3 — Optimisation avancée + évolution stockage ❌
+
+| # | Tâche | Couche | Effort | Détail |
+|---|---|---|---|---|
+| O3 | Re-encodage à l'upload | back | M | Décode→ré-encode PNG/JPEG : strip EXIF (fuite GPS/métadonnées) + neutralise polyglot définitivement. ⚠️ casse GIF animé + WebP sans plugin `ImageIO` (TwelveMonkeys) → re-encoder PNG/JPEG seulement, GIF/WebP = magic-bytes only. **Décision à prendre.** |
+| O4 | Variantes responsive | back+front | M | Générer WebP + largeurs multiples (thumb/medium/full) → `srcset`. Gain bande passante. |
+| O5 | Domaine cookieless | infra | S | Servir les médias depuis un sous-domaine dédié sans cookies → défense en profondeur XSS. |
+| O6 | CDN | infra | S | Cache immutable déjà compatible (§12.3). |
+| S7 | Backend MinIO/S3 swappable | back | L | Interface `MediaStorage` + impl `S3MediaStorage` (`software.amazon.awssdk:s3` ou `minio-java`), sélection `MEDIA_BACKEND=fs\|s3`. **Déclencheur** : scale horizontal (≥ 2 replicas backend) — le FS local n'est pas partagé entre replicas. Tant qu'on est mono-replica, inutile. |
+
+### 12.5 Config
+
+```env
+MEDIA_STORAGE_PATH=/app/media   # mappé sur le volume Docker media_data
+```
+
+Multipart : `spring.servlet.multipart.max-file-size=5MB`, `max-request-size=6MB`. `GET /api/v1/media/**` ajouté en `permitAll` dans `SecurityConfig`.
+
+---
+
 ## Annexes
 
 ### A. Mapping draft → roadmap
@@ -799,7 +874,7 @@ Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.
 
 ### B. Décisions volontairement reportées
 
-- Stockage médias (MinIO vs FS local) → réétudier au début v2.
+- ~~Stockage médias (MinIO vs FS local)~~ → **tranché : filesystem** + durcissement P0 (PR `feat/images-management`). MinIO/S3 = évolution future (service swappable). Détail + roadmap P1→P3 en §12.
 - OAuth Google/GitHub → v3.
 - Mode sombre → v3 (token CSS prévus dès v1, mais pas de toggle UI).
 - Page `/admin/users` (gestion users) → v2 ou v3 selon besoin.
