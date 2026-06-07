@@ -49,6 +49,8 @@ public class SecurityConfig {
                             "/api/v1/auth/register").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/instance/branding").permitAll()
+                    .requestMatchers(HttpMethod.GET,
+                            "/api/v1/media/**").permitAll()
                     // swagger / OpenAPI
                     .requestMatchers(
                             "/v3/api-docs/**",
