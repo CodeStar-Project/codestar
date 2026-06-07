@@ -1,6 +1,8 @@
 package com.codestar.backend.service;
 
 import com.codestar.backend.exception.ApiException;
+import com.codestar.backend.model.MediaAsset;
+import com.codestar.backend.repository.IMediaAssetRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +26,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-
+/**
+ * Filesystem-backed media storage (course images)
+ */
 @Service
 public class MediaStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(MediaStorageService.class);
 
-    // SVG excluded (script/XSS vector).
+    // Extension → content-type for serving. SVG excluded (script/XSS vector).
     private static final Map<String, String> EXT_CONTENT_TYPE = Map.of(
             "png", "image/png",
             "jpg", "image/jpeg",
@@ -42,10 +46,25 @@ public class MediaStorageService {
     private static final int MAX_DIM = 12_000; // px per side
     private static final Pattern ID_PATTERN = Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[a-z0-9]+$");
 
-    @Value("${codestar.media.storage-path:./media}")
-    private String storagePathRaw;
+    private final IMediaAssetRepository mediaAssets;
+    private final UploadRateLimiter rateLimiter;
+    private final String storagePathRaw;
+    private final long userQuotaBytes;
+    private final long instanceQuotaBytes;
+    private final long userQuotaMb;
+    private final long instanceQuotaMb;
 
     private Path storageRoot;
+
+    public MediaStorageService(IMediaAssetRepository mediaAssets, UploadRateLimiter rateLimiter, @Value("${codestar.media.storage-path:./media}") String storagePathRaw, @Value("${codestar.media.user-quota-mb:100}") long userQuotaMb, @Value("${codestar.media.instance-quota-mb:5000}") long instanceQuotaMb) {
+        this.mediaAssets = mediaAssets;
+        this.rateLimiter = rateLimiter;
+        this.storagePathRaw = storagePathRaw;
+        this.userQuotaMb = userQuotaMb;
+        this.instanceQuotaMb = instanceQuotaMb;
+        this.userQuotaBytes = userQuotaMb * 1024L * 1024L;
+        this.instanceQuotaBytes = instanceQuotaMb * 1024L * 1024L;
+    }
 
     @PostConstruct
     void init() {
@@ -57,7 +76,10 @@ public class MediaStorageService {
         }
     }
 
-    public String store(MultipartFile file) {
+    public String store(MultipartFile file, UUID ownerId) {
+        if (!rateLimiter.tryAcquire(ownerId)) {
+            throw ApiException.tooManyRequests("too many uploads, please slow down");
+        }
         if (file == null || file.isEmpty()) {
             throw ApiException.badRequest("file is required");
         }
@@ -80,14 +102,31 @@ public class MediaStorageService {
         if (ext == null) {
             throw ApiException.badRequest("unsupported image type (png, jpg, webp, gif only)");
         }
-        validateDimensions(bytes);
+        int[] dim = readDimensions(bytes); // bomb guard; null when unknown (e.g. webp)
+
+        long newBytes = bytes.length;
+        enforceQuota(ownerId, newBytes);
 
         String id = UUID.randomUUID() + "." + ext;
-        Path target = storageRoot.resolve(id).normalize();
+        Path target = pathFor(id);
         if (!target.startsWith(storageRoot)) {
             throw ApiException.badRequest("invalid target path");
         }
         writeAtomic(target, bytes);
+
+        try {
+            mediaAssets.save(new MediaAsset(
+                    id, ownerId, contentTypeFor(id), newBytes,
+                    dim == null ? null : dim[0],
+                    dim == null ? null : dim[1]));
+        } catch (RuntimeException e) {
+            try {
+                Files.deleteIfExists(target);
+            } catch (IOException ignored) {
+                // best-effort
+            }
+            throw e;
+        }
         return id;
     }
 
@@ -95,7 +134,7 @@ public class MediaStorageService {
         if (id == null || !ID_PATTERN.matcher(id).matches()) {
             throw ApiException.notFound("Media not found");
         }
-        Path file = storageRoot.resolve(id).normalize();
+        Path file = pathFor(id);
         if (!file.startsWith(storageRoot) || !Files.isReadable(file)) {
             throw ApiException.notFound("Media not found");
         }
@@ -106,6 +145,24 @@ public class MediaStorageService {
         int dot = id.lastIndexOf('.');
         String ext = dot >= 0 ? id.substring(dot + 1).toLowerCase() : "";
         return EXT_CONTENT_TYPE.getOrDefault(ext, "application/octet-stream");
+    }
+
+    private Path pathFor(String id) {
+        return storageRoot
+                .resolve(id.substring(0, 2))
+                .resolve(id.substring(2, 4))
+                .resolve(id)
+                .normalize();
+    }
+
+    // Rejects when the upload would push the owner or the instance over quota.
+    private void enforceQuota(UUID ownerId, long newBytes) {
+        if (mediaAssets.sumBytesByOwner(ownerId) + newBytes > userQuotaBytes) {
+            throw ApiException.payloadTooLarge("upload would exceed your storage quota (" + userQuotaMb + " MB)");
+        }
+        if (mediaAssets.sumBytesTotal() + newBytes > instanceQuotaBytes) {
+            throw ApiException.payloadTooLarge("instance storage is full (" + instanceQuotaMb + " MB)");
+        }
     }
 
     private static String detectType(byte[] b) {
@@ -131,14 +188,14 @@ public class MediaStorageService {
         return null;
     }
 
-    private void validateDimensions(byte[] bytes) {
+    private int[] readDimensions(byte[] bytes) {
         try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             if (iis == null) {
-                return;
+                return null;
             }
             Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
             if (!readers.hasNext()) {
-                return;
+                return null;
             }
             ImageReader reader = readers.next();
             try {
@@ -148,6 +205,7 @@ public class MediaStorageService {
                 if (w <= 0 || h <= 0 || w > MAX_DIM || h > MAX_DIM || (long) w * h > MAX_PIXELS) {
                     throw ApiException.badRequest("image dimensions too large");
                 }
+                return new int[]{w, h};
             } finally {
                 reader.dispose();
             }
@@ -160,7 +218,9 @@ public class MediaStorageService {
     private void writeAtomic(Path target, byte[] bytes) {
         Path tmp = null;
         try {
-            tmp = Files.createTempFile(storageRoot, "upload-", ".tmp");
+            Path dir = target.getParent();
+            Files.createDirectories(dir);
+            tmp = Files.createTempFile(dir, "upload-", ".tmp");
             Files.write(tmp, bytes);
             try {
                 Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE);

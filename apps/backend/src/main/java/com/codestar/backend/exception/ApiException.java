@@ -34,7 +34,15 @@ public class ApiException extends RuntimeException {
         return new ApiException(HttpStatus.FORBIDDEN, message); 
     }
 
-    public static ApiException unauthorized(String message){ 
-        return new ApiException(HttpStatus.UNAUTHORIZED, message); 
+    public static ApiException unauthorized(String message){
+        return new ApiException(HttpStatus.UNAUTHORIZED, message);
+    }
+
+    public static ApiException payloadTooLarge(String message) {
+        return new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, message);
+    }
+
+    public static ApiException tooManyRequests(String message) {
+        return new ApiException(HttpStatus.TOO_MANY_REQUESTS, message);
     }
 }
