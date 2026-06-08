@@ -1,5 +1,6 @@
 package com.codestar.backend.controller;
 
+import com.codestar.backend.config.SignupProperties;
 import com.codestar.backend.dto.ApiResponseDto;
 import com.codestar.backend.dto.auth.LoginRequestDto;
 import com.codestar.backend.dto.auth.LoginResponseDto;
@@ -15,7 +16,6 @@ import com.codestar.backend.service.InvitationService;
 import com.codestar.backend.utils.Emails;
 import com.codestar.backend.utils.JwtUtils;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,15 +36,15 @@ public class AuthController {
     private final InvitationService invitationService;
     private final GroupService groupService;
 
-    @Value("${codestar.signup.open:false}")
-    private boolean signupOpen;
+    private final boolean signupOpen;
 
-    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService) {
+    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService, SignupProperties signupProperties) {
         this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
         this.passwordEncoder = passwordEncoder;
         this.invitationService = invitationService;
         this.groupService = groupService;
+        this.signupOpen = signupProperties.open();
     }
 
     @PostMapping("/login")

@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Validates and normalizes the {@code payload} map of a course block per kind
@@ -30,6 +31,7 @@ public class BlockPayloadValidator {
     private static final int TABLE_ROWS_MAX = 100;
     private static final int EXPECTED_OUTPUT_MAX = 4000;
     private static final Set<String> ALLOWED_TONES = Set.of("neutral", "warning", "danger", "success", "green", "tip");
+    private static final Pattern INTERNAL_MEDIA_PATH = Pattern.compile("^/api/v1/media/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[a-z0-9]+$");
 
     /**
      * Returns a normalized payload (only the allowed keys, with their values).
@@ -87,7 +89,13 @@ public class BlockPayloadValidator {
 
     private Map<String, Object> validateImage(Map<String, Object> p) {
         rejectUnknown(p, Set.of("src", "alt"));
-        String src = requireUrl(p, "src");
+        // src is optional because blocks are mostly added before the image is uploaded via course builder
+        String src = optionalString(p, "src", 2000);
+        if (src == null || src.isBlank()) {
+            src = "";
+        } else if (!INTERNAL_MEDIA_PATH.matcher(src).matches()) {
+            src = requireHttpUrl(src);
+        }
         String alt = optionalString(p, "alt", ALT_MAX);
         if (alt == null) alt = "";
         return Map.of("src", src, "alt", alt);
@@ -263,17 +271,16 @@ public class BlockPayloadValidator {
         return out;
     }
 
-    private static String requireUrl(Map<String, Object> p, String key) {
-        String raw = requireString(p, key, 2000);
+    private static String requireHttpUrl(String raw) {
         URI uri;
         try {
             uri = URI.create(raw);
         } catch (IllegalArgumentException e) {
-            throw ApiException.badRequest(key + " is not a valid URL");
+            throw ApiException.badRequest("src is not a valid URL");
         }
         String scheme = uri.getScheme();
         if (scheme == null || !(scheme.equals("http") || scheme.equals("https"))) {
-            throw ApiException.badRequest(key + " must be an http(s) URL");
+            throw ApiException.badRequest("src must be an http(s) URL or an uploaded image");
         }
         return raw;
     }

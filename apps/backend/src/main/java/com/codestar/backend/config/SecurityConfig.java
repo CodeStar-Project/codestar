@@ -2,7 +2,6 @@ package com.codestar.backend.config;
 
 import com.codestar.backend.security.ApiSecurityExceptionHandler;
 import com.codestar.backend.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,12 +27,12 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final ApiSecurityExceptionHandler securityExceptionHandler;
 
-    @Value("${codestar.cors.allowed-origins}")
-    private List<String> allowedOrigins;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtFilter, ApiSecurityExceptionHandler securityExceptionHandler) {
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter, ApiSecurityExceptionHandler securityExceptionHandler, CorsProperties corsProperties) {
         this.jwtFilter = jwtFilter;
         this.securityExceptionHandler = securityExceptionHandler;
+        this.allowedOrigins = corsProperties.allowedOrigins();
     }
 
     @Bean
@@ -43,12 +42,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    // public auth + branding
                     .requestMatchers(HttpMethod.POST,
                             "/api/v1/auth/login",
                             "/api/v1/auth/register").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/instance/branding").permitAll()
+                    .requestMatchers(HttpMethod.GET,
+                            "/api/v1/media/**").permitAll()
                     // swagger / OpenAPI
                     .requestMatchers(
                             "/v3/api-docs/**",

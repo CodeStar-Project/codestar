@@ -1,5 +1,6 @@
 package com.codestar.backend.service;
 
+import com.codestar.backend.config.InstanceProperties;
 import com.codestar.backend.dto.instance.InstanceBrandingDto;
 import com.codestar.backend.dto.instance.UpdateBrandingRequestDto;
 import com.codestar.backend.exception.ApiException;
@@ -8,7 +9,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -28,17 +28,17 @@ public class InstanceBrandingService {
 
     private static final Logger log = LoggerFactory.getLogger(InstanceBrandingService.class);
 
-    @Value("${codestar.instance.config-path}")
-    private String configPath;
+    private final String configPath;
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
 
     private volatile InstanceBrandingDto cached;
 
-    public InstanceBrandingService(ResourceLoader resourceLoader, ObjectMapper objectMapper) {
+    public InstanceBrandingService(ResourceLoader resourceLoader, ObjectMapper objectMapper, InstanceProperties instanceProperties) {
         this.resourceLoader = resourceLoader;
         this.objectMapper = objectMapper;
+        this.configPath = instanceProperties.configPath();
     }
 
     @PostConstruct

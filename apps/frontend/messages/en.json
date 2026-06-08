@@ -204,6 +204,8 @@
       "code": "Code",
       "src": "URL (https://…)",
       "alt": "Alt text",
+      "imageUpload": "Upload an image",
+      "imageUploadError": "Upload failed",
       "tone": "Tone",
       "quoteText": "Quote",
       "author": "Author (optional)",

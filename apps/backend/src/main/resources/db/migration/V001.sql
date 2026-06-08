@@ -211,3 +211,25 @@ CREATE TABLE app_settings (
 
 -- Default editorial limit: max blocks per course page.
 INSERT INTO app_settings (key, value) VALUES ('max_blocks_per_page', '50');
+
+-- MEDIA_ASSETS — index of uploaded course images (files live on the filesystem)
+CREATE TABLE media_assets (
+    id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+    filename        VARCHAR(64)     NOT NULL UNIQUE,
+    owner_id        UUID            NOT NULL,
+    content_type    VARCHAR(64)     NOT NULL,
+    bytes           BIGINT          NOT NULL,
+    width           INTEGER         NULL,
+    height          INTEGER         NULL,
+    referenced      BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    CONSTRAINT media_assets_owner_fk
+        FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT media_assets_bytes_chk
+        CHECK (bytes >= 0)
+);
+
+CREATE INDEX idx_media_assets_owner ON media_assets (owner_id);
+CREATE INDEX idx_media_assets_unreferenced
+    ON media_assets (created_at)
+    WHERE referenced = FALSE;
