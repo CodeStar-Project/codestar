@@ -1,6 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-06-07
+> Dernière mise à jour : 2026-06-08 (§5 réécrite — inventaire exhaustif des endpoints réels au niveau code, branche `feat/images-management`)
 
 ---
 
@@ -15,11 +15,13 @@ Branche active : `dev`. Phase v1 **terminée**, phase v2 **largement avancée** 
 - Auth : `POST /auth/{login,register,logout}`, `GET /auth/me`.
 - Groupes : CRUD complet + `join` + invitations (create/list) + curriculum (get/put) + membres (list/delete/patch rôle).
 - Invitations : `DELETE /invitations/{id}` (permission créateur/admin).
-- Cours : list / mine / slug / blocks / create / **duplicate** / patch / status / delete / put-blocks. Validation payload via `BlockPayloadValidator`, filtres via `CourseSpecifications`.
+- Cours : list / mine / slug / get-pages / create / **duplicate** / patch / status / delete / put-pages / **export** / **import**. Validation payload via `BlockPayloadValidator`, filtres via `CourseSpecifications`. (Modèle Course→Page→Bloc, cf. §11.4ter — `/blocks` remplacé par `/pages`.)
 - Enrollments : `GET /mine`, `POST /{courseId}/progress` (upsert).
 - Bookmarks : post / delete / mine / get.
 - Instance branding : `GET` + `PATCH /instance/branding`.
 - **Users (admin)** : `GET /users`, `PATCH /{id}/role`, `POST /{id}/{disable,enable}` — hors roadmap initiale, anticipe `/admin/users`.
+- **Settings** : `GET /settings` (Teacher+), `PATCH /settings` (Admin+) — `app_settings` key/value, `max_blocks_per_page` (cf. §11.4ter).
+- **Media** : `POST /media` (Teacher+), `GET /media/{id}` (public) — cf. §12.
 - OpenAPI/Swagger (`OpenApiConfig`).
 
 ### Backend — reste à faire
@@ -281,59 +283,122 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 
 ## 5. API REST
 
-Convention : `/api/v1/...`. Toutes les réponses enveloppées dans `ApiResponseDto<T> { success, message, data }` (déjà existant). v1 et v2 implémentées (sauf `/notes/*`). Endpoints réels supplémentaires non listés dans le tableau d'origine :
+> **Inventaire exhaustif au niveau code** (branche `feat/images-management`). Source = annotations `@*Mapping` + `@PreAuthorize` des contrôleurs. Préfixe global `/api/v1`. **33 endpoints implémentés**, regroupés par ressource.
 
-- `GET /courses/mine`, `POST /courses/{id}/duplicate`, `POST /courses/{id}/status`, `DELETE /courses/{id}`
-- `GET /bookmarks`, `GET /bookmarks/mine`
-- `GET /groups/{id}/invitations`, `GET/DELETE/PATCH /groups/{groupId}/members[/{userId}]`
-- `GET /users`, `PATCH /users/{id}/role`, `POST /users/{id}/{disable,enable}`
-- `POST /media` (Teacher+), `GET /media/{id}` (public) — upload/download images de cours (cf. §12)
+### Conventions
 
-### v1 — Auth & groupes
+- **Enveloppe** : toutes les réponses dans `ApiResponseDto<T> { success, message, data }`. **Exception** : `GET /media/{id}` renvoie le binaire brut (`Resource`), hors enveloppe.
+- **Auth** : JWT Bearer (`Authorization: Bearer <token>`), sessions `STATELESS`. Token via `POST /auth/{login,register}`.
+- **Routes publiques** (`permitAll`, cf. `SecurityConfig`) : `POST /auth/login`, `POST /auth/register`, `GET /instance/branding`, `GET /media/**`, Swagger (`/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html`). **Toute autre route = `authenticated()`** (≥ Student) même sans `@PreAuthorize` explicite.
+- **Rôles** : `Student+` = tout authentifié · `Teacher+` = TEACHER/ADMIN/SUPER_ADMIN · `Admin+` = ADMIN/SUPER_ADMIN. Les `⚠️` = check programmatique (services `@coursePermissionService`/`@groupPermissionService`/`@invitationPermissionService`).
+- **Légende statut** : ✅ implémenté · 🟡 partiel · ❌ non implémenté.
+
+### Auth — `AuthController` (`/api/v1/auth`)
 
 | Méthode | Endpoint | Rôle | Description |
 |---|---|---|---|
-| POST | `/api/v1/auth/register` | Visitor | Inscription email + mot de passe + invitationCode (obligatoire si signup fermé) |
-| POST | `/api/v1/auth/login` | Visitor | Retourne JWT |
-| POST | `/api/v1/auth/logout` | Tout authentifié | Invalide token (blacklist Redis ou expiration courte) |
-| GET | `/api/v1/auth/me` | Tout authentifié | Profil + rôle + groupes |
-| POST | `/api/v1/groups/join` | Tout authentifié | Body `{ code }` → ajoute le user au gorupe si valide |
-| GET | `/api/v1/groups` | Admin / SA | Liste toutes les groupes |
-| GET | `/api/v1/groups/mine` | Tout authentifié | Mes groupes |
-| POST | `/api/v1/groups` | Admin / SA | Créer un group |
-| PATCH | `/api/v1/groups/{id}` | Admin / SA | Modifier nom/dates |
-| POST | `/api/v1/groups/{id}/invitations` | Admin / Teacher (son groupe) | Génère un code (params : maxUses, expiresAt) |
-| DELETE | `/api/v1/invitations/{id}` | Admin / créateur | Révoque |
-| GET | `/api/v1/instance/branding` | Visitor | Renvoie `instance.json` |
+| POST | `/auth/login` | Public | `LoginRequestDto {email, password}` → `LoginResponseDto {token, type:"Bearer"}` |
+| POST | `/auth/register` | Public | `RegisterRequestDto {email, password, displayName, invitationCode?}` → 201 + JWT. `invitationCode` **obligatoire si `SIGNUP_OPEN=false`**. Crée un user `STUDENT` |
+| GET | `/auth/me` | Authentifié | `MeResponseDto {id, email, displayName, role, createdAt, groups[]}` |
+| POST | `/auth/logout` | Authentifié | 204 No Content. **No-op stateless** (TODO blacklist JWT, cf. B6) |
 
-### v2 — Cours, progression, branding
+### Courses — `CourseController` (`/api/v1/courses`)
 
-| Méthode | Endpoint | Rôle |
-|---|---|---|
-| GET | `/api/v1/courses` | Student+ |
-| GET | `/api/v1/courses/{slug}` | Student+ |
-| POST | `/api/v1/courses` | Teacher+ |
-| PATCH | `/api/v1/courses/{id}` | Auteur ou Admin+ |
-| POST | `/api/v1/courses/{id}/publish` | Auteur ou Admin+ |
-| GET | `/api/v1/courses/{id}/blocks` | Student+ |
-| PUT | `/api/v1/courses/{id}/blocks` | Auteur ou Admin+ (remplacement complet, ordre = index dans tableau) |
-| POST | `/api/v1/enrollments/{courseId}/progress` | Student+ — body `{ progress: 0..1 }` |
-| GET | `/api/v1/enrollments/mine` | Student+ |
-| POST | `/api/v1/bookmarks` | Student+ |
-| DELETE | `/api/v1/bookmarks/{id}` | Propriétaire |
-| GET/PUT | `/api/v1/notes/{courseId}/{blockId}` | Propriétaire |
-| GET | `/api/v1/groups/{id}/curriculum` | Membre groupe |
-| PUT | `/api/v1/groups/{id}/curriculum` | Admin+ ou Teacher animant |
-| PATCH | `/api/v1/instance/branding` | Admin+ |
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/courses` | Student+ | Query : `all`, `status`, `category`, `level`, `author`(UUID), `q`. `all=true` → **Admin+ requis**. `List<CourseSummaryDto>` |
+| GET | `/courses/mine` | Teacher+ | Cours dont je suis l'auteur |
+| GET | `/courses/{slug}` | Student+ | `CourseDto` (par slug) |
+| GET | `/courses/{id}/pages` | Student+ | `List<CoursePageDto>` (modèle Course→Page→Bloc, cf. §11.4ter) |
+| POST | `/courses` | Teacher+ | `CreateCourseRequestDto` → 201 `CourseDto` |
+| POST | `/courses/{id}/duplicate` | Teacher+ ⚠️ `canEditCourse` | 201 `CourseDto` |
+| PATCH | `/courses/{id}` | ⚠️ `canEditCourse` | `UpdateCourseRequestDto` |
+| POST | `/courses/{id}/status` | ⚠️ `canEditCourse` | `UpdateCourseStatusRequestDto {status}` (remplace l'ancien `/publish`) |
+| DELETE | `/courses/{id}` | ⚠️ `canEditCourse` | Archive le cours (soft) |
+| PUT | `/courses/{id}/pages` | ⚠️ `canEditCourse` | `SavePagesRequestDto` — **remplacement complet** des pages/blocs (remplace l'ancien `/blocks`) |
+| GET | `/courses/{id}/export` | ⚠️ `canEditCourse` | `CourseExportDto` (JSON §11.3, **version 2**) |
+| POST | `/courses/import` | Teacher+ | `ImportCourseRequestDto` → 201 `CourseDto` (`DRAFT`, slugify + collision) |
 
-### v3 — Gamification
+### Enrollments — `EnrollmentController` (`/api/v1/enrollments`)
 
-| Méthode | Endpoint | Rôle |
-|---|---|---|
-| POST | `/api/v1/quiz/{blockId}/attempt` | Student+ |
-| GET | `/api/v1/leaderboard?scope={global,groups,friends}&season={current}` | Student+ |
-| GET | `/api/v1/me/stats` | Student+ — XP, streak, badges, rang |
-| POST | `/api/v1/admin/leaderboard/reset` | Admin+ |
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/enrollments/mine` | Authentifié | `List<EnrollmentDto>` |
+| POST | `/enrollments/{courseId}/progress` | Authentifié | `UpdateProgressRequestDto {progress: 0..1}` (upsert) |
+
+### Bookmarks — `BookmarkController` (`/api/v1/bookmarks`)
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| POST | `/bookmarks` | Authentifié | `CreateBookmarkRequestDto` → 201 `BookmarkDto` |
+| DELETE | `/bookmarks/{id}` | Authentifié (propriétaire) | — |
+| GET | `/bookmarks/mine` | Authentifié | `List<BookmarkEnrichedDto>` (tous mes favoris) |
+| GET | `/bookmarks?courseId={uuid}` | Authentifié | `List<BookmarkEnrichedDto>` (mes favoris pour un cours) |
+
+### Groups — `GroupController` (`/api/v1/groups`)
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/groups` | Admin+ | Liste tous les groupes |
+| GET | `/groups/mine` | Authentifié | Mes groupes (`List<GroupSummaryDto>`) |
+| GET | `/groups/{id}` | Admin+ | `GroupResponseDto` |
+| POST | `/groups` | Admin+ | `CreateGroupRequestDto` → 201 |
+| PATCH | `/groups/{id}` | Admin+ | `UpdateGroupRequestDto` (nom/dates) |
+| DELETE | `/groups/{id}` | Admin+ | — |
+| POST | `/groups/join` | Authentifié | `JoinGroupRequestDto {code}` → renvoie le `groupId` rejoint |
+| POST | `/groups/{groupId}/invitations` | ⚠️ `canManageGroup` | `CreateInvitationRequestDto {maxUses, expiresAt?}` → 201 `InvitationResponseDto` |
+| GET | `/groups/{groupId}/invitations` | ⚠️ `canManageGroup` | Query `includeRevoked` (def. `false`) |
+| GET | `/groups/{groupId}/curriculum` | ⚠️ `isGroupMember` | `List<CourseSummaryDto>` |
+| PUT | `/groups/{groupId}/curriculum` | ⚠️ `canManageGroup` | `UpdateCurriculumRequestDto` (remplacement complet) |
+| GET | `/groups/{groupId}/members` | ⚠️ `canManageGroup` | `List<GroupMemberDto>` |
+| DELETE | `/groups/{groupId}/members/{userId}` | ⚠️ `canManageGroup` | Retire un membre |
+| PATCH | `/groups/{groupId}/members/{userId}` | ⚠️ `canManageGroup` | `UpdateGroupMemberRoleRequestDto {roleInGroup}` |
+| ~~GET~~ | ~~`/groups/{groupId}/stats/export.csv`~~ | ⚠️ `canManageGroup` | ❌ **commenté** (TODO export CSV, cf. §2.15) |
+
+### Invitations — `InvitationController` (`/api/v1/invitations`)
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| DELETE | `/invitations/{id}` | ⚠️ `canRevoke` (créateur ou Admin) | Révoque un code |
+
+### Users — `UserController` (`/api/v1/users`) — classe entière `Admin+`
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/users` | Admin+ | Query : `role`, `disabled`, `q`. `List<UserSummaryDto>` |
+| PATCH | `/users/{id}/role` | Admin+ | `UpdateUserRoleRequestDto {role}` (un admin ne peut promouvoir qu'en dessous de lui) |
+| POST | `/users/{id}/disable` | Admin+ | Désactive |
+| POST | `/users/{id}/enable` | Admin+ | Réactive |
+
+### Settings — `SettingsController` (`/api/v1/settings`)
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/settings` | Teacher+ | `SettingsDto` (l'éditeur lit `max_blocks_per_page`). ⚠️ TODO : restreindre Teacher après fusion avec `instance` |
+| PATCH | `/settings` | Admin+ | `UpdateSettingsRequestDto` (borne `max_blocks_per_page` 1–1000) |
+
+### Media — `MediaController` (`/api/v1/media`) — cf. §12
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| POST | `/media` | Teacher+ | multipart `file` (png/jpg/webp/gif, ≤ 5 MB) → 201 `MediaUploadDto {id, url}` |
+| GET | `/media/{id}` | Public | Binaire brut (hors enveloppe). Headers : `Cache-Control: immutable 1 an`, `ETag`, `nosniff`, `Content-Disposition: inline` |
+
+### Instance — `InstanceController` (`/api/v1/instance`)
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| GET | `/instance/branding` | Public | `InstanceBrandingDto` (lit `instance.json`, pas de cache) |
+| PATCH | `/instance/branding` | Admin+ | `UpdateBrandingRequestDto` → réécrit `instance.json` |
+
+### Non implémenté (roadmap)
+
+- ❌ **Notes** : `GET/PUT /notes/{courseId}/{blockId}` (v2) — table + contrôleur absents.
+- ❌ **Export CSV stats** : `GET /groups/{groupId}/stats/export.csv` — code commenté dans `GroupController` (service `GroupStatsService` présent).
+- ❌ **Gamification v3** : `POST /quiz/{blockId}/attempt`, `GET /leaderboard?scope={global,groups,friends}&season={current}`, `GET /me/stats`, `POST /admin/leaderboard/reset` — rien.
+- ⚠️ **Logout** : route présente mais no-op (pas de blacklist).
+
+> ⚠️ **Changements vs ancienne doc** : `/courses/{id}/blocks` → `/courses/{id}/pages` (modèle pages, §11.4ter) · `/courses/{id}/publish` → `/courses/{id}/status` · ajout `/courses/{id}/export` + `/courses/import` · ajout `/settings/*` · `/notes/*` jamais livré.
 
 ---
 
