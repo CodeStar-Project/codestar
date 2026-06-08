@@ -81,7 +81,7 @@ public class MediaStorageService {
             throw ApiException.tooManyRequests("too many uploads, please slow down");
         }
         if (file == null || file.isEmpty()) {
-            throw ApiException.payloadTooLarge("file is required");
+            throw ApiException.badRequest("file is required");
         }
         if (file.getSize() > MAX_BYTES) {
             throw ApiException.payloadTooLarge("file exceeds the 5 MB limit");
