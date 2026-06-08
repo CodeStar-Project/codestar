@@ -12,12 +12,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 
   let res: Response;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000)
   try {
     res = await fetch(`${backendBaseUrl()}/api/v1/media/${id}`, {
       cache: "no-store",
+      signal: controller.signal,
     });
   } catch {
     return new Response("Bad gateway", { status: 502 });
+  } finally {
+    clearTimeout(timeoutId);
   }
   if (!res.ok || !res.body) {
     return new Response("Not found", { status: 404 });

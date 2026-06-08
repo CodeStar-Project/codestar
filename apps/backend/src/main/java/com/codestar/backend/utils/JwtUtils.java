@@ -8,7 +8,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import com.codestar.backend.config.JwtProperties;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -22,13 +22,15 @@ import java.util.UUID;
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret}")
-    private String secret;
-
-    @Value("${jwt.expiration}")
-    private long expiration;
+    private final String secret;
+    private final long expiration;
 
     private Key key;
+
+    public JwtUtils(JwtProperties props) {
+        this.secret = props.secret();
+        this.expiration = props.expiration();
+    }
 
     @PostConstruct
     public void init() {

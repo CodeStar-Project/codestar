@@ -1,12 +1,12 @@
 package com.codestar.backend.service;
 
+import com.codestar.backend.config.MediaProperties;
 import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.model.MediaAsset;
 import com.codestar.backend.repository.IMediaAssetRepository;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -56,12 +56,12 @@ public class MediaStorageService {
 
     private Path storageRoot;
 
-    public MediaStorageService(IMediaAssetRepository mediaAssets, UploadRateLimiter rateLimiter, @Value("${codestar.media.storage-path:./media}") String storagePathRaw, @Value("${codestar.media.user-quota-mb:100}") long userQuotaMb, @Value("${codestar.media.instance-quota-mb:5000}") long instanceQuotaMb) {
+    public MediaStorageService(IMediaAssetRepository mediaAssets, UploadRateLimiter rateLimiter, MediaProperties props) {
         this.mediaAssets = mediaAssets;
         this.rateLimiter = rateLimiter;
-        this.storagePathRaw = storagePathRaw;
-        this.userQuotaMb = userQuotaMb;
-        this.instanceQuotaMb = instanceQuotaMb;
+        this.storagePathRaw = props.storagePath();
+        this.userQuotaMb = props.userQuotaMb();
+        this.instanceQuotaMb = props.instanceQuotaMb();
         this.userQuotaBytes = userQuotaMb * 1024L * 1024L;
         this.instanceQuotaBytes = instanceQuotaMb * 1024L * 1024L;
     }
@@ -81,10 +81,10 @@ public class MediaStorageService {
             throw ApiException.tooManyRequests("too many uploads, please slow down");
         }
         if (file == null || file.isEmpty()) {
-            throw ApiException.badRequest("file is required");
+            throw ApiException.payloadTooLarge("file is required");
         }
         if (file.getSize() > MAX_BYTES) {
-            throw ApiException.badRequest("file exceeds the 5 MB limit");
+            throw ApiException.payloadTooLarge("file exceeds the 5 MB limit");
         }
 
         byte[] bytes;

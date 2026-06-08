@@ -6,7 +6,6 @@ import com.codestar.backend.repository.IUserRepository;
 import com.codestar.backend.utils.Emails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,18 +21,12 @@ public class SuperAdminBootstrap {
 
     private static final Logger log = LoggerFactory.getLogger(SuperAdminBootstrap.class);
 
-    @Value("${codestar.bootstrap.super-admin.email:}")
-    private String bootstrapEmail;
-
-    @Value("${codestar.bootstrap.super-admin.password:}")
-    private String bootstrapPassword;
-
-    @Value("${codestar.bootstrap.super-admin.display-name:Super-admin}")
-    private String bootstrapDisplayName;
-
     @Bean
-    public CommandLineRunner superAdminRunner(IUserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public CommandLineRunner superAdminRunner(IUserRepository userRepository, PasswordEncoder passwordEncoder, BootstrapProperties props) {
         return args -> {
+            String bootstrapEmail = props.email();
+            String bootstrapPassword = props.password();
+            String bootstrapDisplayName = props.displayName();
             if (bootstrapEmail == null || bootstrapEmail.isBlank()) {
                 return;
             }

@@ -823,17 +823,18 @@ Débloque le contrôle d'usage.
 | # | Tâche | Couche | Effort | Statut / détail |
 |---|---|---|---|---|
 | M1 | Table `media_assets` | back | M | ✅ `id`, `filename`, `owner_id` (FK user, CASCADE), `content_type`, `bytes`, `width`, `height`, `created_at`, `referenced` (bool, pour P2). Index owner + index partiel `WHERE referenced=FALSE`. **Ajoutée dans `V001.sql` en place** (encore en pré-déploiement → reset DB requis) ; passer à une migration versionnée dès qu'on vise prod. Entité `MediaAsset` + `IMediaAssetRepository`. |
-| M2 | Rate-limit upload | back | S | ✅ `UploadRateLimiter` : token-bucket par user, **en mémoire, sans dépendance** (single-instance). Dépassement → 429. Config `codestar.media.rate-limit.{capacity,refill-per-minute}`. Redis = upgrade multi-replica (P3). |
+| M2 | Rate-limit upload | back | S | ✅ `UploadRateLimiter` : token-bucket par user, **en mémoire, sans dépendance** (single-instance). Dépassement → 429. **Éviction des buckets inactifs** via sweep `@Scheduled` (TTL idle 30 min) → map bornée aux users actifs, pas de fuite heap (`@EnableScheduling` activé, réutilisé par le GC P2). Config `codestar.media.rate-limit.{capacity,refill-per-minute,idle-ttl-minutes,sweep-ms}`. Redis = upgrade multi-replica (P3). |
 | M3 | Quota disque | back | S | ✅ Cap par user + par instance (somme `bytes` DB), rejet 413. Config `MEDIA_USER_QUOTA_MB` (100) / `MEDIA_INSTANCE_QUOTA_MB` (5000). |
 | M4 | Sharding répertoire | back | S | ✅ `media/ab/cd/uuid.ext` (préfixe uuid) dans `pathFor`. URL/id inchangés (shard interne). |
 
-Notes : cohérence disque↔DB (delete fichier si l'insert échoue) ; race quota tolérée (pas de lock, léger dépassement possible) ; owner supprimé → row CASCADE → fichier orphelin invisible pour le GC P2 (edge connu).
+Notes : cohérence disque↔DB (delete fichier si l'insert échoue) ; **race quota acceptée** (check `SUM` puis `save` non atomiques → 2 uploads concurrents peuvent dépasser légèrement). Tolérée car : quota = garde-fou souple (pas facturation), dépassement borné à `uploads concurrents × 5 MB`, rate-limiter par user borne déjà le burst, mono-instance. Fix atomique = compteur `user_storage(owner_id, used_bytes)` + `UPDATE … WHERE used_bytes + :n <= :quota` (atomique sous verrou de ligne) — reporté à P2 (couplé au cycle de vie des assets / GC). Edge connu : owner supprimé → row CASCADE → fichier orphelin invisible pour le GC P2.
 
 #### P2 — Garbage collection orphelins ❌
 
 | # | Tâche | Couche | Effort | Détail |
 |---|---|---|---|---|
-| G1 | GC médias non référencés | back | M | À chaque `PUT /courses/{id}/pages`, marquer `media_asset.referenced`. Job `@Scheduled` quotidien : supprime fichier+ligne si `referenced=false AND created_at < now-24h` (grâce 24h pour uploads en cours). Évite la fuite disque (upload abandonné, bloc supprimé). Dépend de M1. |
+| G1 | GC médias non référencés | back | M | À chaque `PUT /courses/{id}/pages`, marquer `media_asset.referenced`. Job `@Scheduled` quotidien (`@EnableScheduling` déjà activé en P1) : supprime fichier+ligne si `referenced=false AND created_at < now-24h` (grâce 24h pour uploads en cours). Évite la fuite disque (upload abandonné, bloc supprimé). Dépend de M1. |
+| G2 | Quota atomique (anti-race) | back | M | Remplacer le check `SUM`+`save` (race tolérée en P1) par un compteur `user_storage(owner_id, used_bytes)` + `UPDATE … SET used_bytes = used_bytes + :n WHERE used_bytes + :n <= :quota` (rows=0 → 413). Idem compteur instance. À faire ici car le compteur doit décrémenter sur suppression/GC → cohérent avec G1. Sans objet tant que mono-instance + quota souple. |
 
 #### P3 — Optimisation avancée + évolution stockage ❌
 

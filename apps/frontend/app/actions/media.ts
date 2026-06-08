@@ -6,7 +6,10 @@ import type { MediaUpload } from "@/lib/types";
 export async function uploadMedia(formData: FormData): Promise<{ ok: boolean; url?: string; error?: string }> {
   try {
     const data = await apiUpload<MediaUpload>("/api/v1/media", formData);
-    return { ok: true, url: data?.url };
+    if (!data?.url) {
+      return { ok: false, error: "Upload failed: missing media URL in response" }
+    }
+    return { ok: true, url: data.url }
   } catch (e) {
     if (e instanceof ApiError) return { ok: false, error: e.message };
     if (e instanceof Error) return { ok: false, error: e.message };
