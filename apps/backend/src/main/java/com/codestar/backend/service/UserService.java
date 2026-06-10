@@ -18,9 +18,11 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final IUserRepository userRepository;
+    private final AuditLogger audit;
 
-    public UserService(IUserRepository userRepository) {
+    public UserService(IUserRepository userRepository, AuditLogger audit) {
         this.userRepository = userRepository;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -62,8 +64,11 @@ public class UserService {
             }
         }
 
+        Role previousRole = target.getRole();
         target.setRole(newRole);
-        return toDto(userRepository.save(target));
+        UserSummaryDto dto = toDto(userRepository.save(target));
+        audit.event("user.role_change").field("userId", targetId).field("fromRole", previousRole.name()).field("toRole", newRole.name()).field("actorId", actor.getId()).log();
+        return dto;
     }
 
     @Transactional
@@ -80,7 +85,9 @@ public class UserService {
             throw ApiException.forbidden("Cannot disable an equal-or-higher user");
 
         target.setDisabledAt(disabled ? OffsetDateTime.now() : null);
-        return toDto(userRepository.save(target));
+        UserSummaryDto dto = toDto(userRepository.save(target));
+        audit.event(disabled ? "user.disable" : "user.enable").field("userId", targetId).field("actorId", actor.getId()).log();
+        return dto;
     }
 
     private static UserSummaryDto toDto(User u) {

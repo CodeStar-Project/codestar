@@ -3,6 +3,7 @@ package com.codestar.backend.config;
 import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.IUserRepository;
+import com.codestar.backend.service.AuditLogger;
 import com.codestar.backend.utils.Emails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,7 @@ public class SuperAdminBootstrap {
     private static final Logger log = LoggerFactory.getLogger(SuperAdminBootstrap.class);
 
     @Bean
-    public CommandLineRunner superAdminRunner(IUserRepository userRepository, PasswordEncoder passwordEncoder, BootstrapProperties props) {
+    public CommandLineRunner superAdminRunner(IUserRepository userRepository, PasswordEncoder passwordEncoder, BootstrapProperties props, AuditLogger audit) {
         return args -> {
             String bootstrapEmail = props.email();
             String bootstrapPassword = props.password();
@@ -41,15 +42,15 @@ public class SuperAdminBootstrap {
             if (existing.isEmpty()) {
                 User u = new User(normalizedEmail, passwordEncoder.encode(bootstrapPassword), bootstrapDisplayName, Role.SUPER_ADMIN);
                 userRepository.save(u);
-                log.info("Bootstrap : super-admin created");
+                audit.event("bootstrap.superadmin_created").log();
                 return;
             }
 
             User user = existing.get();
             if (user.getRole() != Role.SUPER_ADMIN) {
-                log.info("Bootstrap : user promoted from {} role to super-admin role", user.getRole());
                 user.setRole(Role.SUPER_ADMIN);
                 userRepository.save(user);
+                audit.event("bootstrap.superadmin_promoted").log();
             }
         };
     }

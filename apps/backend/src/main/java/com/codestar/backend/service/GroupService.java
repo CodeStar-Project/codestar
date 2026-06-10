@@ -26,10 +26,12 @@ public class GroupService {
 
     private final IGroupRepository groups;
     private final IGroupMembershipRepository memberships;
+    private final AuditLogger audit;
 
-    public GroupService(IGroupRepository groups, IGroupMembershipRepository memberships) {
+    public GroupService(IGroupRepository groups, IGroupMembershipRepository memberships, AuditLogger audit) {
         this.groups = groups;
         this.memberships = memberships;
+        this.audit = audit;
     }
 
     @Transactional
@@ -47,6 +49,7 @@ public class GroupService {
         groups.save(g);
         memberships.save(new GroupMembership(new GroupMembershipId(createdBy, g.getId()), GroupMemberRole.TEACHER));
 
+        audit.event("group.create").field("groupId", g.getId()).field("slug", slug).field("createdBy", createdBy).log();
         return toDto(g);
     }
 
@@ -61,6 +64,7 @@ public class GroupService {
         validateDates(g);
 
         groups.save(g);
+        audit.event("group.update").field("groupId", id).log();
         return toDto(g);
     }
 
@@ -110,6 +114,7 @@ public class GroupService {
             throw ApiException.notFound("Cannot find group");
         }
         groups.deleteById(id);
+        audit.event("group.delete").field("groupId", id).log();
     }
 
     // helpers
