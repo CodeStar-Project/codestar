@@ -118,8 +118,4 @@ public class AuthController {
     public ResponseEntity<ApiResponseDto<Void>> logout() {
         return ResponseEntity.noContent().build();
     }
-
-    private static String emailHash(String normalizedEmail) {
-        return Integer.toHexString(normalizedEmail.hashCode());
-    }
 }
