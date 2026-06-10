@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                MDC.put("userId", user.getId().toString()); // pas compris
+                MDC.put("userId", user.getId().toString());
             }
         } catch (JwtException | IllegalArgumentException ignored) {
             // invalid / expired / malformed token = no authentication
