@@ -23,6 +23,7 @@ import {
   BookIcon,
   ChartIcon,
   PlusIcon,
+  SparklesIcon,
   UsersIcon,
 } from "@/components/ui/icons";
 import { isAdmin } from "@/lib/roles";
@@ -61,6 +62,12 @@ export default async function AdminDashboardPage() {
         title={admin ? t("title") : t("titleTeacher")}
         actions={
           <>
+            <GlassButton asChild variant="glass">
+              <Link href="/admin/ai-generator">
+                <SparklesIcon size={14} />
+                AI Generator
+              </Link>
+            </GlassButton>
             <GlassButton asChild variant="primary">
               <Link href="/admin/courses/new">
                 <PlusIcon size={14} />

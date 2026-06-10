@@ -309,3 +309,9 @@ export const HelpCircleIcon = (props: IconProps) => (
     <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01" />
   </svg>
 );
+
+export const XIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
