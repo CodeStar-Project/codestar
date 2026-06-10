@@ -1,6 +1,7 @@
 package com.codestar.backend.exception;
 
 import com.codestar.backend.dto.ApiResponseDto;
+import com.codestar.backend.service.AuditLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,7 +21,12 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class); // on en a toujours besoin ?
+    private final AuditLogger audit;
+
+    public GlobalExceptionHandler(AuditLogger audit) {
+        this.audit = audit;
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleApi(ApiException ex) {
@@ -40,6 +46,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponseDto<Void>> handleAccessDenied(AccessDeniedException ex) {
+        audit.event("security.access_denied").warn();
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ApiResponseDto<>(false, "Access denied", null));
     }

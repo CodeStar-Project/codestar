@@ -48,6 +48,7 @@ public class MediaStorageService {
 
     private final IMediaAssetRepository mediaAssets;
     private final UploadRateLimiter rateLimiter;
+    private final AuditLogger audit;
     private final String storagePathRaw;
     private final long userQuotaBytes;
     private final long instanceQuotaBytes;
@@ -56,9 +57,10 @@ public class MediaStorageService {
 
     private Path storageRoot;
 
-    public MediaStorageService(IMediaAssetRepository mediaAssets, UploadRateLimiter rateLimiter, MediaProperties props) {
+    public MediaStorageService(IMediaAssetRepository mediaAssets, UploadRateLimiter rateLimiter, MediaProperties props, AuditLogger audit) {
         this.mediaAssets = mediaAssets;
         this.rateLimiter = rateLimiter;
+        this.audit = audit;
         this.storagePathRaw = props.storagePath();
         this.userQuotaMb = props.userQuotaMb();
         this.instanceQuotaMb = props.instanceQuotaMb();
@@ -78,6 +80,7 @@ public class MediaStorageService {
 
     public String store(MultipartFile file, UUID ownerId) {
         if (!rateLimiter.tryAcquire(ownerId)) {
+            audit.event("media.upload_rate_limited").field("ownerId", ownerId).warn();
             throw ApiException.tooManyRequests("too many uploads, please slow down");
         }
         if (file == null || file.isEmpty()) {
@@ -127,6 +130,8 @@ public class MediaStorageService {
             }
             throw e;
         }
+
+        audit.event("media.upload").field("mediaId", id).field("ownerId", ownerId).field("bytes", newBytes).log();
         return id;
     }
 
@@ -158,9 +163,11 @@ public class MediaStorageService {
     // Rejects when the upload would push the owner or the instance over quota.
     private void enforceQuota(UUID ownerId, long newBytes) {
         if (mediaAssets.sumBytesByOwner(ownerId) + newBytes > userQuotaBytes) {
+            audit.event("media.quota_exceeded").field("ownerId", ownerId).field("scope", "user").field("bytes", newBytes).warn();
             throw ApiException.payloadTooLarge("upload would exceed your storage quota (" + userQuotaMb + " MB)");
         }
         if (mediaAssets.sumBytesTotal() + newBytes > instanceQuotaBytes) {
+            audit.event("media.quota_exceeded").field("ownerId", ownerId).field("scope", "instance").field("bytes", newBytes).warn();
             throw ApiException.payloadTooLarge("instance storage is full (" + instanceQuotaMb + " MB)");
         }
     }

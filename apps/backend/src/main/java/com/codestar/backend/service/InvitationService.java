@@ -8,31 +8,27 @@ import com.codestar.backend.model.InvitationCode;
 import com.codestar.backend.repository.IGroupMembershipRepository;
 import com.codestar.backend.repository.IGroupRepository;
 import com.codestar.backend.repository.IInvitationCodeRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-// TODO logs example
-
 @Service
 public class InvitationService {
-
-    private static final Logger log = LoggerFactory.getLogger(InvitationService.class);
 
     private final IInvitationCodeRepository invitations;
     private final IGroupRepository groups;
     private final IGroupMembershipRepository memberships;
     private final InvitationCodeGenerator generator;
+    private final AuditLogger audit;
 
-    public InvitationService(IInvitationCodeRepository invitations, IGroupRepository groups, IGroupMembershipRepository memberships, InvitationCodeGenerator generator) {
+    public InvitationService(IInvitationCodeRepository invitations, IGroupRepository groups, IGroupMembershipRepository memberships, InvitationCodeGenerator generator, AuditLogger audit) {
         this.invitations = invitations;
         this.groups = groups;
         this.memberships = memberships;
         this.generator = generator;
+        this.audit = audit;
     }
 
     @Transactional
@@ -48,7 +44,9 @@ public class InvitationService {
         } while (invitations.findByCode(code).isPresent());
 
         InvitationCode entity = new InvitationCode(code, groupId, maxUses, expiresAt, createdBy);
-        return invitations.save(entity);
+        InvitationCode saved = invitations.save(entity);
+        audit.event("invitation.create").field("invitationId", saved.getId()).field("groupId", groupId).field("createdBy", createdBy).field("maxUses", maxUses).log();
+        return saved;
     }
 
     @Transactional
@@ -58,7 +56,7 @@ public class InvitationService {
         if (inv.getRevokedAt() != null) return;
         inv.setRevokedAt(OffsetDateTime.now());
         invitations.save(inv);
-        log.info("Invitation {} revoked by user {}", invitationId, actorUserId);
+        audit.event("invitation.revoke").field("invitationId", invitationId).field("actorId", actorUserId).log();
     }
 
     @Transactional
@@ -83,6 +81,7 @@ public class InvitationService {
             throw ApiException.badRequest("Code expired, revoked or used up");
         }
 
+        audit.event("group.join").field("groupId", groupId).field("userId", userId).field("invitationId", inv.getId()).log();
         return groupId;
     }
 }

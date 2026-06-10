@@ -24,11 +24,13 @@ public class GroupCurriculumService {
     private final IGroupCurriculumRepository curriculum;
     private final IGroupRepository groups;
     private final ICourseRepository courses;
+    private final AuditLogger audit;
 
-    public GroupCurriculumService(IGroupCurriculumRepository curriculum, IGroupRepository groups, ICourseRepository courses) {
+    public GroupCurriculumService(IGroupCurriculumRepository curriculum, IGroupRepository groups, ICourseRepository courses, AuditLogger audit) {
         this.curriculum = curriculum;
         this.groups = groups;
         this.courses = courses;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -74,6 +76,7 @@ public class GroupCurriculumService {
                 .map(courseId -> new GroupCurriculum(new GroupCurriculumId(groupId, courseId)))
                 .toList();
         curriculum.saveAll(rows);
+        audit.event("group.curriculum_replace").field("groupId", groupId).field("courses", rows.size()).log();
 
         return getCurriculum(groupId);
     }

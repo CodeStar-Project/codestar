@@ -1,6 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-06-08 (§5 réécrite — inventaire exhaustif des endpoints réels au niveau code, branche `feat/images-management`)
+> Dernière mise à jour : 2026-06-10
 
 ---
 
@@ -877,6 +877,16 @@ Filesystem local — volume Docker `media_data`, `MEDIA_STORAGE_PATH=/app/media`
 - **Cache immutable 1 an + ETag** : id unique par upload → contenu immuable, le navigateur ne revalide jamais (CDN-friendly).
 - **Lecteur** : `<img loading="lazy" decoding="async">`.
 
+### 12.3bis Accès au GET média (public) — décision
+
+`GET /api/v1/media/**` est en `permitAll` (non authentifié). **Volontaire** : une image de cours se charge via `<img>`, qui n'envoie pas le JWT, et le proxy Next ne forwarde aucun header auth → exiger l'auth casserait l'affichage. Modèle **capability-URL** : id = UUIDv4 opaque (~122 bits), aucun endpoint de listing → pas d'énumération ni de fuite de masse ; on ne récupère qu'une image dont on connaît déjà l'URL exacte.
+
+Tradeoff assumé : les images **ne sont pas gated par cours/inscription** (URL partagée = image visible par un anonyme). Acceptable pour des illustrations de cours (faible sensibilité), **pas** pour du média privé/PII.
+
+Protection anti-abus du GET (rate-limit / connection-limit / bande passante) = **déléguée à l'edge** (reverse proxy nginx/Caddy ou CDN), **différée** (décision 2026-06-10 : « si proxy, ce sera après »). Raison : mauvaise couche en app (fichier statique, cache immutable 1 an absorbe déjà, IP masquée derrière proxy → besoin `X-Forwarded-For` de confiance). L'**upload** (POST), lui, est déjà rate-limité + quota.
+
+Si média privé un jour → **URLs signées** (token HMAC + TTL sur le GET, garde le cache) — voir P3.
+
 ### 12.4 Prochaines étapes
 
 Statut : ✅ fait · 🟡 partiel · ❌ à faire · ordre conseillé = P1 → P3.
@@ -910,6 +920,8 @@ Notes : cohérence disque↔DB (delete fichier si l'insert échoue) ; **race quo
 | O4 | Variantes responsive | back+front | M | Générer WebP + largeurs multiples (thumb/medium/full) → `srcset`. Gain bande passante. |
 | O5 | Domaine cookieless | infra | S | Servir les médias depuis un sous-domaine dédié sans cookies → défense en profondeur XSS. |
 | O6 | CDN | infra | S | Cache immutable déjà compatible (§12.3). |
+| O7 | Rate-limit / connection-limit du GET média | infra | S | À l'**edge** (reverse proxy nginx/Caddy ou CDN), pas en app (cf. §12.3bis). Différé. Ex : `limit_req_zone` nginx sur `/api/v1/media/`. |
+| O8 | URLs signées (média privé) | back | M | Si un jour le média doit être gated : token HMAC + TTL sur le GET (garde le cache, expire les liens). Seulement si besoin de média non-public (cf. §12.3bis). |
 | S7 | Backend MinIO/S3 swappable | back | L | Interface `MediaStorage` + impl `S3MediaStorage` (`software.amazon.awssdk:s3` ou `minio-java`), sélection `MEDIA_BACKEND=fs\|s3`. **Déclencheur** : scale horizontal (≥ 2 replicas backend) — le FS local n'est pas partagé entre replicas. Tant qu'on est mono-replica, inutile. |
 
 ### 12.5 Config
@@ -919,6 +931,89 @@ MEDIA_STORAGE_PATH=/app/media   # mappé sur le volume Docker media_data
 ```
 
 Multipart : `spring.servlet.multipart.max-file-size=5MB`, `max-request-size=6MB`. `GET /api/v1/media/**` ajouté en `permitAll` dans `SecurityConfig`.
+
+---
+
+## 13. Observabilité & tests backend (stratégie)
+
+> Cadrage décidé le 2026-06-09 pour les items roadmap **B7** (logging) et **B8–B12** (tests). Couvre **uniquement le backend**. Le frontend (Playwright F1–F5) reste hors scope ici.
+
+### 13.1 Logging en production (B7)
+
+**Principe 12-factor** : le backend tourne en container (`ENTRYPOINT java -jar`). Les logs partent sur **stdout/stderr**, jamais dans un fichier interne au container. Docker (puis k8s / driver de log) capture et route. Le travail de B7 porte donc sur le **format**, pas la destination.
+
+**Décision — logging structuré JSON natif Spring Boot 3.4** (et non `logback-spring.xml` + `logstash-logback-encoder` comme supposé à l'origine dans B7). Le projet est sur Spring Boot **3.4.0**, qui embarque le logging structuré sans dépendance ni XML :
+
+```properties
+# application-prod.properties (profil prod déjà activé par docker-compose)
+logging.structured.format.console=ecs
+```
+
+- Format **`ecs`** (Elastic Common Schema) : standard large, avalé par Elastic/OpenSearch, Loki, CloudWatch, Datadog. Alternatives `logstash` (ELK) / `gelf` (Graylog) si l'agrégateur l'impose.
+- **Split dev/prod par profil** : `dev` garde le texte coloré lisible (défaut, aucune config) ; `prod` émet du JSON. `service.name` est dérivé de `spring.application.name=backend`.
+- **Corrélation via MDC** : un filtre `RequestContextFilter` (`@Order(HIGHEST_PRECEDENCE)`) pose un `requestId` (header `X-Request-Id` ou UUID généré, renvoyé au client) en début de requête ; `userId` est ajouté dans `JwtAuthenticationFilter` juste après l'authentification. Le format structuré remonte automatiquement ces clés MDC au niveau racine du JSON. **`MDC.clear()` obligatoire dans un `finally`** : les threads Tomcat sont réutilisés → sans nettoyage, fuite de contexte d'une requête à la suivante (logs attribués au mauvais user).
+- **Sécurité des logs** : ne **jamais** journaliser mot de passe (même tenté), token JWT, hash, `jwt.secret`, ni PII inutile. Un login échoué se logge avec un *hash* de l'email (détection de brute-force sans fuite d'identité), pas l'email ni le password — couplé au rate-limit B5.
+- Logback reste sous le capot (Spring Boot) ; on ne crée un `logback-spring.xml` que si un besoin fin non couvert par la propriété native apparaît.
+
+### 13.2 Tests backend — stratégie en couches (B8–B12)
+
+**JUnit 5 et Testcontainers ne sont pas des alternatives** : ce sont des couches différentes qui se combinent. JUnit est le framework de test (présent dans **tous** les tests) ; Testcontainers fournit un vrai PostgreSQL jetable, ajouté **seulement** pour les tests qui touchent la base.
+
+```
+JUnit 5                ← socle, toujours présent
+  ├─ Mockito           ← faux objets (logique isolée)
+  ├─ Spring Test       ← démarre le contexte Spring (@WebMvcTest / @SpringBootTest)
+  └─ Testcontainers    ← vrai Postgres jetable (tests d'intégration DB)
+```
+
+**Le type de test suit la nature de l'unité** (pyramide) :
+
+| Niveau | Outils (en plus de JUnit) | Pour quoi | Coût |
+|---|---|---|---|
+| Unitaire | Mockito | logique pure, branches, validators | ms |
+| Slice | Spring Test (`@WebMvcTest`, `@DataJpaTest`) | couche web isolée / repo + SQL | rapide |
+| Intégration | Spring Test + **Testcontainers** | flux complet routing→validation→sécurité→DB | lent |
+
+**Pourquoi Testcontainers et pas H2** : le projet utilise **JSONB**, le dialecte PostgreSQL et Flyway `validate`. H2 simule mal ces points → faux positifs. Testcontainers lance un Postgres réel (`postgres:16-alpine`) par run ; `@ServiceConnection` (Spring Boot 3.1+) câble la datasource automatiquement et Flyway applique `V001.sql` sur ce container — on teste contre le **vrai schéma**. Prérequis : Docker disponible en dev et en CI (déjà le cas).
+
+**Dépendances à ajouter (pom, scope `test`)** : `org.testcontainers:junit-jupiter`, `org.testcontainers:postgresql` (versions via le BOM Testcontainers), `org.springframework.security:spring-security-test`. Note Spring Boot 3.4 : utiliser `@MockitoBean` (et non `@MockBean`, déprécié).
+
+**Convention** : tests d'intégration suffixés `*IT` (héritent d'une classe de base `IntegrationTest` annotée `@SpringBootTest @AutoConfigureMockMvc @Testcontainers`), tests unitaires/slice suffixés `*Test`.
+
+**Mapping des cibles roadmap → type recommandé** :
+
+| Item | Cible | Type recommandé | Raison |
+|---|---|---|---|
+| B8 | Socle Testcontainers | classe de base `IntegrationTest` | débloque B9–B11 (volet DB) |
+| B9 | `AuthController` | **intégration** (Testcontainers) | flux register/login complet + DB + sécurité |
+| B10 | `GroupService` | mix unitaire + intégration | dépend du SQL réel |
+| B11 | `InvitationService` | unitaire Mockito (intégration si SQL complexe) | logique consume/expiry/revoke |
+| B12 | `GroupPermissionService` | **unitaire Mockito** (pas de Testcontainers) | logique de permissions pure → quick-win haute valeur (sécurité) |
+
+**Ordre d'attaque conseillé** : B8 (socle) → B12 (quick-win, le plus critique) → B9 → B11 → B10.
+
+### 13.3 Logging — plan « ready » par étapes (statut au 2026-06-09)
+
+**Fondation B7 livrée** (couche transversale) :
+
+- Logging structuré JSON natif Spring Boot 3.4 (`logging.structured.format.console=ecs`) sur profil `prod` ; `application-prod.properties`. Dev reste en texte lisible.
+- Corrélation MDC : `requestId` posé par `RequestContextFilter` (header `X-Request-Id` ou UUID, renvoyé au client), `userId` ajouté par `JwtAuthenticationFilter` après validation. `MDC.clear()` en `finally` (anti-fuite entre threads Tomcat réutilisés).
+- Access log : une ligne par requête (`méthode path → statut (durée)`), path seul (jamais la query string).
+- Events sécurité auth : login échoué (email **hashé**, jamais en clair) / succès, register OK / refusé ; refus d'autorisation 403 (`GlobalExceptionHandler`).
+
+**Étapes vers « logs ready »** (✅ fait · 🟡 en cours · ❌ à faire) :
+
+| Étape | Objet | Statut | Notes |
+|---|---|---|---|
+| 1 | **Audit trail métier** — INFO/WARN sur mutations (Course create/update/status/archive/duplicate/import, User role-change/disable/enable, Group CRUD/join/membres/curriculum, Invitation create/revoke, Settings, Branding, Media upload/rate-limit/quota, Bootstrap super-admin, 403 access-denied) ; autosave `savePages` en DEBUG | ✅ | Jamais de code d'invitation ni de payload loggé ; acteur via id explicite ou `userId` MDC. |
+| 2 | **Maîtrise du bruit + healthcheck** — Actuator `/actuator/health` (public, check DB inclus), healthcheck Docker dédié, `/actuator` skippé dans l'access log | ✅ | = roadmap **B4**. Supprime ~8600 lignes/jour de ping |
+| 3 | **Champs structurés requêtables** — access log en key-value typés (`method/path/status/durationMs`) ; 28 events métier (30 call-sites) centralisés dans `AuditLogger` (bean, logger dédié `audit`, API `audit.event("action").field(k,v).log()`) avec `action` obligatoire + ids typés | ✅ | Permet `status>=500`, `durationMs>1000`, `action:course.create` sans parser le message. `AuditLogger` tue le boilerplate + garantit le format (routable via logger `audit`) |
+| 4 | **Audit anti-fuite** — relire chaque log existant (MediaStorageService, InstanceBrandingService…) pour PII/secret + convention écrite | ❌ | |
+| 5 | **Rotation + shipping** — docker-compose `logging:` (json-file `max-size`/`max-file`) + doc shipping stdout→Loki/ELK dans `DEPLOYMENT.md` (D3) | ❌ | infra/docs |
+| 6 | **Tests logging** — MDC nettoyé entre requêtes, access log émis, zéro secret en sortie ; sur socle Testcontainers B8 | ❌ | couplé aux tests |
+| 7 | **Optimisation (option)** — `AsyncAppender` (latence requête) + actuator `loggers` (changer le niveau à chaud sans redéploy) | ❌ | |
+
+Ordre : 1 → 2 → 3 → 4 → 5 → 6 → 7.
 
 ---
 

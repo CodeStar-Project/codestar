@@ -22,11 +22,13 @@ public class GroupMemberService {
     private final IGroupMembershipRepository memberships;
     private final IGroupRepository groups;
     private final IUserRepository users;
+    private final AuditLogger audit;
 
-    public GroupMemberService(IGroupMembershipRepository memberships, IGroupRepository groups, IUserRepository users) {
+    public GroupMemberService(IGroupMembershipRepository memberships, IGroupRepository groups, IUserRepository users, AuditLogger audit) {
         this.memberships = memberships;
         this.groups = groups;
         this.users = users;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +68,7 @@ public class GroupMemberService {
             throw ApiException.notFound("Member not in group");
         
         memberships.deleteById(id);
+        audit.event("group.member_remove").field("groupId", groupId).field("userId", userId).log();
     }
 
     @Transactional
@@ -81,6 +84,7 @@ public class GroupMemberService {
                 .orElseThrow(() -> ApiException.notFound("Member not in group"));
         m.setRoleInGroup(newRole);
         GroupMembership saved = memberships.save(m);
+        audit.event("group.member_role").field("groupId", groupId).field("userId", userId).field("roleInGroup", newRole.name()).log();
 
         User u = users.findById(userId)
                 .orElseThrow(() -> ApiException.notFound("User not found: " + userId));
