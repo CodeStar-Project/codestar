@@ -76,7 +76,7 @@ public class AuthController {
 
         boolean hasCode = request.getInvitationCode() != null && !request.getInvitationCode().isBlank();
         if (!signupOpen && !hasCode) {
-            audit.event("auth.register_refused").field("emailHash", emailHash(normalizedEmail)).warn();
+            audit.event("auth.register_refused").warn();
             throw ApiException.badRequest("Registration closed — an invitation code is required.");
         }
 

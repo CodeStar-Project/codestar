@@ -16,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 
 @Component
@@ -27,12 +28,14 @@ public class RequestContextFilter extends OncePerRequestFilter {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String MDC_REQUEST_ID = "requestId";
 
+    private static final Pattern VALID_REQUEST_ID = Pattern.compile("[A-Za-z0-9_-]{8,64}");
+
     private static final List<String> SKIP_PREFIXES = List.of("/actuator", "/swagger-ui", "/v3/api-docs");
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain) throws ServletException, IOException {
         String requestId = request.getHeader(REQUEST_ID_HEADER);
-        if (requestId == null || requestId.isBlank()) {
+        if (requestId == null || !VALID_REQUEST_ID.matcher(requestId).matches()) {
             requestId = UUID.randomUUID().toString();
         }
         MDC.put(MDC_REQUEST_ID, requestId);
