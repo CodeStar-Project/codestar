@@ -30,6 +30,9 @@ public class AuditLogger {
         }
 
         public AuditEvent field(String key, Object value) {
+            if ("action".equals(key)) {
+                throw new IllegalArgumentException("'action' is a reserved audit key");
+            }
             fields.put(key, value);
             return this;
         }
