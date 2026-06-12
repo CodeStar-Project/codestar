@@ -39,14 +39,16 @@ public class CourseService {
     private final CoursePermissionService coursePermissions;
     private final BlockPayloadValidator blockPayloadValidator;
     private final SettingsService settingsService;
+    private final AuditLogger audit;
 
-    public CourseService(ICourseRepository courseRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService) {
+    public CourseService(ICourseRepository courseRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService, AuditLogger audit) {
         this.courseRepository = courseRepository;
         this.pageRepository = pageRepository;
         this.userRepository = userRepository;
         this.coursePermissions = coursePermissions;
         this.blockPayloadValidator = blockPayloadValidator;
         this.settingsService = settingsService;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -158,6 +160,11 @@ public class CourseService {
         }
         pageRepository.saveAll(newPages); // cascades blocks
 
+        audit.event("course.duplicate")
+                .field("courseId", savedCopy.getId())
+                .field("sourceId", sourceId)
+                .field("authorId", newAuthorId)
+                .log();
         return toDto(savedCopy);
     }
 
@@ -197,7 +204,9 @@ public class CourseService {
         course.setAuthor(author);
         course.setStatus(CourseStatus.DRAFT);
 
-        return toDto(courseRepository.save(course));
+        Course saved = courseRepository.save(course);
+        audit.event("course.create").field("courseId", saved.getId()).field("slug", saved.getSlug()).field("authorId", authorId).log();
+        return toDto(saved);
     }
 
     @Transactional
@@ -205,9 +214,15 @@ public class CourseService {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
 
-        if (request.getTitle() != null) course.setTitle(request.getTitle());
-        if (request.getDescription() != null) course.setDescription(request.getDescription());
-        if (request.getCategory() != null) course.setCategory(request.getCategory());
+        if (request.getTitle() != null) 
+            course.setTitle(request.getTitle());
+
+        if (request.getDescription() != null) 
+            course.setDescription(request.getDescription());
+
+        if (request.getCategory() != null) 
+            course.setCategory(request.getCategory());
+
         if (request.getLevel() != null) {
             if (!ALLOWED_LEVELS.contains(request.getLevel())) {
                 throw ApiException.badRequest("Invalid level: " + request.getLevel());
@@ -215,7 +230,9 @@ public class CourseService {
             course.setLevel(request.getLevel());
         }
 
-        return toDto(courseRepository.save(course));
+        Course saved = courseRepository.save(course);
+        audit.event("course.update").field("courseId", id).log();
+        return toDto(saved);
     }
 
     @Transactional
@@ -225,7 +242,8 @@ public class CourseService {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Course not found: " + id));
 
-        if (newStatus == course.getStatus()) {
+        CourseStatus oldStatus = course.getStatus();
+        if (newStatus == oldStatus) {
             return toDto(course);
         }
 
@@ -246,7 +264,9 @@ public class CourseService {
             }
         }
 
-        return toDto(courseRepository.save(course));
+        Course saved = courseRepository.save(course);
+        audit.event("course.status").field("courseId", id).field("fromStatus", oldStatus.name()).field("toStatus", newStatus.name()).log();
+        return toDto(saved);
     }
 
     @Transactional
@@ -256,6 +276,7 @@ public class CourseService {
         if (course.getStatus() != CourseStatus.ARCHIVED) {
             course.setStatus(CourseStatus.ARCHIVED);
             courseRepository.save(course);
+            audit.event("course.archive").field("courseId", id).log();
         }
     }
 
@@ -317,6 +338,7 @@ public class CourseService {
             savedPages.add(pageRepository.save(page)); // cascades blocks
         }
 
+        audit.event("course.save_pages").field("courseId", courseId).field("pages", savedPages.size()).debug();
         return savedPages.stream().map(this::toPageDto).collect(Collectors.toList());
     }
 
@@ -432,6 +454,7 @@ public class CourseService {
         }
         pageRepository.saveAll(newPages); // cascades blocks
 
+        audit.event("course.import").field("courseId", saved.getId()).field("slug", saved.getSlug()).field("pages", importPages.size()).field("authorId", authorId).log();
         return toDto(saved);
     }
 

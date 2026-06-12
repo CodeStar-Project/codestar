@@ -49,6 +49,10 @@ public class SecurityConfig {
                             "/api/v1/instance/branding").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/media/**").permitAll()
+                    // actuator health
+                    .requestMatchers(HttpMethod.GET,
+                            "/actuator/health",
+                            "/actuator/health/**").permitAll()
                     // swagger / OpenAPI
                     .requestMatchers(
                             "/v3/api-docs/**",

@@ -32,13 +32,15 @@ public class InstanceBrandingService {
 
     private final ResourceLoader resourceLoader;
     private final ObjectMapper objectMapper;
+    private final AuditLogger audit;
 
     private volatile InstanceBrandingDto cached;
 
-    public InstanceBrandingService(ResourceLoader resourceLoader, ObjectMapper objectMapper, InstanceProperties instanceProperties) {
+    public InstanceBrandingService(ResourceLoader resourceLoader, ObjectMapper objectMapper, InstanceProperties instanceProperties, AuditLogger audit) {
         this.resourceLoader = resourceLoader;
         this.objectMapper = objectMapper;
         this.configPath = instanceProperties.configPath();
+        this.audit = audit;
     }
 
     @PostConstruct
@@ -87,6 +89,7 @@ public class InstanceBrandingService {
         }
 
         cached = merged;
+        audit.event("branding.update").field("name", merged.name()).field("accent", merged.accent()).log();
         return cached;
     }
 
