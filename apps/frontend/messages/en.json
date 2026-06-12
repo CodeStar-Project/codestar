@@ -163,7 +163,16 @@
     "description": "An unexpected error occurred. Try again or head back home.",
     "retry": "Try again",
     "home": "Back home",
-    "unknown": "Unknown error."
+    "unknown": "Unknown error.",
+    "adminAi": {
+      "empty": "Empty response from the AI service.",
+      "rateLimited": "Generation limit reached, try again in a few minutes.",
+      "unavailable": "AI service unavailable, please try again.",
+      "invalidResponse": "The model returned an invalid response, try again.",
+      "failed": "Generation failed, try again.",
+      "unexpected": "Unexpected error during generation.",
+      "importFailed": "Error while importing the course."
+    }
   },
   "courseBuilder": {
     "title": "Course Builder",

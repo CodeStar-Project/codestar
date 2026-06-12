@@ -163,7 +163,16 @@
     "description": "Une erreur inattendue s'est produite. Réessayez ou revenez à l'accueil.",
     "retry": "Réessayer",
     "home": "Retour à l'accueil",
-    "unknown": "Erreur inconnue."
+    "unknown": "Erreur inconnue.",
+    "adminAi": {
+      "empty": "Réponse vide du service IA.",
+      "rateLimited": "Limite de génération atteinte, réessayez dans quelques minutes.",
+      "unavailable": "Service IA indisponible, veuillez réessayer.",
+      "invalidResponse": "Le modèle a retourné une réponse invalide, réessayez.",
+      "failed": "La génération a échoué, réessayez.",
+      "unexpected": "Erreur inattendue lors de la génération.",
+      "importFailed": "Erreur lors de l'import du cours."
+    }
   },
   "courseBuilder": {
     "title": "Course Builder",

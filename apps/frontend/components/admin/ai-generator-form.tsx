@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import {
   generateAiCourse,
@@ -298,6 +299,7 @@ function DraftPreview({
 
 export function AiGeneratorForm() {
   const router = useRouter();
+  const tErr = useTranslations("errors.adminAi");
 
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState<Level>("INTERMEDIATE");
@@ -325,7 +327,7 @@ export function AiGeneratorForm() {
       if (result.ok) {
         setDraft(result.draft);
       } else {
-        setError(result.error);
+        setError(tErr(result.error));
       }
     });
   }
@@ -342,7 +344,7 @@ export function AiGeneratorForm() {
       if (result.ok && result.course) {
         router.push(`/admin/courses/${result.course.id}`);
       } else {
-        setError(result.error ?? "Erreur lors de l'import du cours.");
+        setError(result.error ?? tErr("importFailed"));
       }
     });
   }

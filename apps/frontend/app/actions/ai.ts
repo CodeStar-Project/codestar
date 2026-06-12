@@ -32,9 +32,17 @@ export interface AiCourseDraft {
   pages: AiDraftPage[];
 }
 
+export type GenerateErrorCode =
+  | "empty"
+  | "rateLimited"
+  | "unavailable"
+  | "invalidResponse"
+  | "failed"
+  | "unexpected";
+
 export type GenerateResult =
   | { ok: true; draft: AiCourseDraft }
-  | { ok: false; error: string };
+  | { ok: false; error: GenerateErrorCode };
 
 export async function generateAiCourse(request: GenerateRequest): Promise<GenerateResult> {
   try {
@@ -43,16 +51,16 @@ export async function generateAiCourse(request: GenerateRequest): Promise<Genera
       body: request,
       timeoutMs: 120_000,
     });
-    if (!draft) return { ok: false, error: "Réponse vide du service IA" };
+    if (!draft) return { ok: false, error: "empty" };
     return { ok: true, draft };
   } catch (e) {
     if (e instanceof ApiError) {
-      if (e.status === 429) return { ok: false, error: "Limite de génération atteinte, réessayez dans quelques minutes." };
-      if (e.status === 503) return { ok: false, error: "Service IA indisponible, veuillez réessayer." };
-      if (e.status === 502) return { ok: false, error: "Le modèle a retourné une réponse invalide, réessayez." };
-      return { ok: false, error: e.message };
+      if (e.status === 429) return { ok: false, error: "rateLimited" };
+      if (e.status === 503) return { ok: false, error: "unavailable" };
+      if (e.status === 502) return { ok: false, error: "invalidResponse" };
+      return { ok: false, error: "failed" };
     }
-    return { ok: false, error: "Erreur inattendue lors de la génération." };
+    return { ok: false, error: "unexpected" };
   }
 }
 
