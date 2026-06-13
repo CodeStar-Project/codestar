@@ -7,6 +7,7 @@ import com.codestar.backend.exception.ApiException;
 import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.AiCourseService;
 import com.codestar.backend.service.AiRateLimiter;
+import com.codestar.backend.service.AuditLogger;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,20 +23,23 @@ public class AiCourseController {
 
     private final AiCourseService aiCourseService;
     private final AiRateLimiter aiRateLimiter;
+    private final AuditLogger audit;
 
-    public AiCourseController(AiCourseService aiCourseService, AiRateLimiter aiRateLimiter) {
+    public AiCourseController(AiCourseService aiCourseService, AiRateLimiter aiRateLimiter, AuditLogger audit) {
         this.aiCourseService = aiCourseService;
         this.aiRateLimiter = aiRateLimiter;
+        this.audit = audit;
     }
 
     @PostMapping("/generate")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponseDto<GenerateCourseResponseDto>> generate(@Valid @RequestBody GenerateCourseRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (!aiRateLimiter.tryAcquire(principal.getId())) {
+            audit.event("ai.course.rate_limited").field("actorId", principal.getId()).warn();
             throw ApiException.tooManyRequests("AI rate limit exceeded, please wait before generating another course");
         }
 
-        GenerateCourseResponseDto draft = aiCourseService.generate(request);
+        GenerateCourseResponseDto draft = aiCourseService.generate(principal.getId(), request);
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Course draft generated", draft));
     }
 }

@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,10 +28,12 @@ public class AiCourseService {
     private final AiProperties props;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final AuditLogger audit;
 
-    public AiCourseService(AiProperties props, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
+    public AiCourseService(AiProperties props, RestClient.Builder restClientBuilder, ObjectMapper objectMapper, AuditLogger audit) {
         this.props = props;
         this.objectMapper = objectMapper;
+        this.audit = audit;
 
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
@@ -46,14 +49,20 @@ public class AiCourseService {
                 .build();
     }
 
-    public GenerateCourseResponseDto generate(GenerateCourseRequestDto request) {
+    public GenerateCourseResponseDto generate(UUID userId, GenerateCourseRequestDto request) {
         String topic = sanitize(request.getTopic());
         List<String> keyIdeas = request.getKeyIdeas() == null
                 ? List.of()
                 : request.getKeyIdeas().stream().map(this::sanitize).toList();
 
-        String rawJson = callApi(buildSystemPrompt(), buildUserPrompt(topic, request.getLevel(), request.getLanguage(), keyIdeas));
-        return parseAndValidate(rawJson);
+        String rawJson = callApi(userId, buildSystemPrompt(), buildUserPrompt(topic, request.getLevel(), request.getLanguage(), keyIdeas));
+        GenerateCourseResponseDto dto = parseAndValidate(userId, rawJson);
+        audit.event("ai.course.generate")
+                .field("actorId", userId)
+                .field("level", request.getLevel())
+                .field("pages", dto.getPages().size())
+                .log();
+        return dto;
     }
 
     // -------------------------------------------------------------------------
@@ -193,7 +202,7 @@ public class AiCourseService {
     // HTTP call
     // -------------------------------------------------------------------------
 
-    private String callApi(String systemPrompt, String userPrompt) {
+    private String callApi(UUID userId, String systemPrompt, String userPrompt) {
         Map<String, Object> body = Map.of(
                 "model", props.model(),
                 "temperature", props.temperature(),
@@ -212,6 +221,10 @@ public class AiCourseService {
                     .retrieve()
                     .body(String.class);
         } catch (Exception e) {
+            audit.event("ai.course.upstream_error")
+                    .field("actorId", userId)
+                    .field("error", e.toString())
+                    .warn();
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI service unavailable, please retry");
         }
     }
@@ -232,7 +245,7 @@ public class AiCourseService {
             "advanced", "ADVANCED"
     );
 
-    private GenerateCourseResponseDto parseAndValidate(String rawJson) {
+    private GenerateCourseResponseDto parseAndValidate(UUID userId, String rawJson) {
         try {
             JsonNode root = objectMapper.readTree(rawJson);
             String content = root.at("/choices/0/message/content").asText();
@@ -243,6 +256,11 @@ public class AiCourseService {
         } catch (ApiException e) {
             throw e;
         } catch (Exception e) {
+            audit.event("ai.course.invalid_response")
+                    .field("actorId", userId)
+                    .field("error", e.toString())
+                    .field("rawLength", rawJson == null ? 0 : rawJson.length())
+                    .warn();
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI returned an invalid response, please retry");
         }
     }
