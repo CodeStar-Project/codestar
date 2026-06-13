@@ -22,9 +22,11 @@ public class SettingsService {
     public static final int MAX_MAX_BLOCKS_PER_PAGE = 1000;
 
     private final IAppSettingRepository repository;
+    private final AuditLogger audit;
 
-    public SettingsService(IAppSettingRepository repository) {
+    public SettingsService(IAppSettingRepository repository, AuditLogger audit) {
         this.repository = repository;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -52,6 +54,7 @@ public class SettingsService {
             throw ApiException.badRequest("maxBlocksPerPage must be between " + MIN_MAX_BLOCKS_PER_PAGE + " and " + MAX_MAX_BLOCKS_PER_PAGE);
         }
         repository.upsert(KEY_MAX_BLOCKS_PER_PAGE, String.valueOf(value), userId);
+        audit.event("settings.update").field("settingKey", KEY_MAX_BLOCKS_PER_PAGE).field("settingValue", value).field("actorId", userId).log();
     }
 
     private int parseOrDefault(String raw) {

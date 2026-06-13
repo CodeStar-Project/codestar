@@ -11,6 +11,7 @@ import com.codestar.backend.model.Role;
 import com.codestar.backend.model.User;
 import com.codestar.backend.repository.IUserRepository;
 import com.codestar.backend.security.AuthenticatedUser;
+import com.codestar.backend.service.AuditLogger;
 import com.codestar.backend.service.GroupService;
 import com.codestar.backend.service.InvitationService;
 import com.codestar.backend.utils.Emails;
@@ -35,26 +36,33 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final InvitationService invitationService;
     private final GroupService groupService;
+    private final AuditLogger audit;
 
     private final boolean signupOpen;
 
-    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService, SignupProperties signupProperties) {
+    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService, SignupProperties signupProperties, AuditLogger audit) {
         this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
         this.passwordEncoder = passwordEncoder;
         this.invitationService = invitationService;
         this.groupService = groupService;
+        this.audit = audit;
         this.signupOpen = signupProperties.open();
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDto<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
-        User user = userRepository.findByEmail(Emails.normalize(request.getEmail()))
+        String normalizedEmail = Emails.normalize(request.getEmail());
+        User user = userRepository.findByEmail(normalizedEmail)
                 .filter(User::isActive)
                 .filter(u -> passwordEncoder.matches(request.getPassword(), u.getPasswordHash()))
-                .orElseThrow(() -> ApiException.unauthorized("Invalid credentials"));
+                .orElseThrow(() -> {
+                    audit.event("auth.login_failed").warn();
+                    return ApiException.unauthorized("Invalid credentials");
+                });
 
         String token = jwtUtils.generateToken(user);
+        audit.event("auth.login_success").field("userId", user.getId()).log();
         return ResponseEntity.ok(new ApiResponseDto<>(true, "Login successful", new LoginResponseDto(token, "Bearer")));
     }
 
@@ -68,14 +76,11 @@ public class AuthController {
 
         boolean hasCode = request.getInvitationCode() != null && !request.getInvitationCode().isBlank();
         if (!signupOpen && !hasCode) {
+            audit.event("auth.register_refused").warn();
             throw ApiException.badRequest("Registration closed — an invitation code is required.");
         }
 
-        User user = new User(
-                normalizedEmail,
-                passwordEncoder.encode(request.getPassword()),
-                request.getDisplayName(),
-                Role.STUDENT);
+        User user = new User(normalizedEmail, passwordEncoder.encode(request.getPassword()), request.getDisplayName(), Role.STUDENT);
         user = userRepository.save(user);
 
         if (hasCode) {
@@ -83,6 +88,7 @@ public class AuthController {
         }
 
         String token = jwtUtils.generateToken(user);
+        audit.event("auth.register").field("userId", user.getId()).field("role", user.getRole().name()).log();
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseDto<>(true, "Account created", new LoginResponseDto(token, "Bearer")));
     }
 
