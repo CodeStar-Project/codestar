@@ -66,7 +66,7 @@ public class AiCourseService {
                 ? List.of()
                 : request.getKeyIdeas().stream().map(this::sanitize).toList();
 
-        String rawJson = callApi(userId, systemPrompt, buildUserPrompt(topic, request.getLevel(), request.getLanguage(), keyIdeas));
+        String rawJson = groqCallApi(userId, systemPrompt, buildUserPrompt(topic, request.getLevel(), request.getLanguage(), keyIdeas));
         GenerateCourseResponseDto dto = parseAndValidate(userId, rawJson, request.getLevel());
         audit.event("ai.course.generate")
                 .field("actorId", userId)
@@ -105,7 +105,7 @@ public class AiCourseService {
                 .trim();
     }
 
-    private String callApi(UUID userId, String systemPrompt, String userPrompt) {
+    private String groqCallApi(UUID userId, String systemPrompt, String userPrompt) {
         Map<String, Object> body = Map.of(
                 "model", props.model(),
                 "temperature", props.temperature(),
