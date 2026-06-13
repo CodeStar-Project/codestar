@@ -8,9 +8,11 @@ import com.codestar.backend.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
@@ -220,18 +222,29 @@ public class AiCourseService {
                     .body(body)
                     .retrieve()
                     .body(String.class);
+        } catch (HttpStatusCodeException e) {
+            HttpStatusCode status = e.getStatusCode();
+            auditUpstreamError(userId, status.value(), e);
+            if (status.value() == HttpStatus.TOO_MANY_REQUESTS.value()) {
+                throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI service is busy, please retry shortly");
+            }
+            if (status.is4xxClientError()) {
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "AI service is misconfigured, contact an administrator");
+            }
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI service unavailable, please retry");
         } catch (Exception e) {
-            audit.event("ai.course.upstream_error")
-                    .field("actorId", userId)
-                    .field("error", e.toString())
-                    .warn();
+            auditUpstreamError(userId, null, e);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI service unavailable, please retry");
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Response parsing & validation
-    // -------------------------------------------------------------------------
+    private void auditUpstreamError(UUID userId, Integer status, Exception e) {
+        audit.event("ai.course.upstream_error")
+                .field("actorId", userId)
+                .field("status", status == null ? "n/a" : status)
+                .field("error", e.toString())
+                .warn();
+    }
 
     private static final Map<String, String> LEVEL_ALIASES = Map.of(
             "débutant", "BEGINNER",
