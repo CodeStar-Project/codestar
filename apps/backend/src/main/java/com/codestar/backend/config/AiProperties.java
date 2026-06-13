@@ -1,5 +1,7 @@
 package com.codestar.backend.config;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -11,7 +13,7 @@ public record AiProperties(
         String apiKey,
         String model,
         @Positive int maxTokens,
-        double temperature,
+        @DecimalMin("0.0") @DecimalMax("2.0") double temperature,
         @Positive int timeoutSeconds,
         @Positive int rateLimitCapacity,
         @Positive int rateLimitRefillPerMinute,
