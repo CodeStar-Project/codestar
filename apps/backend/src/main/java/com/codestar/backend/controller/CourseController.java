@@ -118,7 +118,7 @@ public class CourseController {
 
     @PostMapping("/import")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<ApiResponseDto<CourseDto>> importCourse(@Valid @RequestBody ImportCourseRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
+    public ResponseEntity<ApiResponseDto<CourseDto>> importCourse(@Valid @RequestBody CoursePayloadDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (principal == null) throw ApiException.unauthorized("Unauthenticated");
         CourseDto course = courseService.importCourse(request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
