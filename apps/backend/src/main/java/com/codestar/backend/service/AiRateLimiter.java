@@ -1,6 +1,7 @@
 package com.codestar.backend.service;
 
 import com.codestar.backend.config.AiProperties;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -16,11 +17,13 @@ public class AiRateLimiter {
 
     private final int capacity;
     private final double refillPerSecond;
+    private final long idleTtlNanos;
     private final Map<UUID, Bucket> buckets = new ConcurrentHashMap<>();
 
     public AiRateLimiter(AiProperties props) {
         this.capacity = props.rateLimitCapacity();
         this.refillPerSecond = props.rateLimitRefillPerMinute() / 60.0;
+        this.idleTtlNanos = props.rateLimitIdleTtlMinutes() * 60L * 1_000_000_000L;
     }
 
     /**
@@ -32,6 +35,12 @@ public class AiRateLimiter {
         return buckets
                 .computeIfAbsent(userId, k -> new Bucket(capacity))
                 .tryConsume(capacity, refillPerSecond);
+    }
+
+    @Scheduled(fixedDelayString = "${codestar.ai.rate-limit-sweep-ms}")
+    void evictIdle() {
+        long cutoff = System.nanoTime() - idleTtlNanos;
+        buckets.values().removeIf(b -> b.idleBefore(cutoff));
     }
 
     private static final class Bucket {
@@ -54,6 +63,10 @@ public class AiRateLimiter {
                 return true;
             }
             return false;
+        }
+
+        synchronized boolean idleBefore(long cutoffNanos) {
+            return lastRefillNanos - cutoffNanos < 0;
         }
     }
 }

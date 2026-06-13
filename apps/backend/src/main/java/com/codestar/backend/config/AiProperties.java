@@ -14,5 +14,7 @@ public record AiProperties(
         double temperature,
         @Positive int timeoutSeconds,
         @Positive int rateLimitCapacity,
-        @Positive int rateLimitRefillPerMinute
+        @Positive int rateLimitRefillPerMinute,
+        @Positive long rateLimitIdleTtlMinutes,
+        @Positive long rateLimitSweepMs
 ) {}
