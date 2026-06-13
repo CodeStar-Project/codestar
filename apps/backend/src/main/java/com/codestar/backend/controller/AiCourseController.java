@@ -30,10 +30,7 @@ public class AiCourseController {
 
     @PostMapping("/generate")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<ApiResponseDto<GenerateCourseResponseDto>> generate(
-            @Valid @RequestBody GenerateCourseRequestDto request,
-            @AuthenticationPrincipal AuthenticatedUser principal) {
-
+    public ResponseEntity<ApiResponseDto<GenerateCourseResponseDto>> generate(@Valid @RequestBody GenerateCourseRequestDto request, @AuthenticationPrincipal AuthenticatedUser principal) {
         if (!aiRateLimiter.tryAcquire(principal.getId())) {
             throw ApiException.tooManyRequests("AI rate limit exceeded, please wait before generating another course");
         }
