@@ -2,8 +2,8 @@ package com.codestar.backend.service;
 
 import com.codestar.backend.config.AiProperties;
 import com.codestar.backend.dto.ai.GenerateCourseRequestDto;
-import com.codestar.backend.dto.ai.GenerateCourseResponseDto;
 import com.codestar.backend.dto.course.CourseBlockType;
+import com.codestar.backend.dto.course.CoursePayloadDto;
 import com.codestar.backend.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,14 +60,14 @@ public class AiCourseService {
                 .build();
     }
 
-    public GenerateCourseResponseDto generate(UUID userId, GenerateCourseRequestDto request) {
+    public CoursePayloadDto generate(UUID userId, GenerateCourseRequestDto request) {
         String topic = sanitize(request.getTopic());
         List<String> keyIdeas = request.getKeyIdeas() == null
                 ? List.of()
                 : request.getKeyIdeas().stream().map(this::sanitize).toList();
 
         String rawJson = groqCallApi(userId, systemPrompt, buildUserPrompt(topic, request.getLevel(), request.getLanguage(), keyIdeas));
-        GenerateCourseResponseDto dto = parseAndValidate(userId, rawJson, request.getLevel());
+        CoursePayloadDto dto = parseAndValidate(userId, rawJson, request.getLevel());
         audit.event("ai.course.generate")
                 .field("actorId", userId)
                 .field("level", request.getLevel())
@@ -159,11 +159,11 @@ public class AiCourseService {
             "advanced", "ADVANCED"
     );
 
-    private GenerateCourseResponseDto parseAndValidate(UUID userId, String rawJson, String requestedLevel) {
+    private CoursePayloadDto parseAndValidate(UUID userId, String rawJson, String requestedLevel) {
         try {
             JsonNode root = objectMapper.readTree(rawJson);
             String content = root.at("/choices/0/message/content").asText();
-            GenerateCourseResponseDto dto = objectMapper.readValue(content, GenerateCourseResponseDto.class);
+            CoursePayloadDto dto = objectMapper.readValue(content, CoursePayloadDto.class);
             normalizeLevel(dto, requestedLevel);
             validateStructure(dto);
             return dto;
@@ -181,7 +181,7 @@ public class AiCourseService {
 
     private static final Set<String> CANONICAL_LEVELS = Set.of("BEGINNER", "INTERMEDIATE", "ADVANCED");
 
-    private void normalizeLevel(GenerateCourseResponseDto dto, String requestedLevel) {
+    private void normalizeLevel(CoursePayloadDto dto, String requestedLevel) {
         if (dto.getCourse() == null) return;
         String raw = dto.getCourse().getLevel();
         String candidate = null;
@@ -195,7 +195,7 @@ public class AiCourseService {
         dto.getCourse().setLevel(candidate);
     }
 
-    private void validateStructure(GenerateCourseResponseDto dto) {
+    private void validateStructure(CoursePayloadDto dto) {
         if (dto.getCourse() == null || dto.getPages() == null || dto.getPages().isEmpty()) {
             throw new ApiException(HttpStatus.BAD_GATEWAY, "AI returned an invalid response, please retry");
         }
@@ -204,9 +204,9 @@ public class AiCourseService {
                 .map(Enum::name)
                 .collect(Collectors.toSet());
 
-        for (GenerateCourseResponseDto.Page page : dto.getPages()) {
+        for (CoursePayloadDto.Page page : dto.getPages()) {
             if (page.getBlocks() == null) continue;
-            for (GenerateCourseResponseDto.Block block : page.getBlocks()) {
+            for (CoursePayloadDto.Block block : page.getBlocks()) {
                 if (block.getKind() == null || !validKinds.contains(block.getKind())) {
                     throw new ApiException(HttpStatus.BAD_GATEWAY, "AI returned an invalid response, please retry");
                 }

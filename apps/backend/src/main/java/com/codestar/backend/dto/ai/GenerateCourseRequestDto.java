@@ -14,8 +14,7 @@ public class GenerateCourseRequestDto {
     private String topic;
 
     @NotNull(message = "level is required")
-    @Pattern(regexp = "^(BEGINNER|INTERMEDIATE|ADVANCED)$",
-             message = "level must be BEGINNER, INTERMEDIATE, or ADVANCED")
+    @Pattern(regexp = "^(BEGINNER|INTERMEDIATE|ADVANCED)$", message = "level must be BEGINNER, INTERMEDIATE, or ADVANCED")
     private String level;
 
     @Pattern(regexp = "^(fr|en)$", message = "language must be fr or en")

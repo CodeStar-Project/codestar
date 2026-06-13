@@ -1,16 +1,27 @@
-package com.codestar.backend.dto.ai;
+package com.codestar.backend.dto.course;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * Draft course returned by the AI generator.
- * Mirrors the JSON shape of ImportCourseRequestDto so the frontend
- * can POST it directly to /api/v1/courses/import without transformation.
- */
-public class GenerateCourseResponseDto {
 
+/**
+ * Portable course payload
+ * Used both as the /api/v1/courses/import request body and as the AI generation output
+ */
+public class CoursePayloadDto {
+
+    private Integer version;
+
+    @NotNull(message = "course is required")
+    @Valid
     private CourseMeta course;
+
+    @NotEmpty(message = "pages must not be empty")
+    @Valid
     private List<Page> pages;
 
     public static class CourseMeta {
@@ -35,6 +46,8 @@ public class GenerateCourseResponseDto {
 
     public static class Page {
         private String title;
+
+        @Valid
         private List<Block> blocks;
 
         public String getTitle() { return title; }
@@ -55,9 +68,11 @@ public class GenerateCourseResponseDto {
         public void setPayload(Map<String, Object> payload) { this.payload = payload; }
     }
 
+    public Integer getVersion() { return version; }
     public CourseMeta getCourse() { return course; }
     public List<Page> getPages() { return pages; }
 
+    public void setVersion(Integer version) { this.version = version; }
     public void setCourse(CourseMeta course) { this.course = course; }
     public void setPages(List<Page> pages) { this.pages = pages; }
 }
