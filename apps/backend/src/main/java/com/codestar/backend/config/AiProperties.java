@@ -14,6 +14,7 @@ public record AiProperties(
         String model,
         @Positive int maxTokens,
         @DecimalMin("0.0") @DecimalMax("2.0") double temperature,
+        @Positive int connectTimeoutSeconds,
         @Positive int timeoutSeconds,
         @Positive int rateLimitCapacity,
         @Positive int rateLimitRefillPerMinute,

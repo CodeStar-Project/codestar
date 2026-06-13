@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 
-// TODO This is also the AI-generation entry point.
+// Also the AI-generation entry point: GenerateCourseResponseDto mirrors this shape by hand so the
+// frontend can POST AI output here verbatim. Keep the two in sync — any field change here must be
+// reflected in GenerateCourseResponseDto, or AI-generated drafts will fail import at runtime.
 
 public class ImportCourseRequestDto {
 
