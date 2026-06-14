@@ -1,6 +1,6 @@
 # Codestar — Hand-off & Roadmap
 
-> Dernière mise à jour : 2026-06-10
+> Dernière mise à jour : 2026-06-14
 
 ---
 
@@ -23,6 +23,7 @@ Branche active : `dev`. Phase v1 **terminée**, phase v2 **largement avancée** 
 - **Settings** : `GET /settings` (Teacher+), `PATCH /settings` (Admin+) — `app_settings` key/value, `max_blocks_per_page` (cf. §11.4ter).
 - **Media** : `POST /media` (Teacher+), `GET /media/{id}` (public) — cf. §12.
 - OpenAPI/Swagger (`OpenApiConfig`).
+- **Génération IA de cours** : `POST /ai/courses/generate` (Teacher+) → `CoursePayloadDto` (DRAFT) re-postable sur `/courses/import`. Provider OpenAI-compatible (Groq par défaut), rate-limité, anti-injection, prompt externalisé. Cf. §11.6. **Front à faire.**
 
 ### Backend — reste à faire
 
@@ -283,7 +284,7 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 
 ## 5. API REST
 
-> **Inventaire exhaustif au niveau code** (branche `feat/images-management`). Source = annotations `@*Mapping` + `@PreAuthorize` des contrôleurs. Préfixe global `/api/v1`. **33 endpoints implémentés**, regroupés par ressource.
+> **Inventaire exhaustif au niveau code** (branche `feat/images-management`). Source = annotations `@*Mapping` + `@PreAuthorize` des contrôleurs. Préfixe global `/api/v1`. **34 endpoints implémentés**, regroupés par ressource.
 
 ### Conventions
 
@@ -391,6 +392,12 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 | GET | `/instance/branding` | Public | `InstanceBrandingDto` (lit `instance.json`, pas de cache) |
 | PATCH | `/instance/branding` | Admin+ | `UpdateBrandingRequestDto` → réécrit `instance.json` |
 
+### AI — `AiCourseController` (`/api/v1/ai/courses`) — cf. §11.6
+
+| Méthode | Endpoint | Rôle | Description |
+|---|---|---|---|
+| POST | `/ai/courses/generate` | Teacher+ | `GenerateCourseRequestDto {topic, level, language?, keyIdeas?}` → `CoursePayloadDto` (DRAFT, même format que `/courses/import`). Rate-limité par user |
+
 ### Non implémenté (roadmap)
 
 - ❌ **Notes** : `GET/PUT /notes/{courseId}/{blockId}` (v2) — table + contrôleur absents.
@@ -398,7 +405,7 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 - ❌ **Gamification v3** : `POST /quiz/{blockId}/attempt`, `GET /leaderboard?scope={global,groups,friends}&season={current}`, `GET /me/stats`, `POST /admin/leaderboard/reset` — rien.
 - ⚠️ **Logout** : route présente mais no-op (pas de blacklist).
 
-> ⚠️ **Changements vs ancienne doc** : `/courses/{id}/blocks` → `/courses/{id}/pages` (modèle pages, §11.4ter) · `/courses/{id}/publish` → `/courses/{id}/status` · ajout `/courses/{id}/export` + `/courses/import` · ajout `/settings/*` · `/notes/*` jamais livré.
+> ⚠️ **Changements vs ancienne doc** : `/courses/{id}/blocks` → `/courses/{id}/pages` (modèle pages, §11.4ter) · `/courses/{id}/publish` → `/courses/{id}/status` · ajout `/courses/{id}/export` + `/courses/import` · ajout `/settings/*` · ajout `/ai/courses/generate` (§11.6) · `/notes/*` jamais livré.
 
 ---
 
@@ -838,11 +845,19 @@ Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.
 - **Migration** : V001 toujours édité en place → reset DB requis (cf. ci-dessus).
 - Vérifs 2ᵉ itération : `mvnw compile` ✅ · `tsc` ✅ · `eslint` ✅ · `next build` ✅ (routes `/admin/settings` + `/admin/courses/[id]/blocks`).
 
-### 11.6 Plus tard (hors PR) — génération IA
+### 11.6 Génération IA — ✅ LIVRÉ (backend)
 
-- L'IA renvoie **le JSON §11.3** → passe par `POST /courses/import` → validation déjà en place = garde-fou.
-- Front : bouton « Générer avec IA » → modal prompt → stream → preview avant insertion.
-- À préparer dès cette PR : schéma JSON stable + validation stricte. Rien d'autre à coder maintenant.
+> Backend uniquement. Le front (bouton « Générer avec IA » + modal + preview avant insertion) reste à faire.
+
+- **Endpoint** `POST /api/v1/ai/courses/generate` (Teacher+) : `GenerateCourseRequestDto { topic, level, language?(fr|en), keyIdeas?[] }` → renvoie un **`CoursePayloadDto`** (le cours en DRAFT). C'est le **même DTO que `POST /courses/import`** → le front le re-POSTe verbatim sur `/courses/import`, dont la validation (`BlockPayloadValidator`) reste le garde-fou unique (§11.3).
+- **DTO unifié** : `GenerateCourseResponseDto` (qui recopiait le format à la main) **supprimé** ; fusionné dans `CoursePayloadDto` — c'est l'ancien `ImportCourseRequestDto`, renommé car il sert désormais à la fois de corps `/import` ET de sortie IA (nested `CourseMeta`/`Page`/`Block`). Plus de risque de drift.
+- **Provider** : API OpenAI-compatible (défaut **Groq** `llama-3.3-70b-versatile`), via `RestClient`, `response_format=json_object`. Config `codestar.ai.*` (api-url/api-key/model/max-tokens=16384/temperature=0.4/connect+read timeouts/rate-limit), 100 % en env. **Clé API optionnelle** (la feature pourra être désactivée / la clé passera dans les paramètres applicatifs plus tard) → si absente, le provider répond 401 → mappé en **502 « misconfigured »**.
+- **Prompt système externalisé** : `resources/prompts/course-system.txt`, chargé 1× au boot (fail-fast si absent). Exige 6–8 pages, blocs riches, shapes **alignées sur `BlockPayloadValidator`**. Kinds autorisés : H1–H6, P, CODE, CALLOUT, QUOTE, TABLE, **QUIZ, SANDBOX, IMAGE**. CODE/SANDBOX = sujets techniques uniquement ; IMAGE = **URL https publique réelle** (jamais inventée, sinon pas de bloc).
+- **Sécurité** : gate Teacher+ ; rate-limiter token-bucket par user (`AiRateLimiter`, éviction `@Scheduled` calquée sur le média) ; **anti-injection** = les entrées utilisateur (`topic`/`keyIdeas`) sont encadrées par une **barrière à nonce aléatoire** par requête (plus de balises XML forgeables) ; `sanitize()` basique en défense de profondeur.
+- **Robustesse** : erreurs upstream mappées finement (429→503 busy, 4xx→502 misconfig, 5xx/timeout→503) ; `normalizeLevel` (alias FR/EN → enum, fallback sur le level demandé) ; `validateStructure` (kinds valides + course/pages non vides). Observabilité via `AuditLogger` (events `ai.course.generate|upstream_error|invalid_response|rate_limited`, jamais clé ni payload).
+- **Dette future** : `apiKey` est posée dans le header `RestClient` au boot → quand la clé passera en settings applicatifs (clé éditable à chaud / feature désactivable), reconstruire le client ou poser le header par requête.
+- **Reste à faire** : UI front (génération + preview + insertion → `/courses/import`).
+- Vérifs : `mvnw compile` ✅.
 
 ---
 

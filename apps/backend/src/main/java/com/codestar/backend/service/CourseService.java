@@ -367,11 +367,11 @@ public class CourseService {
         return new CourseExportDto(CourseExportDto.CURRENT_VERSION, meta, pages);
     }
 
-    private record ImportPage(String title, List<ImportCourseRequestDto.BlockInput> blocks) {}
+    private record ImportPage(String title, List<CoursePayloadDto.Block> blocks) {}
 
     @Transactional
-    public CourseDto importCourse(ImportCourseRequestDto request, UUID authorId) {
-        ImportCourseRequestDto.CourseMetaInput meta = request.getCourse();
+    public CourseDto importCourse(CoursePayloadDto request, UUID authorId) {
+        CoursePayloadDto.CourseMeta meta = request.getCourse();
         if (meta == null || meta.getTitle() == null || meta.getTitle().isBlank()) {
             throw ApiException.badRequest("course.title is required");
         }
@@ -391,9 +391,9 @@ public class CourseService {
             throw ApiException.badRequest("pages is required");
         }
         List<ImportPage> importPages = new ArrayList<>();
-        List<ImportCourseRequestDto.PageInput> pageInputs = request.getPages();
+        List<CoursePayloadDto.Page> pageInputs = request.getPages();
         for (int pi = 0; pi < pageInputs.size(); pi++) {
-            ImportCourseRequestDto.PageInput p = pageInputs.get(pi);
+            CoursePayloadDto.Page p = pageInputs.get(pi);
             if (p.getBlocks() == null) {
                 throw ApiException.badRequest("Page " + pi + ": blocks is required");
             }
@@ -406,13 +406,13 @@ public class CourseService {
 
         List<List<Map<String, Object>>> validatedByPage = new ArrayList<>(importPages.size());
         for (int pi = 0; pi < importPages.size(); pi++) {
-            List<ImportCourseRequestDto.BlockInput> blocks = importPages.get(pi).blocks();
+            List<CoursePayloadDto.Block> blocks = importPages.get(pi).blocks();
             if (blocks.size() > maxBlocksPerPage) {
                 throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
             }
             List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
             for (int bi = 0; bi < blocks.size(); bi++) {
-                ImportCourseRequestDto.BlockInput input = blocks.get(bi);
+                CoursePayloadDto.Block input = blocks.get(bi);
                 if (input.getKind() == null || !ALLOWED_BLOCK_KINDS.contains(input.getKind())) {
                     throw ApiException.badRequest("Page " + pi + " block " + bi + ": invalid kind: " + input.getKind());
                 }

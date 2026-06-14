@@ -8,21 +8,23 @@ import java.util.List;
 import java.util.Map;
 
 
-// TODO This is also the AI-generation entry point.
-
-public class ImportCourseRequestDto {
+/**
+ * Portable course payload
+ * Used both as the /api/v1/courses/import request body and as the AI generation output
+ */
+public class CoursePayloadDto {
 
     private Integer version;
 
     @NotNull(message = "course is required")
     @Valid
-    private CourseMetaInput course;
+    private CourseMeta course;
 
     @NotEmpty(message = "pages must not be empty")
     @Valid
-    private List<PageInput> pages;
+    private List<Page> pages;
 
-    public static class CourseMetaInput {
+    public static class CourseMeta {
         private String title;
         private String slug;
         private String description;
@@ -42,20 +44,20 @@ public class ImportCourseRequestDto {
         public void setLevel(String level) { this.level = level; }
     }
 
-    public static class PageInput {
+    public static class Page {
         private String title;
 
         @Valid
-        private List<BlockInput> blocks;
+        private List<Block> blocks;
 
         public String getTitle() { return title; }
-        public List<BlockInput> getBlocks() { return blocks; }
+        public List<Block> getBlocks() { return blocks; }
 
         public void setTitle(String title) { this.title = title; }
-        public void setBlocks(List<BlockInput> blocks) { this.blocks = blocks; }
+        public void setBlocks(List<Block> blocks) { this.blocks = blocks; }
     }
 
-    public static class BlockInput {
+    public static class Block {
         private String kind;
         private Map<String, Object> payload;
 
@@ -67,10 +69,10 @@ public class ImportCourseRequestDto {
     }
 
     public Integer getVersion() { return version; }
-    public CourseMetaInput getCourse() { return course; }
-    public List<PageInput> getPages() { return pages; }
+    public CourseMeta getCourse() { return course; }
+    public List<Page> getPages() { return pages; }
 
     public void setVersion(Integer version) { this.version = version; }
-    public void setCourse(CourseMetaInput course) { this.course = course; }
-    public void setPages(List<PageInput> pages) { this.pages = pages; }
+    public void setCourse(CourseMeta course) { this.course = course; }
+    public void setPages(List<Page> pages) { this.pages = pages; }
 }
