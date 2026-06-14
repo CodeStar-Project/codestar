@@ -168,7 +168,7 @@
       "empty": "Réponse vide du service IA.",
       "rateLimited": "Limite de génération atteinte, réessayez dans quelques minutes.",
       "unavailable": "Service IA indisponible, veuillez réessayer.",
-      "invalidResponse": "Le modèle a retourné une réponse invalide, réessayez.",
+      "invalidResponse": "Le service IA n'a pas pu produire un cours exploitable. Réessayez — si l'erreur persiste, contactez un administrateur.",
       "failed": "La génération a échoué, réessayez.",
       "unexpected": "Erreur inattendue lors de la génération.",
       "importFailed": "Erreur lors de l'import du cours."
@@ -301,6 +301,51 @@
     "maxBlocksRange": "La valeur doit être un entier entre {min} et {max}.",
     "save": "Enregistrer",
     "saved": "✓ Enregistré"
+  },
+  "adminAi": {
+    "breadcrumbAdmin": "Admin",
+    "kicker": "Fonctionnalité expérimentale",
+    "title": "Générateur de cours IA",
+    "description": "Décris un sujet et laisse l'IA générer un cours complet. Tu pourras le réviser avant de l'importer.",
+    "describeCourse": "Décrire le cours",
+    "topicLabel": "Sujet",
+    "topicPlaceholder": "ex : Introduction à React, Les bases de SQL, Docker pour les débutants…",
+    "topicHelper": "{count}/200 — minimum 5 caractères",
+    "levelLabel": "Niveau",
+    "languageLabel": "Langue du contenu",
+    "langFr": "Français",
+    "langEn": "English",
+    "keyIdeasLabel": "Idées clés à couvrir",
+    "keyIdeasOptional": "(optionnel, max 10)",
+    "keyIdeasPlaceholder": "Appuie sur Entrée pour ajouter…",
+    "removeIdea": "Supprimer « {idea} »",
+    "generate": "Générer le cours",
+    "generatingTitle": "Génération en cours",
+    "generatingSubtitle": "La génération d'un cours détaillé peut prendre jusqu'à 90 secondes",
+    "successTitle": "Cours généré avec succès",
+    "editParams": "← Modifier les paramètres",
+    "importEdit": "Importer et éditer",
+    "regenerate": "Regénérer",
+    "pageCount": "{count, plural, one {# page} other {# pages}}",
+    "blockCount": "{count, plural, one {# bloc} other {# blocs}}",
+    "level": {
+      "BEGINNER": "Débutant",
+      "INTERMEDIATE": "Intermédiaire",
+      "ADVANCED": "Avancé"
+    },
+    "levelDescription": {
+      "BEGINNER": "Langage simple, analogies, exemples pas à pas",
+      "INTERMEDIATE": "Patterns, bonnes pratiques, compromis",
+      "ADVANCED": "Cas limites, performance, décisions d'architecture"
+    },
+    "generationSteps": [
+      "Analyse du sujet et des objectifs…",
+      "Construction du plan pédagogique…",
+      "Rédaction des concepts et définitions…",
+      "Enrichissement avec exemples et cas pratiques…",
+      "Ajout des tableaux et synthèses…",
+      "Finalisation et vérification du cours…"
+    ]
   },
   "notFound": {
     "title": "Page introuvable",

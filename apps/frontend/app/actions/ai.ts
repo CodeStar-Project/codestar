@@ -1,36 +1,9 @@
 "use server";
 
 import { ApiError, apiFetch } from "@/lib/api";
-import type { CourseBlockKind, CourseLevel } from "@/lib/types";
+import { COURSE_PAYLOAD_VERSION } from "@/lib/types";
+import type { AiCourseDraft, GenerateRequest } from "@/lib/types";
 import { importCourse } from "./courses";
-
-export interface GenerateRequest {
-  topic: string;
-  level: CourseLevel;
-  language: "fr" | "en";
-  keyIdeas?: string[];
-}
-
-export interface AiDraftBlock {
-  kind: CourseBlockKind;
-  payload: Record<string, unknown>;
-}
-
-export interface AiDraftPage {
-  title: string;
-  blocks: AiDraftBlock[];
-}
-
-export interface AiCourseDraft {
-  course: {
-    title: string;
-    slug: string;
-    description: string;
-    category: string;
-    level: CourseLevel;
-  };
-  pages: AiDraftPage[];
-}
 
 export type GenerateErrorCode =
   | "empty"
@@ -66,7 +39,7 @@ export async function generateAiCourse(request: GenerateRequest): Promise<Genera
 
 export async function importAiCourse(draft: AiCourseDraft) {
   return importCourse({
-    version: 2,
+    version: COURSE_PAYLOAD_VERSION,
     course: draft.course,
     pages: draft.pages,
   });

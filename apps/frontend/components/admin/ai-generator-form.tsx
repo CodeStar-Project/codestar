@@ -4,12 +4,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import {
-  generateAiCourse,
-  importAiCourse,
-  type AiCourseDraft,
-  type GenerateRequest,
-} from "@/app/actions/ai";
+import { generateAiCourse, importAiCourse } from "@/app/actions/ai";
+import type { AiCourseDraft, GenerateRequest } from "@/lib/types";
 import { GlassButton } from "@/components/ui/glass-button";
 import {
   GlassCard,
@@ -21,7 +17,6 @@ import {
   ArrowRightIcon,
   BookIcon,
   CheckCircleIcon,
-  PlusIcon,
   SparklesIcon,
   XIcon,
 } from "@/components/ui/icons";
@@ -34,20 +29,7 @@ import { cn } from "@/lib/utils";
 type Level = "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
 type Language = "fr" | "en";
 
-const LEVELS: { value: Level; label: string; description: string }[] = [
-  { value: "BEGINNER", label: "Débutant", description: "Langage simple, analogies, exemples pas à pas" },
-  { value: "INTERMEDIATE", label: "Intermédiaire", description: "Patterns, bonnes pratiques, compromis" },
-  { value: "ADVANCED", label: "Avancé", description: "Cas limites, performance, décisions d'architecture" },
-];
-
-const GENERATION_STEPS = [
-  "Analyse du sujet et des objectifs…",
-  "Construction du plan pédagogique…",
-  "Rédaction des concepts et définitions…",
-  "Enrichissement avec exemples et cas pratiques…",
-  "Ajout des tableaux et synthèses…",
-  "Finalisation et vérification du cours…",
-];
+const LEVEL_VALUES: Level[] = ["BEGINNER", "INTERMEDIATE", "ADVANCED"];
 
 const BLOCK_COLORS: Record<string, string> = {
   H1: "bg-violet-500/15 text-violet-300",
@@ -74,6 +56,7 @@ function KeyIdeasInput({
   ideas: string[];
   onChange: (ideas: string[]) => void;
 }) {
+  const t = useTranslations("adminAi");
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -112,7 +95,7 @@ function KeyIdeasInput({
               onChange(ideas.filter((i) => i !== idea));
             }}
             className="opacity-60 transition-opacity hover:opacity-100"
-            aria-label={`Supprimer "${idea}"`}
+            aria-label={t("removeIdea", { idea })}
           >
             <XIcon size={12} />
           </button>
@@ -125,7 +108,7 @@ function KeyIdeasInput({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           onBlur={commit}
-          placeholder={ideas.length === 0 ? "Appuie sur Entrée pour ajouter…" : ""}
+          placeholder={ideas.length === 0 ? t("keyIdeasPlaceholder") : ""}
           className="min-w-[140px] flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-soft"
           maxLength={100}
         />
@@ -134,14 +117,16 @@ function KeyIdeasInput({
   );
 }
 
-function GeneratingAnimation({ onDone }: { onDone?: () => void }) {
+function GeneratingAnimation() {
+  const t = useTranslations("adminAi");
+  const steps = t.raw("generationSteps") as string[];
   const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
-    if (stepIndex >= GENERATION_STEPS.length - 1) return;
+    if (stepIndex >= steps.length - 1) return;
     const id = setTimeout(() => setStepIndex((s) => s + 1), 12000);
     return () => clearTimeout(id);
-  }, [stepIndex]);
+  }, [stepIndex, steps.length]);
 
   return (
     <GlassCard variant="strong" className="overflow-hidden">
@@ -152,11 +137,11 @@ function GeneratingAnimation({ onDone }: { onDone?: () => void }) {
             <span className="absolute inset-0 animate-ping rounded-full bg-accent/20" />
           </div>
           <div>
-            <p className="font-display text-lg text-text">Génération en cours</p>
-            <p className="mt-1 text-sm text-text-soft">La génération d'un cours détaillé peut prendre jusqu'à 90 secondes</p>
+            <p className="font-display text-lg text-text">{t("generatingTitle")}</p>
+            <p className="mt-1 text-sm text-text-soft">{t("generatingSubtitle")}</p>
           </div>
           <div className="w-full max-w-sm space-y-2">
-            {GENERATION_STEPS.map((step, i) => (
+            {steps.map((step, i) => (
               <div
                 key={step}
                 className={cn(
@@ -184,19 +169,16 @@ function GeneratingAnimation({ onDone }: { onDone?: () => void }) {
 }
 
 function LevelBadge({ level }: { level: string }) {
+  const t = useTranslations("adminAi");
   const colors: Record<string, string> = {
     BEGINNER: "bg-emerald-500/15 text-emerald-300",
     INTERMEDIATE: "bg-amber-500/15 text-amber-300",
     ADVANCED: "bg-red-500/15 text-red-300",
   };
-  const labels: Record<string, string> = {
-    BEGINNER: "Débutant",
-    INTERMEDIATE: "Intermédiaire",
-    ADVANCED: "Avancé",
-  };
+  const known = level === "BEGINNER" || level === "INTERMEDIATE" || level === "ADVANCED";
   return (
     <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", colors[level] ?? "bg-slate-500/15 text-slate-300")}>
-      {labels[level] ?? level}
+      {known ? t(`level.${level}`) : level}
     </span>
   );
 }
@@ -212,6 +194,7 @@ function DraftPreview({
   onRegenerate: () => void;
   importing: boolean;
 }) {
+  const t = useTranslations("adminAi");
   return (
     <div className="space-y-6">
       {/* Course header */}
@@ -232,8 +215,10 @@ function DraftPreview({
                 <p className="mt-2 text-sm leading-relaxed text-text-soft">{draft.course.description}</p>
               )}
               <p className="mt-3 text-xs text-muted">
-                {draft.pages.length} page{draft.pages.length !== 1 ? "s" : ""} ·{" "}
-                {draft.pages.reduce((n, p) => n + p.blocks.length, 0)} blocs
+                {t("pageCount", { count: draft.pages.length })} ·{" "}
+                {t("blockCount", {
+                  count: draft.pages.reduce((n, p) => n + p.blocks.length, 0),
+                })}
               </p>
             </div>
           </div>
@@ -267,7 +252,7 @@ function DraftPreview({
                   ))}
                   {page.blocks.length > 1 && (
                     <span className="text-[11px] text-muted">
-                      ({page.blocks.length} blocs)
+                      ({t("blockCount", { count: page.blocks.length })})
                     </span>
                   )}
                 </div>
@@ -281,12 +266,12 @@ function DraftPreview({
       <div className="flex flex-wrap items-center gap-3">
         <GlassButton variant="primary" size="lg" onClick={onImport} loading={importing} disabled={importing}>
           <BookIcon size={16} />
-          Importer et éditer
+          {t("importEdit")}
           <ArrowRightIcon size={16} />
         </GlassButton>
         <GlassButton variant="ghost" size="lg" onClick={onRegenerate} disabled={importing}>
           <SparklesIcon size={16} />
-          Regénérer
+          {t("regenerate")}
         </GlassButton>
       </div>
     </div>
@@ -299,6 +284,7 @@ function DraftPreview({
 
 export function AiGeneratorForm() {
   const router = useRouter();
+  const t = useTranslations("adminAi");
   const tErr = useTranslations("errors.adminAi");
 
   const [topic, setTopic] = useState("");
@@ -355,31 +341,31 @@ export function AiGeneratorForm() {
       {!generating && !draft && (
         <GlassCard variant="strong">
           <GlassCardHeader className="px-6 pt-6 pb-0">
-            <GlassCardTitle>Décrire le cours</GlassCardTitle>
+            <GlassCardTitle>{t("describeCourse")}</GlassCardTitle>
           </GlassCardHeader>
           <GlassCardContent className="p-6 space-y-6">
             {/* Topic */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text">
-                Sujet <span className="text-red-400">*</span>
+                {t("topicLabel")} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && canGenerate && handleGenerate()}
-                placeholder="ex: Introduction à React, Les bases de SQL, Docker pour les débutants…"
+                placeholder={t("topicPlaceholder")}
                 maxLength={200}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-text placeholder:text-text-soft outline-none transition-colors focus:border-accent/50 focus:bg-white/8"
               />
-              <p className="text-xs text-muted">{topic.trim().length}/200 — minimum 5 caractères</p>
+              <p className="text-xs text-muted">{t("topicHelper", { count: topic.trim().length })}</p>
             </div>
 
             {/* Level */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-text">Niveau</label>
+              <label className="block text-sm font-medium text-text">{t("levelLabel")}</label>
               <div className="grid gap-2 sm:grid-cols-3">
-                {LEVELS.map(({ value, label, description }) => (
+                {LEVEL_VALUES.map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -391,8 +377,8 @@ export function AiGeneratorForm() {
                         : "border-white/10 bg-white/5 text-text hover:border-white/20 hover:bg-white/8"
                     )}
                   >
-                    <div className="text-sm font-medium">{label}</div>
-                    <div className="mt-0.5 text-[11px] opacity-70">{description}</div>
+                    <div className="text-sm font-medium">{t(`level.${value}`)}</div>
+                    <div className="mt-0.5 text-[11px] opacity-70">{t(`levelDescription.${value}`)}</div>
                   </button>
                 ))}
               </div>
@@ -400,7 +386,7 @@ export function AiGeneratorForm() {
 
             {/* Language */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-text">Langue du contenu</label>
+              <label className="block text-sm font-medium text-text">{t("languageLabel")}</label>
               <div className="flex gap-2">
                 {(["fr", "en"] as Language[]).map((lang) => (
                   <button
@@ -414,7 +400,7 @@ export function AiGeneratorForm() {
                         : "border-white/10 bg-white/5 text-text hover:border-white/20"
                     )}
                   >
-                    {lang === "fr" ? "Français" : "English"}
+                    {lang === "fr" ? t("langFr") : t("langEn")}
                   </button>
                 ))}
               </div>
@@ -423,8 +409,8 @@ export function AiGeneratorForm() {
             {/* Key ideas */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text">
-                Idées clés à couvrir{" "}
-                <span className="font-normal text-muted">(optionnel, max 10)</span>
+                {t("keyIdeasLabel")}{" "}
+                <span className="font-normal text-muted">{t("keyIdeasOptional")}</span>
               </label>
               <KeyIdeasInput ideas={keyIdeas} onChange={setKeyIdeas} />
             </div>
@@ -445,7 +431,7 @@ export function AiGeneratorForm() {
               className="w-full"
             >
               <SparklesIcon size={16} />
-              Générer le cours
+              {t("generate")}
             </GlassButton>
           </GlassCardContent>
         </GlassCard>
@@ -461,7 +447,7 @@ export function AiGeneratorForm() {
             {error}
           </div>
           <GlassButton variant="ghost" onClick={() => { setError(null); }}>
-            ← Modifier les paramètres
+            {t("editParams")}
           </GlassButton>
         </div>
       )}
@@ -472,10 +458,10 @@ export function AiGeneratorForm() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm text-emerald-400">
               <CheckCircleIcon size={16} />
-              Cours généré avec succès
+              {t("successTitle")}
             </div>
             <GlassButton variant="ghost" size="sm" onClick={() => { setDraft(null); setError(null); }}>
-              ← Modifier les paramètres
+              {t("editParams")}
             </GlassButton>
           </div>
           <DraftPreview
