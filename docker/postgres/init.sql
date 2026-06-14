@@ -1,6 +1,5 @@
 -- Codestar database initialization
--- Hibernate manages the schema via ddl-auto=update.
+-- This file is used to install PostgreSQL extensions required by the database.
 
--- Add extensions or seed data here.
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Example: install an extension
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
