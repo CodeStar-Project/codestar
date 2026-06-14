@@ -7,14 +7,14 @@ import java.util.Map;
  * Versioned import/export envelope for a course (same for AI features)
  *
  * <pre>
- * { "version": 2,
+ * { "version": 1,
  *   "course": { title, slug, description, category, level },
  *   "pages": [ { title, blocks: [ { kind, payload } ] } ] }
  * </pre>
  */
 public record CourseExportDto(int version, CourseMeta course, List<PageExport> pages) {
 
-    public static final int CURRENT_VERSION = 2;
+    public static final int CURRENT_VERSION = 1;
 
     public record CourseMeta(
             String title,

@@ -126,10 +126,11 @@ export interface PageInput {
 }
 
 /**
- * Course payload schema version. Must match the backend's CourseExportDto.CURRENT_VERSION —
- * /courses/import rejects any other value.
+ * Course payload SCHEMA version.
+ * Must match the backend's CourseExportDto.CURRENT_VERSION.
+ * Endpoint /courses/import rejects any other version value.
  */
-export const COURSE_PAYLOAD_VERSION = 2;
+export const COURSE_PAYLOAD_VERSION = 1;
 
 export interface CourseExport {
   version: number;

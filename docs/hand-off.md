@@ -317,7 +317,7 @@ Flyway versionné `V001__init.sql`, `V002__groups.sql`, etc. Une migration = une
 | POST | `/courses/{id}/status` | ⚠️ `canEditCourse` | `UpdateCourseStatusRequestDto {status}` (remplace l'ancien `/publish`) |
 | DELETE | `/courses/{id}` | ⚠️ `canEditCourse` | Archive le cours (soft) |
 | PUT | `/courses/{id}/pages` | ⚠️ `canEditCourse` | `SavePagesRequestDto` — **remplacement complet** des pages/blocs (remplace l'ancien `/blocks`) |
-| GET | `/courses/{id}/export` | ⚠️ `canEditCourse` | `CourseExportDto` (JSON §11.3, **version 2**) |
+| GET | `/courses/{id}/export` | ⚠️ `canEditCourse` | `CourseExportDto` (JSON §11.3, **version 1**) |
 | POST | `/courses/import` | Teacher+ | `ImportCourseRequestDto` → 201 `CourseDto` (`DRAFT`, slugify + collision) |
 
 ### Enrollments — `EnrollmentController` (`/api/v1/enrollments`)
@@ -786,15 +786,22 @@ Mapping UI palette → kind/tone : Vigilance ⚠️ (`CALLOUT/warning`, orange) 
 
 ### 11.3 Schéma JSON import / export (versionné)
 
-Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.6). Contrat unique = garde-fou unique.
+Même format pour l'export, l'import, et la génération IA (cf. §11.6). Contrat unique = garde-fou unique.
 
 ```json
 {
   "version": 1,
   "course": { "title", "slug", "description", "category", "level" },
-  "blocks": [ { "kind", "payload" } ]
+  "pages": [ { "title", "blocks": [ { "kind", "payload" } ] } ]
 }
 ```
+
+**Versionnement du schéma.** `version` = version **du format JSON** (pas du cours ni de l'app). Mécanique :
+
+- **Source de vérité** : `CourseExportDto.CURRENT_VERSION` (back) ↔ `COURSE_PAYLOAD_VERSION` (front, `lib/types.ts`). **Toujours aligner les deux.**
+- **Export** estampille le JSON avec `CURRENT_VERSION` ; **import** rejette toute autre valeur (`"Unsupported import version"`). L'import-fichier de l'éditeur et la génération IA passent par ce même contrôle.
+- **Démarre à `1`** (réinitialisé avant tout release ; un ancien `2` traînait du temps où le modèle est passé de blocs plats → pages).
+- **Incrémenter** `version` (+ prévoir migration ou rejet propre des anciens payloads) **à chaque changement incompatible** de l'enveloppe. Documenter le changement ici.
 
 ### 11.4 TODO Backend (à faire en premier) — ✅ FAIT (PR `feat/course-builder`)
 
@@ -836,7 +843,7 @@ Même format pour l'export, l'import, et plus tard la génération IA (cf. §11.
 - **Modèle Course → Page → Bloc** (au lieu de Course → Bloc plat). Nouvelle table `course_pages` ; `course_blocks` gagne `page_id` (FK CASCADE) tout en gardant `course_id` dénormalisé (bookmarks/enrollment inchangés, cohérence garantie par les écritures full-replace).
   - Entités `CoursePage`, `CourseBlock.page`, `Course.pages`. Repo `ICoursePageRepository`.
   - API : `GET/PUT /courses/{id}/pages` (remplacent `/blocks`). DTO `CoursePageDto`, `SavePagesRequestDto` (`pages[].{title?, blocks[]}`). `CourseDto.pages`.
-  - Export/import **v2 uniquement** : `{ version:2, course, pages:[{title?, blocks}] }`. Pas de rétrocompat v1 (`blocks` plat rejeté ; `pages` requis).
+  - Export/import uniquement pour la version 1.
   - Front : `course-editor.tsx` = barre de pages (ajout / renommer / réordonner ◀▶ / supprimer) + canvas par page ; reader `/courses/[slug]/read` rend les pages en sections titrées ; intro cours compte les pages comme leçons.
 - **`max_blocks_per_page` configurable ADMIN/SUPER_ADMIN** : table `app_settings` (key/value, seed `50`). `SettingsService` + `GET /settings` (TEACHER+, l'éditeur le lit) + `PATCH /settings` (ADMIN+). Page `/admin/settings` (form). Borne 1–1000. Plafond aussi appliqué côté `savePages` et `importCourse` (+ `MAX_PAGES = 200`). L'éditeur désactive la palette quand la page est pleine.
 - **i18n** : tous les strings introduits passés en `messages/{fr,en}.json` (namespaces `courseBuilder` étendu + `adminSettings`, `admin.settingsLink`) ; `sandbox.tsx` (« Run » / « Bientôt ») et titres de page i18n.
