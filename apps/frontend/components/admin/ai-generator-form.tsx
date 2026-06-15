@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -17,6 +17,7 @@ import {
   ArrowRightIcon,
   BookIcon,
   CheckCircleIcon,
+  HelpCircleIcon,
   SparklesIcon,
   XIcon,
 } from "@/components/ui/icons";
@@ -279,6 +280,80 @@ function DraftPreview({
 }
 
 // ---------------------------------------------------------------------------
+// Prompt help popover
+// ---------------------------------------------------------------------------
+
+const PROMPT_TIPS = [
+  { label: "Public cible", example: "lycéens 1ère NSI, étudiants master, développeurs juniors…" },
+  { label: "Structure", example: "cours magistral, tutoriel pratique, fiche de révision…" },
+  { label: "Ton", example: "formel, accessible, humoristique, très technique…" },
+  { label: "Objectifs", example: "ce que l'apprenant doit savoir faire à la fin du cours" },
+  { label: "Contexte", example: "version du framework, environnement, prérequis…" },
+];
+
+function PromptHelpPopover() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) close();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open, close]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        aria-label="Conseils pour rédiger un bon sujet"
+        aria-expanded={open}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center justify-center rounded-full p-1 text-muted transition-colors hover:text-text-soft"
+      >
+        <HelpCircleIcon size={17} />
+      </button>
+
+      {open && (
+        <div
+          role="tooltip"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+          className="absolute left-1/2 top-full z-50 mt-2 w-80 -translate-x-1/2 rounded-xl border border-white/10 bg-[var(--glass-bg)] p-4 shadow-xl backdrop-blur-md"
+        >
+          {/* Arrow */}
+          <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-white/10 bg-[var(--glass-bg)]" />
+
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-accent">
+            Conseils pour un meilleur cours
+          </p>
+          <p className="mb-3 text-xs text-text-soft">
+            Précisez dans le sujet ou les idées clés :
+          </p>
+          <ul className="space-y-2">
+            {PROMPT_TIPS.map(({ label, example }) => (
+              <li key={label} className="flex gap-2 text-xs">
+                <span className="mt-0.5 shrink-0 font-medium text-text">{label} —</span>
+                <span className="text-text-soft">{example}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 border-t border-white/10 pt-3 text-[11px] text-muted">
+            Exemple : <em className="text-text-soft">"Introduction à Docker pour des lycéens en terminale NSI, ton accessible, avec des analogies du quotidien"</em>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main form
 // ---------------------------------------------------------------------------
 
@@ -341,7 +416,10 @@ export function AiGeneratorForm() {
       {!generating && !draft && (
         <GlassCard variant="strong">
           <GlassCardHeader className="px-6 pt-6 pb-0">
-            <GlassCardTitle>{t("describeCourse")}</GlassCardTitle>
+            <div className="flex items-center gap-2">
+              <GlassCardTitle>{t("describeCourse")}</GlassCardTitle>
+              <PromptHelpPopover />
+            </div>
           </GlassCardHeader>
           <GlassCardContent className="p-6 space-y-6">
             {/* Topic */}
