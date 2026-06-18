@@ -15,6 +15,8 @@ const layout = isProd
       serializers: { err: pino.stdSerializers.err },
     };
 
+// Pass thrown errors under the `err` key — pino's serializer (and ECS) map it to a full structured
+// stack. Any other key drops the non-enumerable Error fields (message/stack), logging `{}`.
 const root = pino({
   level: process.env.LOG_LEVEL ?? (isProd ? "info" : "debug"),
   ...layout,
