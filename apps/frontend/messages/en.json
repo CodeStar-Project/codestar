@@ -163,7 +163,16 @@
     "description": "An unexpected error occurred. Try again or head back home.",
     "retry": "Try again",
     "home": "Back home",
-    "unknown": "Unknown error."
+    "unknown": "Unknown error.",
+    "adminAi": {
+      "empty": "Empty response from the AI service.",
+      "rateLimited": "Generation limit reached, try again in a few minutes.",
+      "unavailable": "AI service unavailable, please try again.",
+      "invalidResponse": "The AI service couldn't return a usable course. Try again — if it keeps failing, contact an administrator.",
+      "failed": "Generation failed, try again.",
+      "unexpected": "Unexpected error during generation.",
+      "importFailed": "Error while importing the course."
+    }
   },
   "courseBuilder": {
     "title": "Course Builder",
@@ -292,6 +301,51 @@
     "maxBlocksRange": "Value must be an integer between {min} and {max}.",
     "save": "Save",
     "saved": "✓ Saved"
+  },
+  "adminAi": {
+    "breadcrumbAdmin": "Admin",
+    "kicker": "Experimental feature",
+    "title": "AI Course Generator",
+    "description": "Describe a topic and let the AI generate a complete course. You can review it before importing.",
+    "describeCourse": "Describe the course",
+    "topicLabel": "Topic",
+    "topicPlaceholder": "e.g. Introduction to React, SQL basics, Docker for beginners…",
+    "topicHelper": "{count}/200 — minimum 5 characters",
+    "levelLabel": "Level",
+    "languageLabel": "Content language",
+    "langFr": "French",
+    "langEn": "English",
+    "keyIdeasLabel": "Key ideas to cover",
+    "keyIdeasOptional": "(optional, max 10)",
+    "keyIdeasPlaceholder": "Press Enter to add…",
+    "removeIdea": "Remove \"{idea}\"",
+    "generate": "Generate the course",
+    "generatingTitle": "Generating",
+    "generatingSubtitle": "Generating a detailed course can take up to 90 seconds",
+    "successTitle": "Course generated successfully",
+    "editParams": "← Edit parameters",
+    "importEdit": "Import and edit",
+    "regenerate": "Regenerate",
+    "pageCount": "{count, plural, one {# page} other {# pages}}",
+    "blockCount": "{count, plural, one {# block} other {# blocks}}",
+    "level": {
+      "BEGINNER": "Beginner",
+      "INTERMEDIATE": "Intermediate",
+      "ADVANCED": "Advanced"
+    },
+    "levelDescription": {
+      "BEGINNER": "Plain language, analogies, step-by-step examples",
+      "INTERMEDIATE": "Patterns, best practices, trade-offs",
+      "ADVANCED": "Edge cases, performance, architecture decisions"
+    },
+    "generationSteps": [
+      "Analyzing the topic and objectives…",
+      "Building the learning plan…",
+      "Writing concepts and definitions…",
+      "Enriching with examples and practical cases…",
+      "Adding tables and summaries…",
+      "Finalizing and reviewing the course…"
+    ]
   },
   "notFound": {
     "title": "Page not found",

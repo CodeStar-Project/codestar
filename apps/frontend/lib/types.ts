@@ -125,6 +125,13 @@ export interface PageInput {
   blocks: BlockInput[];
 }
 
+/**
+ * Course payload SCHEMA version.
+ * Must match the backend's CourseExportDto.CURRENT_VERSION.
+ * Endpoint /courses/import rejects any other version value.
+ */
+export const COURSE_PAYLOAD_VERSION = 1;
+
 export interface CourseExport {
   version: number;
   course: {
@@ -137,17 +144,21 @@ export interface CourseExport {
   pages: PageInput[];
 }
 
-export const COURSE_PAYLOAD_VERSION = 2;
-
 export interface GenerateRequest {
   topic: string;
   level: CourseLevel;
-  language?: "fr" | "en";
+  language: "fr" | "en";
   keyIdeas?: string[];
 }
 
 export interface AiCourseDraft {
-  course: CourseExport["course"];
+  course: {
+    title: string;
+    slug: string;
+    description: string;
+    category: string;
+    level: CourseLevel;
+  };
   pages: PageInput[];
 }
 

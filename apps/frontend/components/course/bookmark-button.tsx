@@ -15,6 +15,7 @@ interface BookmarkButtonProps {
   initialId: string | null;
   labelAdd: string;
   labelRemove: string;
+  iconOnly?: boolean;
 }
 
 export function BookmarkButton({
@@ -23,6 +24,7 @@ export function BookmarkButton({
   initialId,
   labelAdd,
   labelRemove,
+  iconOnly = false,
 }: BookmarkButtonProps) {
   const [id, setId] = useState<string | null>(initialId);
   const [pending, start] = useTransition();
@@ -52,7 +54,7 @@ export function BookmarkButton({
       aria-label={active ? labelRemove : labelAdd}
     >
       {active ? <BookmarkFilledIcon size={14} /> : <BookmarkIcon size={14} />}
-      {active ? labelRemove : labelAdd}
+      {!iconOnly && (active ? labelRemove : labelAdd)}
     </GlassButton>
   );
 }

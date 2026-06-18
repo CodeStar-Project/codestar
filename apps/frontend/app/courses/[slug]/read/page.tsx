@@ -176,25 +176,17 @@ export default async function CourseReaderPage({ params, searchParams }: PagePro
             <div className="space-y-2">
               {pageBlocks.map((b) => (
                 <div key={b.id} className="group relative">
-                  <div className="absolute -left-12 top-1 hidden opacity-0 transition-opacity group-hover:opacity-100 lg:block">
+                  <div className="absolute -left-10 top-1 hidden opacity-0 transition-opacity group-hover:opacity-100 lg:block">
                     <BookmarkButton
                       courseId={course.id}
                       blockId={b.id}
                       initialId={bookmarkMap.get(b.id) ?? null}
                       labelAdd={t("addBookmark")}
                       labelRemove={t("removeBookmark")}
+                      iconOnly
                     />
                   </div>
                   <BlockRenderer block={b} id={blockSlug(b)} />
-                  <div className="mt-1 lg:hidden">
-                    <BookmarkButton
-                      courseId={course.id}
-                      blockId={b.id}
-                      initialId={bookmarkMap.get(b.id) ?? null}
-                      labelAdd={t("addBookmark")}
-                      labelRemove={t("removeBookmark")}
-                    />
-                  </div>
                 </div>
               ))}
             </div>
