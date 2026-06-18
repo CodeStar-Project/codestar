@@ -137,6 +137,20 @@ export interface CourseExport {
   pages: PageInput[];
 }
 
+export const COURSE_PAYLOAD_VERSION = 2;
+
+export interface GenerateRequest {
+  topic: string;
+  level: CourseLevel;
+  language?: "fr" | "en";
+  keyIdeas?: string[];
+}
+
+export interface AiCourseDraft {
+  course: CourseExport["course"];
+  pages: PageInput[];
+}
+
 export interface InstanceSettings {
   maxBlocksPerPage: number;
 }

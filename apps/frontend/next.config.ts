@@ -25,6 +25,7 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],
   env: {
     JWT_SECRET: process.env.JWT_SECRET ?? "",
   },

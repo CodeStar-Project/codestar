@@ -1,8 +1,9 @@
 import { backendBaseUrl } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
-/**
- * Proxy course images from the backend so the browser can load them from the frontend origin
- */
+
+export const runtime = "nodejs";
+
 const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]+$/;
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -20,11 +21,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       signal: controller.signal,
     });
   } catch {
+    logger.warn("mediaProxy", "backend unreachable");
     return new Response("Bad gateway", { status: 502 });
   } finally {
     clearTimeout(timeoutId);
   }
   if (!res.ok || !res.body) {
+    if (res.status >= 500) logger.error("mediaProxy", "backend error", { status: res.status });
     return new Response("Not found", { status: 404 });
   }
 
