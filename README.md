@@ -1,6 +1,6 @@
 # Codestar
 
-Open-source &amp; self-hosted e-learning platform
+Open-source &amp; self-hosted e-learning platform template to build yours easly.
 
 ## Backend 
 
