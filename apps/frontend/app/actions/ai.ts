@@ -1,6 +1,7 @@
 "use server";
 
 import { ApiError, apiFetch } from "@/lib/api";
+import { logger } from "@/lib/logger";
 import { COURSE_PAYLOAD_VERSION } from "@/lib/types";
 import type { AiCourseDraft, GenerateRequest } from "@/lib/types";
 import { importCourse } from "./courses";
@@ -46,6 +47,7 @@ export async function generateAiCourse(request: GenerateRequest): Promise<Genera
       if (e.status === 502) return { ok: false, error: "invalidResponse" };
       return { ok: false, error: "failed" };
     }
+    logger.error("generateAiCourse", "unexpected error", { err: e });
     return { ok: false, error: "unexpected" };
   }
 }

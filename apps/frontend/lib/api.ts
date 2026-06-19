@@ -5,7 +5,9 @@ import "server-only";
  */
 
 import { cookies } from "next/headers";
+import { decodeJwt } from "jose";
 
+import { logger } from "./logger";
 import type { ApiResponse } from "./types";
 
 function requireEnv(name: string): string {
@@ -47,6 +49,25 @@ export class ApiError extends Error {
   }
 }
 
+function actorIdFromToken(token: string | undefined): string | undefined {
+  if (!token) return undefined;
+  try {
+    const sub = decodeJwt(token).sub;
+    return typeof sub === "string" ? sub : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function logRequestFailure(method: string, path: string, status: number, token?: string) {
+  const route = path.split("?")[0];
+  const actorId = actorIdFromToken(token);
+  if (status >= 500) logger.error("api", "upstream server error", { method, route, status, actorId });
+  else if (status === 0) logger.warn("api", "network error", { method, route, actorId });
+  else if (status === 408) logger.warn("api", "request timeout", { method, route, actorId });
+  else if (status === 400 || status === 422) logger.debug("api", "bad request", { method, route, status, actorId });
+}
+
 export async function apiFetch<T>(
   path: string,
   {
@@ -62,9 +83,10 @@ export async function apiFetch<T>(
     finalHeaders.set("Content-Type", "application/json");
   }
 
+  let token: string | undefined;
   if (withAuth) {
     const cookieStore = await cookies();
-    const token = cookieStore.get(authCookieName())?.value;
+    token = cookieStore.get(authCookieName())?.value;
     if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
@@ -87,9 +109,12 @@ export async function apiFetch<T>(
       signal,
     });
   } catch (err) {
+    const method = rest.method ?? "GET";
     if (err instanceof Error && err.name === "AbortError") {
+      logRequestFailure(method, path, 408, token);
       throw new ApiError(408, "Request timeout");
     }
+    logRequestFailure(method, path, 0, token);
     throw new ApiError(0, "Network error");
   } finally {
     clearTimeout(timeoutId);
@@ -111,6 +136,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
+    logRequestFailure(rest.method ?? "GET", path, res.status, token);
     throw new ApiError(res.status, parsed?.message ?? `HTTP error ${res.status}`);
   }
 
@@ -144,8 +170,10 @@ export async function apiUpload<T>(path: string, formData: FormData, timeoutMs =
     });
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
+      logRequestFailure("POST", path, 408, token);
       throw new ApiError(408, "Request timeout");
     }
+    logRequestFailure("POST", path, 0, token);
     throw new ApiError(0, "Network error");
   } finally {
     clearTimeout(timeoutId);
@@ -163,6 +191,7 @@ export async function apiUpload<T>(path: string, formData: FormData, timeoutMs =
   }
 
   if (!res.ok) {
+    logRequestFailure("POST", path, res.status, token);
     throw new ApiError(res.status, parsed?.message ?? `HTTP error ${res.status}`);
   }
 
@@ -180,9 +209,10 @@ export async function apiFetchText(
   } & RequestInit = {}
 ): Promise<string> {
   const finalHeaders = new Headers(rest.headers);
+  let token: string | undefined;
   if (withAuth) {
     const cookieStore = await cookies();
-    const token = cookieStore.get(authCookieName())?.value;
+    token = cookieStore.get(authCookieName())?.value;
     if (token) finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
@@ -203,9 +233,12 @@ export async function apiFetchText(
       signal,
     });
   } catch (err) {
+    const method = rest.method ?? "GET";
     if (err instanceof Error && err.name === "AbortError") {
+      logRequestFailure(method, path, 408, token);
       throw new ApiError(408, "Request timeout");
     }
+    logRequestFailure(method, path, 0, token);
     throw new ApiError(0, "Network error");
   } finally {
     clearTimeout(timeoutId);
@@ -215,6 +248,7 @@ export async function apiFetchText(
   const text = await res.text();
 
   if (!res.ok) {
+    logRequestFailure(rest.method ?? "GET", path, res.status, token);
     let message = `HTTP error ${res.status}`;
     if (text.trim()) {
       if (contentType.includes("application/json")) {
