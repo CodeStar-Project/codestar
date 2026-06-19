@@ -27,7 +27,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     clearTimeout(timeoutId);
   }
   if (!res.ok || !res.body) {
-    if (res.status >= 500) logger.error("mediaProxy", "backend error", { status: res.status });
+    if (res.status >= 500) {
+      logger.error("mediaProxy", "backend error", { status: res.status });
+      return new Response("Bad gateway", { status: 502 });
+    }
     return new Response("Not found", { status: 404 });
   }
 
