@@ -32,6 +32,7 @@ export default async function GroupsPage() {
             <CreateGroupTrigger
               newGroup={t("newGroup")}
               form={{
+                title: t("form.title"),
                 name: t("form.name"),
                 namePlaceholder: t("form.namePlaceholder"),
                 slug: t("form.slug"),
@@ -54,6 +55,7 @@ export default async function GroupsPage() {
           members: t("members"),
           curriculum: t("curriculum"),
           deleteConfirm: t("deleteConfirm"),
+          deleteBtn: t("deleteBtn"),
           empty: t("empty"),
         }}
       />

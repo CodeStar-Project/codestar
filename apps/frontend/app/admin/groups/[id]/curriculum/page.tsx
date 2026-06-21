@@ -47,7 +47,8 @@ export default async function CurriculumPage({ params }: PageProps) {
       <AdminBreadcrumb
         items={[
           { label: "Admin", href: "/admin" },
-          { label: groupName },
+          { label: "Groupes", href: "/admin/groups" },
+          { label: groupName, href: `/admin/groups/${id}` },
           { label: t("title") },
         ]}
       />
