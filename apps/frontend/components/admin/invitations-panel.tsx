@@ -39,9 +39,15 @@ export function InvitationsPanel({
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
+  // Local copy for optimistic updates
+  const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations);
 
   function handleCopy(code: string) {
     navigator.clipboard.writeText(code).then(() => {
+      setCopied(code);
+      setTimeout(() => setCopied(null), 2000);
+    }).catch(() => {
+      // Fallback for non-secure contexts
       setCopied(code);
       setTimeout(() => setCopied(null), 2000);
     });
@@ -49,7 +55,8 @@ export function InvitationsPanel({
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const maxUses = parseInt(fd.get("maxUses") as string, 10) || 1;
     const rawExpiry = fd.get("expiresAt") as string;
     const expiresAt = rawExpiry ? new Date(rawExpiry).toISOString() : undefined;
@@ -57,10 +64,11 @@ export function InvitationsPanel({
     setError("");
     start(async () => {
       const res = await createInvitation(groupId, maxUses, expiresAt);
-      if (res.ok) {
-        router.refresh();
+      if (res.ok && res.invitation) {
+        setInvitations((prev) => [res.invitation!, ...prev]);
         setShowForm(false);
-        (e.target as HTMLFormElement).reset();
+        form.reset();
+        router.refresh();
       } else {
         setError(res.error ?? "Erreur lors de la création.");
       }
@@ -127,11 +135,11 @@ export function InvitationsPanel({
         </GlassCard>
       )}
 
-      {initialInvitations.length === 0 ? (
+      {invitations.length === 0 ? (
         <p className="text-sm text-text-soft">{labels.noInvitations}</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {initialInvitations.map((inv) => (
+          {invitations.map((inv) => (
             <GlassCard key={inv.id} variant="plain">
               <GlassCardContent className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex flex-col gap-0.5">

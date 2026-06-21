@@ -113,9 +113,12 @@ export interface Invitation {
 
 export async function getInvitations(groupId: string, includeRevoked = false): Promise<Invitation[]> {
   const qs = includeRevoked ? "?includeRevoked=true" : "";
-  return (
-    (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? []
-  );
+  try {
+    return (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? [];
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 403 || e.status === 404)) return [];
+    throw e;
+  }
 }
 
 export async function createGroup(payload: {
