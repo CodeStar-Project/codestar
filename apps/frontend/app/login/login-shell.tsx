@@ -16,12 +16,13 @@ import {
   signInAction,
   signUpAction,
 } from "@/app/actions/auth";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandMark, type LogoPreset } from "@/components/brand-mark";
 import { useInstanceBranding } from "@/components/branding-provider";
-import { GlassButton } from "@/components/ui/glass-button";
+import { AuroraLayer } from "@/components/home/aurora-layer";
 import { GlassChip } from "@/components/ui/glass-chip";
 import { GlassField, GlassInput } from "@/components/ui/glass-input";
-import { ArrowRightIcon, KeyIcon, StarIcon } from "@/components/ui/icons";
+import { CheckIcon } from "@/components/ui/icons";
+import { SlideToConfirm } from "@/components/ui/slide-to-confirm";
 
 type LoginMode = "signin" | "signup" | "join";
 
@@ -70,9 +71,9 @@ export function LoginShell({
   );
 
   return (
-    <main className="grid min-h-[100dvh] grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
-      <section className="flex items-center justify-center px-6 py-16 lg:px-10">
-        <div className="w-full max-w-[440px]">
+    <main className="grid h-[100dvh] grid-cols-1 overflow-hidden lg:grid-cols-[1.05fr_1fr]">
+      <section className="flex items-center justify-center overflow-y-auto px-6 py-12 lg:px-10">
+        <div className="fx-rise w-full max-w-[440px]">
           <Link
             href="/"
             className="mb-10 inline-flex items-center gap-2.5"
@@ -226,8 +227,10 @@ function LoginForm({
   const tFields = useTranslations("login.fields");
   const tErrors = useTranslations("login.errors");
   const tCtas = useTranslations("login.ctas");
+  const tSlide = useTranslations("login.slide");
   const tConsent = useTranslations("login.consent");
   const router = useRouter();
+  const formRef = React.useRef<HTMLFormElement>(null);
 
   const [state, setState] = React.useState<FormState>({
     email: "",
@@ -239,6 +242,13 @@ function LoginForm({
 
   const requireCode = mode === "join";
   const showCode = mode === "join" || mode === "signup";
+
+  // Validité live par champ — alimente la coche « pop » de validation.
+  // Uniquement quand un critère de format réel existe (on ne « valide »
+  // jamais un mot de passe en signin, on ne le connaît pas).
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email);
+  const passwordValid = mode === "signup" && state.password.length >= 8;
+  const codeValid = CODE_RE.test(state.code.trim().toUpperCase());
 
   const validate = (s: FormState): FormErrors => {
     const e: FormErrors = {};
@@ -299,7 +309,8 @@ function LoginForm({
       }
 
       if (result.ok) {
-        router.push(nextPath);
+        // Default landing ("/") → role dispatcher. A real deep-link is honored.
+        router.push(nextPath === "/" ? "/dashboard" : nextPath);
         // Force le re-fetch du RootLayout (auth + branding) pour que la nav
         // bascule immédiatement en état authentifié.
         router.refresh();
@@ -314,26 +325,35 @@ function LoginForm({
   };
 
   return (
-    <form className="mt-8 space-y-4" onSubmit={onSubmit} noValidate>
+    <form
+      ref={formRef}
+      className="mt-8 space-y-4"
+      onSubmit={onSubmit}
+      noValidate
+    >
       <GlassField
         label={tFields("email")}
         htmlFor="email"
         required
         error={errors.email}
       >
-        <GlassInput
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          required
-          aria-invalid={!!errors.email}
-          value={state.email}
-          onChange={(e) =>
-            setState((s) => ({ ...s, email: e.target.value }))
-          }
-        />
+        <div className="relative">
+          <GlassInput
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            required
+            aria-invalid={!!errors.email}
+            value={state.email}
+            onChange={(e) =>
+              setState((s) => ({ ...s, email: e.target.value }))
+            }
+            className="pr-11"
+          />
+          <ValidCheck show={emailValid} />
+        </div>
       </GlassField>
 
       <GlassField
@@ -352,20 +372,24 @@ function LoginForm({
         helper={mode === "signup" ? tFields("passwordHelper") : undefined}
         error={errors.password}
       >
-        <GlassInput
-          id="password"
-          name="password"
-          type="password"
-          autoComplete={
-            mode === "signin" ? "current-password" : "new-password"
-          }
-          required
-          aria-invalid={!!errors.password}
-          value={state.password}
-          onChange={(e) =>
-            setState((s) => ({ ...s, password: e.target.value }))
-          }
-        />
+        <div className="relative">
+          <GlassInput
+            id="password"
+            name="password"
+            type="password"
+            autoComplete={
+              mode === "signin" ? "current-password" : "new-password"
+            }
+            required
+            aria-invalid={!!errors.password}
+            value={state.password}
+            onChange={(e) =>
+              setState((s) => ({ ...s, password: e.target.value }))
+            }
+            className="pr-11"
+          />
+          <ValidCheck show={passwordValid} />
+        </div>
       </GlassField>
 
       {showCode && (
@@ -380,24 +404,27 @@ function LoginForm({
           }
           error={errors.code}
         >
-          <GlassInput
-            id="code"
-            name="code"
-            type="text"
-            inputMode="text"
-            autoComplete="one-time-code"
-            required={requireCode}
-            placeholder={tFields("codePlaceholder")}
-            aria-invalid={!!errors.code}
-            value={state.code}
-            onChange={(e) =>
-              setState((s) => ({
-                ...s,
-                code: e.target.value.toUpperCase(),
-              }))
-            }
-            className="font-mono tracking-widest uppercase"
-          />
+          <div className="relative">
+            <GlassInput
+              id="code"
+              name="code"
+              type="text"
+              inputMode="text"
+              autoComplete="one-time-code"
+              required={requireCode}
+              placeholder={tFields("codePlaceholder")}
+              aria-invalid={!!errors.code}
+              value={state.code}
+              onChange={(e) =>
+                setState((s) => ({
+                  ...s,
+                  code: e.target.value.toUpperCase(),
+                }))
+              }
+              className="pr-11 font-mono tracking-widest uppercase"
+            />
+            <ValidCheck show={codeValid} />
+          </div>
         </GlassField>
       )}
 
@@ -410,20 +437,18 @@ function LoginForm({
         </div>
       )}
 
-      <GlassButton
-        type="submit"
-        variant="primary"
-        size="lg"
+      {/* Validation par glissement — geste volontaire plutôt qu'un clic.
+          Le bouton submit caché préserve l'envoi via la touche Entrée. */}
+      <SlideToConfirm
+        onConfirm={() => formRef.current?.requestSubmit()}
+        label={tSlide("label")}
+        confirmedLabel={tSlide("confirmed")}
+        ariaLabel={tCtas(mode)}
         loading={submitting}
-        className="w-full"
-      >
-        {!submitting && (
-          <>
-            {tCtas(mode)}
-            <ArrowRightIcon size={14} />
-          </>
-        )}
-      </GlassButton>
+      />
+      <button type="submit" className="sr-only" tabIndex={-1} aria-hidden>
+        {tCtas(mode)}
+      </button>
 
       <p className="text-center text-[0.78rem] text-muted">
         {tConsent("prefix")}{" "}
@@ -441,12 +466,38 @@ function LoginForm({
 }
 
 /* ============================================================
-   Decorative right panel
+   Coche de validation live — surgit en « pop » élastique dès
+   qu'un champ devient valide. Purement décoratif (a11y : la
+   validation réelle reste portée par aria-invalid + erreurs).
+   ============================================================ */
+
+function ValidCheck({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[color:var(--color-success)]"
+    >
+      <CheckIcon size={18} className="fx-pop" strokeWidth={2.4} />
+    </span>
+  );
+}
+
+/* ============================================================
+   Panneau de marque (droite) — sobre. Aucune donnée inventée :
+   la phrase de l'instance (tagline) + des faits réels uniquement.
    ============================================================ */
 
 function DecorativeAside() {
   const branding = useInstanceBranding();
-  const t = useTranslations("login.decorative");
+  const t = useTranslations("login.aside");
+  const preset = branding.logo.value as LogoPreset;
+
+  const facts = [
+    t("facts.openSource"),
+    t("facts.license"),
+    t("facts.selfHosted"),
+  ];
 
   return (
     <aside
@@ -466,63 +517,49 @@ function DecorativeAside() {
             "radial-gradient(circle at 30% 20%, color-mix(in oklab, var(--color-accent) 35%, transparent), transparent 50%), radial-gradient(circle at 80% 80%, color-mix(in oklab, var(--color-accent) 25%, transparent), transparent 55%)",
         }}
       />
+
+      {/* Décor animé : aurora + orbes + particules. */}
+      <AuroraLayer />
+
       <div className="relative flex h-full flex-col justify-between p-12">
-        <div className="flex items-center gap-2">
-          <GlassChip variant="default" size="sm">
-            <StarIcon size={12} />
-            {t("license")}
-          </GlassChip>
-          <GlassChip variant="default" size="sm">
-            {t("selfHosted")}
-          </GlassChip>
+        <div
+          className="fx-rise flex items-center gap-2.5"
+          style={{ animationDelay: "0.1s" }}
+        >
+          <BrandMark size={34} preset={preset} accent={branding.accent} />
+          <span className="text-[1.05rem] font-semibold text-text">
+            {branding.name}
+          </span>
         </div>
 
         <div>
-          <h2 className="font-display text-[clamp(2.5rem,3.4vw,3.4rem)] leading-[1.05] text-text">
-            <em className="italic">
-              {t("quote", { name: branding.name })}
-            </em>
+          <h2
+            className="fx-rise max-w-md font-display text-[clamp(2.4rem,3.4vw,3.4rem)] leading-[1.04] text-text"
+            style={{ animationDelay: "0.2s" }}
+          >
+            {branding.tagline}
           </h2>
-          <div className="mt-6 flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full text-[0.85rem] font-semibold text-white"
-              style={{ background: "var(--color-accent)" }}
-              aria-hidden
-            >
-              NM
-            </div>
-            <div>
-              <div className="text-[0.92rem] font-semibold text-text">
-                {t("quoteAuthor")}
-              </div>
-              <div className="text-[0.8rem] text-muted">{t("quoteRole")}</div>
-            </div>
-          </div>
+          <p
+            className="fx-rise mt-5 max-w-sm text-[1.02rem] leading-relaxed text-text-soft"
+            style={{ animationDelay: "0.35s" }}
+          >
+            {t("subline")}
+          </p>
         </div>
 
-        <div className="glass-strong w-fit max-w-[340px] rounded-[var(--r-lg)] p-4">
-          <div className="flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-muted">
-            <KeyIcon size={13} style={{ color: "var(--color-accent)" }} />
-            {t("streakLabel")}
-          </div>
-          <div className="font-display text-[2.2rem] leading-tight text-text">
-            {t("streakValue")}
-          </div>
-          <div className="mt-3 flex gap-1">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <span
-                key={i}
-                className="h-4 flex-1 rounded-sm"
-                style={{
-                  background:
-                    i >= 11
-                      ? "var(--color-accent)"
-                      : "color-mix(in oklab, var(--color-accent) 25%, var(--color-bg-base))",
-                }}
-              />
-            ))}
-          </div>
-        </div>
+        <ul className="flex flex-wrap items-center gap-2">
+          {facts.map((fact, i) => (
+            <li
+              key={fact}
+              className="fx-rise"
+              style={{ animationDelay: `${0.5 + i * 0.1}s` }}
+            >
+              <GlassChip variant="default" size="sm" className="fx-sheen">
+                {fact}
+              </GlassChip>
+            </li>
+          ))}
+        </ul>
       </div>
     </aside>
   );

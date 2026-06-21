@@ -1,35 +1,28 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
-import { CourseCard } from "@/components/course/course-card";
+import { CatalogCourseCard } from "@/components/course/catalog-course-card";
 import { EmptyState } from "@/components/course/empty-state";
 import { GlassChip } from "@/components/ui/glass-chip";
 import { GlassInput } from "@/components/ui/glass-input";
 import { BookIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import type { CourseSummary } from "@/lib/types";
-
-interface Labels {
-  search: string;
-  empty: string;
-  emptyFiltered: string;
-  tabAll: string;
-  tabMine: string;
-}
 
 interface CatalogGridProps {
   allCourses: CourseSummary[];
   groupCourseIds: string[];
-  labels: Labels;
   locale: "fr" | "en";
 }
 
 export function CatalogGrid({
   allCourses,
   groupCourseIds,
-  labels,
   locale,
 }: CatalogGridProps) {
+  const t = useTranslations("catalog");
   const [scope, setScope] = useState<"all" | "mine">("all");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -54,35 +47,46 @@ export function CatalogGrid({
     });
   }, [allCourses, scope, groupSet, category, query]);
 
+  const scopes: { id: "all" | "mine"; label: string }[] = [
+    { id: "all", label: t("tabs.all") },
+    { id: "mine", label: t("tabs.mine") },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <GlassChip
-            asButton
-            variant={scope === "all" ? "accent" : "default"}
-            onClick={() => setScope("all")}
-          >
-            {labels.tabAll}
-          </GlassChip>
-          <GlassChip
-            asButton
-            variant={scope === "mine" ? "accent" : "default"}
-            onClick={() => setScope("mine")}
-          >
-            {labels.tabMine}
-          </GlassChip>
+    <div>
+      {/* Toolbar */}
+      <div className="mb-8 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="inline-flex rounded-full border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-0.5 backdrop-blur-md">
+            {scopes.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setScope(s.id)}
+                aria-pressed={scope === s.id}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-[0.85rem] transition-colors",
+                  scope === s.id
+                    ? "bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)]"
+                    : "text-text-soft hover:text-text"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[0.82rem] text-muted" aria-live="polite">
+            {t("results", { count: filtered.length })}
+          </span>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <GlassInput
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={labels.search}
-            className="max-w-md"
-          />
-        </div>
+        <GlassInput
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("search")}
+          className="w-full"
+        />
 
         {categories.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +96,7 @@ export function CatalogGrid({
               size="sm"
               onClick={() => setCategory(null)}
             >
-              ✦
+              {t("allCategories")}
             </GlassChip>
             {categories.map((c) => (
               <GlassChip
@@ -112,13 +116,13 @@ export function CatalogGrid({
       {filtered.length === 0 ? (
         <EmptyState
           icon={<BookIcon size={20} />}
-          title={query || category ? labels.emptyFiltered : labels.empty}
+          title={query || category ? t("emptyFiltered") : t("empty")}
         />
       ) : (
-        <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((c) => (
             <li key={c.id}>
-              <CourseCard course={c} href={`/courses/${c.slug}`} locale={locale} />
+              <CatalogCourseCard course={c} locale={locale} />
             </li>
           ))}
         </ul>

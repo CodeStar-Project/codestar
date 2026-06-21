@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Instrument_Serif } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -7,23 +8,33 @@ import { getMe } from "@/app/actions/auth";
 import { getInstanceBranding } from "@/app/actions/instance";
 import { AuthProvider } from "@/components/auth-provider";
 import { BrandingProvider } from "@/components/branding-provider";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeScript } from "@/components/theme-script";
 import { MeshBackground } from "@/components/ui/mesh-background";
 import { SITE_URL } from "@/lib/site";
+import { DEFAULT_THEME, isTheme, resolveTheme, THEME_COOKIE } from "@/lib/theme";
 
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -102,17 +113,23 @@ const jsonLd = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [locale, messages, branding, me] = await Promise.all([
+  const [locale, messages, branding, me, cookieStore] = await Promise.all([
     getLocale(),
     getMessages(),
     getInstanceBranding(),
     getMe(),
+    cookies(),
   ]);
+
+  const themeCookie = cookieStore.get(THEME_COOKIE)?.value;
+  const theme = isTheme(themeCookie) ? themeCookie : DEFAULT_THEME;
+  const resolvedTheme = resolveTheme(theme);
 
   return (
     <html
       lang={locale}
-      className={`${outfit.variable} ${instrumentSerif.variable} h-full antialiased`}
+      data-theme={resolvedTheme}
+      className={`${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
       style={
         {
           "--color-accent-raw": branding.accent,
@@ -120,15 +137,18 @@ export default async function RootLayout({
       }
     >
       <body className="min-h-full flex flex-col bg-bg-base text-text font-sans">
+        <ThemeScript />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <MeshBackground />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <BrandingProvider branding={branding}>
-            <AuthProvider initialUser={me}>{children}</AuthProvider>
-          </BrandingProvider>
+          <ThemeProvider initialTheme={theme} initialResolved={resolvedTheme}>
+            <BrandingProvider branding={branding}>
+              <AuthProvider initialUser={me}>{children}</AuthProvider>
+            </BrandingProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

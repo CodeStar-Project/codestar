@@ -25,7 +25,6 @@ import { useTranslations } from "next-intl";
 import {
   changeCourseStatus,
   exportCourse,
-  importCourse,
   saveCoursePages,
   updateCourse,
 } from "@/app/actions/courses";
@@ -41,8 +40,11 @@ import {
   type PaletteEntry,
 } from "@/components/block-kinds/palette";
 import { GlassButton } from "@/components/ui/glass-button";
-import { GlassInput, GlassSelect } from "@/components/ui/glass-input";
+import { GlassCard, GlassCardContent } from "@/components/ui/glass-card";
+import { GlassChip } from "@/components/ui/glass-chip";
+import { GlassInput } from "@/components/ui/glass-input";
 import {
+  ArrowRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
@@ -56,9 +58,11 @@ import type {
   CourseBlock,
   CourseBlockKind,
   CourseExport,
+  CourseLevel,
   CoursePage,
   CourseStatus,
   PageInput,
+  UpdateCoursePayload,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -84,9 +88,26 @@ interface CourseEditorProps {
   previewHref: string;
 }
 
-type View = "edit" | "split" | "preview";
-const STATUSES: CourseStatus[] = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+type View = "edit" | "preview";
+type Mode = "start" | "build";
 const AUTOSAVE_MS = 1500;
+
+const KIND_LABEL_KEY: Record<CourseBlockKind, string> = {
+  H1: "palette.h1",
+  H2: "palette.h2",
+  H3: "palette.h3",
+  H4: "palette.h4",
+  H5: "palette.h5",
+  H6: "palette.h6",
+  P: "palette.p",
+  QUOTE: "palette.quote",
+  CODE: "palette.code",
+  CALLOUT: "palette.callout",
+  IMAGE: "palette.image",
+  TABLE: "palette.table",
+  QUIZ: "palette.quiz",
+  SANDBOX: "palette.sandbox",
+};
 
 let counter = 0;
 function nextId(): string {
@@ -115,16 +136,6 @@ function toRenderBlock(d: DraftBlock): CourseBlock {
   };
 }
 
-function previewText(d: DraftBlock): string {
-  const p = d.payload;
-  const candidates = [p.text, p.question, p.code, p.src];
-  for (const c of candidates) {
-    if (typeof c === "string" && c.trim()) return c.trim();
-  }
-  if (Array.isArray(p.header)) return (p.header as unknown[]).filter(Boolean).join(" · ");
-  return "";
-}
-
 function countWords(pages: DraftPage[]): number {
   let n = 0;
   const eat = (s: unknown) => {
@@ -148,6 +159,10 @@ function countWords(pages: DraftPage[]): number {
   return n;
 }
 
+function hasAnyBlock(pages: CoursePage[]): boolean {
+  return pages.some((p) => p.blocks.length > 0);
+}
+
 export function CourseEditor({
   courseId,
   courseSlug,
@@ -161,21 +176,26 @@ export function CourseEditor({
   const tErr = useTranslations("errors");
   const router = useRouter();
 
+  const [mode, setMode] = useState<Mode>(() =>
+    hasAnyBlock(initialPages) ? "build" : "start"
+  );
   const [pages, setPages] = useState<DraftPage[]>(() =>
     initialPages.length > 0 ? initialPages.map(toDraftPage) : [emptyPage()]
   );
   const [currentPageId, setCurrentPageId] = useState<string>(
     () => (initialPages[0]?.id ?? null) ?? ""
   );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState(initialTitle);
   const [status, setStatus] = useState<CourseStatus>(initialStatus);
   const [view, setView] = useState<View>("edit");
+  const [pickerAt, setPickerAt] = useState<number | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, startMeta] = useTransition();
+  const [publishing, startPublish] = useTransition();
+  const [importing, startImport] = useTransition();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSavedJson = useRef<string>("");
@@ -188,7 +208,6 @@ export function CourseEditor({
   const currentPage =
     pages.find((p) => p.localId === currentPageId) ?? pages[0];
   const currentBlocks = useMemo(() => currentPage?.blocks ?? [], [currentPage]);
-  const selected = currentBlocks.find((b) => b.localId === selectedId) ?? null;
   const pageFull = currentBlocks.length >= maxBlocksPerPage;
 
   const markDirty = () => {
@@ -213,7 +232,7 @@ export function CourseEditor({
       return next;
     });
     setCurrentPageId(page.localId);
-    setSelectedId(null);
+    setPickerAt(null);
     markDirty();
   }
 
@@ -224,9 +243,9 @@ export function CourseEditor({
       const next = prev.filter((p) => p.localId !== localId);
       const fallback = next[Math.max(0, idx - 1)];
       setCurrentPageId(fallback.localId);
-      setSelectedId(null);
       return next;
     });
+    setPickerAt(null);
     markDirty();
   }
 
@@ -254,7 +273,7 @@ export function CourseEditor({
     }));
   }
 
-  function addEntry(entry: PaletteEntry) {
+  function addEntryAt(entry: PaletteEntry, index: number) {
     if (pageFull) {
       setError(t("pages.full", { max: maxBlocksPerPage }));
       return;
@@ -265,13 +284,20 @@ export function CourseEditor({
       payload: { ...defaultPayloadFor(entry.kind), ...(entry.payloadPatch ?? {}) },
     };
     updateCurrentPage((p) => {
-      const idx = p.blocks.findIndex((b) => b.localId === selectedId);
       const blocks = [...p.blocks];
-      if (idx === -1) blocks.push(draft);
-      else blocks.splice(idx + 1, 0, draft);
+      const at = Math.max(0, Math.min(index, blocks.length));
+      blocks.splice(at, 0, draft);
       return { ...p, blocks };
     });
-    setSelectedId(draft.localId);
+  }
+
+  function moveBlock(localId: string, delta: number) {
+    updateCurrentPage((p) => {
+      const i = p.blocks.findIndex((b) => b.localId === localId);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= p.blocks.length) return p;
+      return { ...p, blocks: arrayMove(p.blocks, i, j) };
+    });
   }
 
   function removeBlock(localId: string) {
@@ -279,7 +305,6 @@ export function CourseEditor({
       ...p,
       blocks: p.blocks.filter((b) => b.localId !== localId),
     }));
-    setSelectedId((cur) => (cur === localId ? null : cur));
   }
 
   function onDragEnd(e: DragEndEvent) {
@@ -327,10 +352,10 @@ export function CourseEditor({
   }, [buildPayload, courseId, tErr]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty || mode !== "build") return;
     const id = setTimeout(() => void persist(), AUTOSAVE_MS);
     return () => clearTimeout(id);
-  }, [dirty, persist]);
+  }, [dirty, mode, persist]);
 
   // Warn before leaving with unsaved changes.
   useEffect(() => {
@@ -350,19 +375,36 @@ export function CourseEditor({
     });
   }
 
-  function onStatusChange(next: CourseStatus) {
-    const prev = status;
-    setStatus(next);
-    startMeta(async () => {
-      const r = await changeCourseStatus(courseId, next);
+  // ---- publish ----
+  async function onPublish() {
+    const ok = await persist();
+    if (!ok) return;
+    startPublish(async () => {
+      const r = await changeCourseStatus(courseId, "PUBLISHED");
       if (!r.ok) {
-        setStatus(prev);
         setError(r.error ?? tErr("unknown"));
+        return;
       }
+      setStatus("PUBLISHED");
+      // Publication terminée : on renvoie vers le tableau de bord des cours.
+      router.push("/admin/courses");
+      router.refresh();
     });
   }
 
-  // ---- import / export ----
+  function onUnpublish() {
+    startPublish(async () => {
+      const r = await changeCourseStatus(courseId, "DRAFT");
+      if (!r.ok) {
+        setError(r.error ?? tErr("unknown"));
+        return;
+      }
+      setStatus("DRAFT");
+      router.refresh();
+    });
+  }
+
+  // ---- export ----
   async function onExport() {
     if (dirty) await persist();
     const r = await exportCourse(courseId);
@@ -379,7 +421,7 @@ export function CourseEditor({
     URL.revokeObjectURL(url);
   }
 
-  const [importing, startImport] = useTransition();
+  // ---- import (fills the CURRENT course) ----
   function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -399,138 +441,238 @@ export function CourseEditor({
           setError(t("import.invalidShape"));
           return;
         }
+
+        const importedPages: DraftPage[] = parsed.pages.map((p) => ({
+          localId: nextId(),
+          title: p.title ?? "",
+          blocks: (p.blocks ?? []).map((b) => ({
+            localId: nextId(),
+            kind: b.kind,
+            payload: { ...(b.payload ?? {}) },
+          })),
+        }));
+        if (importedPages.length === 0) importedPages.push(emptyPage());
+
+        const payload: PageInput[] = importedPages.map((p) => ({
+          title: p.title.trim() || null,
+          blocks: p.blocks.map((b) => ({
+            kind: b.kind,
+            payload: normalizePayload(b.kind, b.payload),
+          })),
+        }));
+
         startImport(async () => {
-          const r = await importCourse(parsed);
-          if (!r.ok || !r.course) {
+          // 1) Replace the course content.
+          const r = await saveCoursePages(courseId, payload);
+          if (!r.ok) {
             setError(r.error ?? tErr("unknown"));
             return;
           }
-          router.push(`/admin/courses/${r.course.id}/blocks`);
+          // 2) Overwrite the course metadata from the file (slug stays untouched).
+          const meta = parsed.course;
+          const metaPatch: UpdateCoursePayload = {};
+          if (meta.title) metaPatch.title = meta.title;
+          if (meta.description != null) metaPatch.description = meta.description ?? undefined;
+          if (meta.category != null) metaPatch.category = meta.category ?? undefined;
+          if (meta.level) metaPatch.level = meta.level as CourseLevel;
+          if (Object.keys(metaPatch).length > 0) {
+            await updateCourse(courseId, metaPatch);
+          }
+          // 3) Reflect the imported content locally.
+          setPages(importedPages);
+          setCurrentPageId(importedPages[0].localId);
+          setPickerAt(null);
+          if (meta.title) setTitle(meta.title);
+          lastSavedJson.current = JSON.stringify(payload);
+          setSavedAt(Date.now());
+          setDirty(false);
+          setMode("build");
+          router.refresh();
         });
       })
       .catch(() => setError(tErr("unknown")));
   }
 
-  const renderBlocks = useMemo(() => currentBlocks.map(toRenderBlock), [currentBlocks]);
   const totalBlocks = useMemo(
     () => pages.reduce((acc, p) => acc + p.blocks.length, 0),
     [pages]
   );
   const words = useMemo(() => countWords(pages), [pages]);
   const minutes = Math.max(1, Math.ceil(words / 200));
+  const pageWords = useMemo(
+    () => (currentPage ? countWords([currentPage]) : 0),
+    [currentPage]
+  );
+  const pageMinutes = Math.max(1, Math.ceil(pageWords / 200));
 
-  const showCanvas = view !== "preview";
-  const showPreview = view !== "edit";
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="application/json,.json"
+      className="hidden"
+      onChange={onImportFile}
+    />
+  );
 
-  return (
-    <div className="grid gap-4 lg:grid-cols-[240px_1fr_320px]">
-      {/* LEFT — palette */}
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-3 backdrop-blur-md">
-          <h2 className="mb-2 px-1 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-            {t("paletteTitle")}
-          </h2>
-          {pageFull && (
-            <p className="mb-2 px-1 text-[0.72rem] text-[color:var(--color-warning)]">
-              {t("pages.full", { max: maxBlocksPerPage })}
-            </p>
-          )}
-          <div className="space-y-3">
-            {PALETTE_GROUPS.map((group) => (
-              <div key={group}>
-                <div className="mb-1 px-1 text-[0.72rem] font-medium text-muted">
-                  {t(`group.${group}`)}
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {paletteByGroup(group).map((entry) => {
-                    const Icon = entry.icon;
-                    return (
-                      <button
-                        key={entry.id}
-                        type="button"
-                        disabled={pageFull}
-                        onClick={() => addEntry(entry)}
-                        className="flex items-center gap-1.5 rounded-[var(--r)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg-strong)] px-2 py-1.5 text-left text-[0.78rem] text-text-soft transition-colors hover:border-[color:var(--color-accent)] hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Icon size={14} />
-                        <span className="truncate">
-                          {t(entry.labelKey as Parameters<typeof t>[0])}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+  // ---- START SCREEN ----
+  if (mode === "start") {
+    return (
+      <div className="mx-auto max-w-3xl">
+        {fileInput}
+        <div className="mb-7 text-center">
+          <h2 className="font-display text-[1.7rem] text-text">{t("start.title")}</h2>
+          <p className="mt-1 text-text-soft">{t("start.lead")}</p>
         </div>
-      </aside>
-
-      {/* CENTER — toolbar + pages bar + canvas/preview */}
-      <div className="min-w-0 space-y-4">
-        <div className="sticky top-20 z-10 space-y-2 rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg-strong)] p-3 backdrop-blur-xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <GlassInput
-              size="sm"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={saveTitle}
-              aria-label={t("field.courseTitle")}
-              className="min-w-[10rem] flex-1 font-display"
-            />
-            <GlassSelect
-              size="sm"
-              value={status}
-              onChange={(e) => onStatusChange(e.target.value as CourseStatus)}
-              aria-label={t("statusLabel")}
-              className="w-36"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {t(`status.${s}`)}
-                </option>
-              ))}
-            </GlassSelect>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="inline-flex rounded-full border border-[color:var(--glass-border)] p-0.5">
-              {(["edit", "split", "preview"] as View[]).map((v) => (
-                <button
-                  key={v}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <GlassCard variant="default" interactive>
+            <GlassCardContent className="flex h-full flex-col gap-3 p-6">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[var(--r)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-accent)]">
+                <UploadIcon size={20} />
+              </span>
+              <h3 className="font-display text-[1.3rem] text-text">{t("start.importTitle")}</h3>
+              <p className="flex-1 text-[0.92rem] text-text-soft">{t("start.importDesc")}</p>
+              <div>
+                <GlassButton
                   type="button"
-                  onClick={() => setView(v)}
-                  aria-pressed={view === v}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-[0.8rem] transition-colors",
-                    view === v
-                      ? "bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)]"
-                      : "text-text-soft hover:text-text"
-                  )}
+                  variant="primary"
+                  onClick={() => fileInputRef.current?.click()}
+                  loading={importing}
                 >
-                  {t(`view.${v}`)}
-                </button>
+                  <UploadIcon size={15} /> {t("start.importButton")}
+                </GlassButton>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          <GlassCard variant="default" interactive>
+            <GlassCardContent className="flex h-full flex-col gap-3 p-6">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[var(--r)] bg-[color:var(--glass-bg-strong)] text-text-soft">
+                <PlusIcon size={20} />
+              </span>
+              <h3 className="font-display text-[1.3rem] text-text">{t("start.composeTitle")}</h3>
+              <p className="flex-1 text-[0.92rem] text-text-soft">{t("start.composeDesc")}</p>
+              <div>
+                <GlassButton type="button" variant="glass" onClick={() => setMode("build")}>
+                  <PlusIcon size={15} /> {t("start.composeButton")}
+                </GlassButton>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+        </div>
+        {error && (
+          <p className="mt-4 text-center text-[0.85rem] text-[color:var(--color-danger)]" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ---- block picker (shared between inserters) ----
+  function renderInserter(index: number) {
+    const open = pickerAt === index;
+    return (
+      <div className="relative flex justify-center py-1.5">
+        {open && (
+          <>
+            <div
+              className="fixed inset-0 z-20"
+              aria-hidden
+              onClick={() => setPickerAt(null)}
+            />
+            <div className="absolute top-full z-30 mt-1 w-[min(30rem,92vw)] rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg-strong)] p-3 shadow-[var(--glass-shadow)] backdrop-blur-xl">
+              {PALETTE_GROUPS.map((group) => (
+                <div key={group} className="mb-2.5 last:mb-0">
+                  <div className="mb-1 px-1 text-[0.7rem] font-medium uppercase tracking-[0.1em] text-muted">
+                    {t(`group.${group}`)}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    {paletteByGroup(group).map((entry) => {
+                      const Icon = entry.icon;
+                      return (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => {
+                            addEntryAt(entry, index);
+                            setPickerAt(null);
+                          }}
+                          className="flex items-center gap-1.5 rounded-[var(--r)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] px-2 py-1.5 text-left text-[0.78rem] text-text-soft transition-colors hover:border-[color:var(--color-accent)] hover:text-text"
+                        >
+                          <Icon size={14} />
+                          <span className="truncate">
+                            {t(entry.labelKey as Parameters<typeof t>[0])}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="mr-1 text-[0.78rem] text-muted" aria-live="polite">
-                {saving ? t("saving") : dirty ? t("unsaved") : savedAt ? t("saved") : ""}
-              </span>
+          </>
+        )}
+        <button
+          type="button"
+          disabled={pageFull}
+          onClick={() => setPickerAt(open ? null : index)}
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-[color:var(--glass-border)] px-3 py-1 text-[0.8rem] text-muted transition-colors hover:border-[color:var(--color-accent)] hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <PlusIcon size={14} /> {t("addBlock")}
+        </button>
+      </div>
+    );
+  }
+
+  // ---- BUILD EDITOR ----
+  return (
+    <div className="mx-auto max-w-3xl">
+      {fileInput}
+
+      {/* HEADER */}
+      <div className="sticky top-20 z-10 space-y-2.5 rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg-strong)] p-3 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2">
+          <GlassInput
+            size="sm"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={saveTitle}
+            aria-label={t("field.courseTitle")}
+            className="min-w-[10rem] flex-1 font-display"
+          />
+          <GlassChip variant={status === "PUBLISHED" ? "success" : "default"} size="sm">
+            {t(`status.${status}`)}
+          </GlassChip>
+          <div className="inline-flex rounded-full border border-[color:var(--glass-border)] p-0.5">
+            {(["edit", "preview"] as View[]).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={cn(
+                  "rounded-full px-3 py-1 text-[0.8rem] transition-colors",
+                  view === v
+                    ? "bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)]"
+                    : "text-text-soft hover:text-text"
+                )}
+              >
+                {t(`view.${v}`)}
+              </button>
+            ))}
+          </div>
+
+          {status === "PUBLISHED" ? (
+            <>
               <GlassButton
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                loading={importing}
+                onClick={onUnpublish}
+                loading={publishing}
               >
-                <UploadIcon size={14} /> {t("import.button")}
-              </GlassButton>
-              <GlassButton type="button" variant="ghost" size="sm" onClick={onExport}>
-                <DownloadIcon size={14} /> {t("export.button")}
-              </GlassButton>
-              <GlassButton asChild variant="ghost" size="sm">
-                <Link href={previewHref} target="_blank">
-                  <EyeIcon size={14} /> {t("openReader")}
-                </Link>
+                {t("unpublish")}
               </GlassButton>
               <GlassButton
                 type="button"
@@ -541,62 +683,117 @@ export function CourseEditor({
               >
                 {t("save")}
               </GlassButton>
-            </div>
-          </div>
-          {error && (
-            <p className="text-[0.8rem] text-[color:var(--color-danger)]" role="alert">
-              {error}
-            </p>
+            </>
+          ) : (
+            <>
+              <GlassButton
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => void persist()}
+                disabled={saving}
+              >
+                {t("saveDraft")}
+              </GlassButton>
+              <GlassButton
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={onPublish}
+                loading={publishing}
+                disabled={saving}
+              >
+                {t("publish")}
+              </GlassButton>
+            </>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={onImportFile}
-          />
-        </div>
 
-        {/* PAGES BAR */}
-        <div className="flex flex-wrap items-center gap-1.5 rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-2 backdrop-blur-md">
-          {pages.map((p, i) => (
-            <button
-              key={p.localId}
-              type="button"
-              onClick={() => {
-                setCurrentPageId(p.localId);
-                setSelectedId(null);
-              }}
-              aria-pressed={p.localId === currentPage?.localId}
-              className={cn(
-                "rounded-full px-3 py-1 text-[0.8rem] transition-colors",
-                p.localId === currentPage?.localId
-                  ? "bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)]"
-                  : "border border-[color:var(--glass-border)] text-text-soft hover:text-text"
+          {/* Overflow menu — secondary actions */}
+          <details className="group relative">
+            <summary className="flex h-9 cursor-pointer list-none items-center gap-1 rounded-full border border-[color:var(--glass-border)] px-3 text-[0.8rem] text-text-soft transition-colors hover:text-text [&::-webkit-details-marker]:hidden">
+              {t("more")}
+            </summary>
+            <div className="absolute right-0 z-30 mt-1 w-56 rounded-[var(--r)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg-strong)] p-1.5 shadow-[var(--glass-shadow)] backdrop-blur-xl">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.85rem] text-text-soft transition-colors hover:bg-[color:var(--glass-bg)] hover:text-text"
+              >
+                <UploadIcon size={15} /> {t("import.button")}
+              </button>
+              <button
+                type="button"
+                onClick={onExport}
+                className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.85rem] text-text-soft transition-colors hover:bg-[color:var(--glass-bg)] hover:text-text"
+              >
+                <DownloadIcon size={15} /> {t("export.button")}
+              </button>
+              <Link
+                href={previewHref}
+                target="_blank"
+                className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.85rem] text-text-soft transition-colors hover:bg-[color:var(--glass-bg)] hover:text-text"
+              >
+                <EyeIcon size={15} /> {t("openReader")}
+              </Link>
+              {status === "PUBLISHED" && (
+                <Link
+                  href={`/courses/${courseSlug}`}
+                  target="_blank"
+                  className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-2.5 py-2 text-left text-[0.85rem] text-text-soft transition-colors hover:bg-[color:var(--glass-bg)] hover:text-text"
+                >
+                  <ArrowRightIcon size={15} /> {t("viewPublic")}
+                </Link>
               )}
-            >
-              {p.title.trim() || t("pages.untitled", { n: i + 1 })}
-            </button>
-          ))}
-          <GlassButton type="button" variant="ghost" size="sm" onClick={addPage} aria-label={t("pages.add")}>
-            <PlusIcon size={14} /> {t("pages.add")}
-          </GlassButton>
+            </div>
+          </details>
+
+          <span className="ml-auto text-[0.78rem] text-muted" aria-live="polite">
+            {saving ? t("saving") : dirty ? t("unsaved") : savedAt ? t("saved") : ""}
+          </span>
         </div>
 
-        {/* CURRENT PAGE CONTROLS */}
+        {error && (
+          <p className="text-[0.8rem] text-[color:var(--color-danger)]" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      {/* PAGES STRIP */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-2 backdrop-blur-md">
+        {pages.map((p, i) => (
+          <button
+            key={p.localId}
+            type="button"
+            onClick={() => {
+              setCurrentPageId(p.localId);
+              setPickerAt(null);
+            }}
+            aria-pressed={p.localId === currentPage?.localId}
+            className={cn(
+              "rounded-full px-3 py-1 text-[0.8rem] transition-colors",
+              p.localId === currentPage?.localId
+                ? "bg-[color:var(--color-accent)] text-[color:var(--color-accent-fg)]"
+                : "border border-[color:var(--glass-border)] text-text-soft hover:text-text"
+            )}
+          >
+            {p.title.trim() || t("pages.untitled", { n: i + 1 })}
+          </button>
+        ))}
+        <GlassButton type="button" variant="ghost" size="sm" onClick={addPage} aria-label={t("pages.add")}>
+          <PlusIcon size={14} /> {t("pages.add")}
+        </GlassButton>
+
         {currentPage && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex items-center gap-1">
             <GlassInput
               size="sm"
               value={currentPage.title}
               onChange={(e) => renameCurrentPage(e.target.value)}
               placeholder={t("field.pageTitle")}
               aria-label={t("field.pageTitle")}
-              className="min-w-[8rem] flex-1"
+              className="w-40"
             />
-            <span className="font-mono text-[0.72rem] text-muted">
-              {currentBlocks.length}/{maxBlocksPerPage}
-            </span>
             <GlassButton
               type="button"
               variant="ghost"
@@ -630,143 +827,102 @@ export function CourseEditor({
             </GlassButton>
           </div>
         )}
-
-        <div className={cn("gap-4", showCanvas && showPreview ? "grid lg:grid-cols-2" : "block")}>
-          {showCanvas && (
-            <div>
-              {currentBlocks.length === 0 ? (
-                <div className="rounded-[var(--r-lg)] border border-dashed border-[color:var(--glass-border)] p-10 text-center text-text-soft">
-                  {t("canvasEmpty")}
-                </div>
-              ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                  <SortableContext
-                    items={currentBlocks.map((b) => b.localId)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <ul className="space-y-2">
-                      {currentBlocks.map((b) => (
-                        <CanvasRow
-                          key={b.localId}
-                          block={b}
-                          selected={b.localId === selectedId}
-                          onSelect={() => setSelectedId(b.localId)}
-                          onRemove={() => removeBlock(b.localId)}
-                          previewText={previewText(b)}
-                          removeLabel={t("deleteBlock")}
-                          dragLabel={t("dragHandle")}
-                        />
-                      ))}
-                    </ul>
-                  </SortableContext>
-                </DndContext>
-              )}
-            </div>
-          )}
-
-          {showPreview && (
-            <div className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-5 backdrop-blur-md">
-              {renderBlocks.length === 0 ? (
-                <p className="text-center text-text-soft">{t("previewEmpty")}</p>
-              ) : (
-                renderBlocks.map((rb) => {
-                  const mod = getModule(rb.kind);
-                  if (!mod) return null;
-                  const Render = mod.Render;
-                  return <Render key={rb.id} block={rb} />;
-                })
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* RIGHT — inspector + stats */}
-      <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="space-y-4">
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-4 backdrop-blur-md">
-            <h2 className="mb-3 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-              {t("inspectorTitle")}
-            </h2>
-            {selected ? (
-              <InspectorBody
-                key={selected.localId}
-                kind={selected.kind}
-                payload={selected.payload}
-                onPatch={(patch) => patchBlock(selected.localId, patch)}
-              />
+      {/* DOCUMENT */}
+      <div className="mt-5">
+        {view === "preview" ? (
+          <div className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-md">
+            {currentBlocks.length === 0 ? (
+              <p className="text-center text-text-soft">{t("previewEmpty")}</p>
             ) : (
-              <p className="text-[0.85rem] text-text-soft">{t("inspectorEmpty")}</p>
+              currentBlocks.map(toRenderBlock).map((rb) => {
+                const mod = getModule(rb.kind);
+                if (!mod) return null;
+                const Render = mod.Render;
+                return <Render key={rb.id} block={rb} />;
+              })
             )}
           </div>
-
-          <div className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-4 backdrop-blur-md">
-            <h2 className="mb-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted">
-              {t("statsTitle")}
-            </h2>
-            <dl className="grid grid-cols-4 gap-2 text-center">
-              <Stat value={pages.length} label={t("stats.pages")} />
-              <Stat value={totalBlocks} label={t("stats.blocks")} />
-              <Stat value={words} label={t("stats.words")} />
-              <Stat value={minutes} label={t("stats.minutes")} />
-            </dl>
+        ) : currentBlocks.length === 0 ? (
+          <div className="rounded-[var(--r-lg)] border border-dashed border-[color:var(--glass-border)] p-10 text-center">
+            <p className="mb-4 text-text-soft">{t("canvasEmpty")}</p>
+            {renderInserter(0)}
           </div>
-        </div>
-      </aside>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext
+              items={currentBlocks.map((b) => b.localId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div>
+                {renderInserter(0)}
+                {currentBlocks.map((b, i) => (
+                  <div key={b.localId}>
+                    <BlockCard
+                      block={b}
+                      label={t(KIND_LABEL_KEY[b.kind] as Parameters<typeof t>[0])}
+                      isFirst={i === 0}
+                      isLast={i === currentBlocks.length - 1}
+                      onPatch={(patch) => patchBlock(b.localId, patch)}
+                      onMove={(delta) => moveBlock(b.localId, delta)}
+                      onRemove={() => removeBlock(b.localId)}
+                      moveUpLabel={t("moveUp")}
+                      moveDownLabel={t("moveDown")}
+                      removeLabel={t("deleteBlock")}
+                      dragLabel={t("dragHandle")}
+                    />
+                    {renderInserter(i + 1)}
+                  </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+
+        <p className="mt-4 text-center font-mono text-[0.72rem] text-muted">
+          {currentBlocks.length} {t("stats.blocks")} · ~{pageMinutes} {t("stats.minutes")}
+          {pages.length > 1 && (
+            <>
+              {" · "}
+              {pages.length} {t("stats.pages")} · {totalBlocks} {t("stats.blocks")} · ~{minutes}{" "}
+              {t("stats.minutes")}
+            </>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <dd className="font-display text-[1.4rem] text-text">{value}</dd>
-      <dt className="text-[0.68rem] text-muted">{label}</dt>
-    </div>
-  );
-}
-
-function InspectorBody({
-  kind,
-  payload,
-  onPatch,
-}: {
-  kind: CourseBlockKind;
-  payload: BlockPayload;
-  onPatch: (patch: BlockPayload) => void;
-}) {
-  const mod = getModule(kind);
-  if (!mod) return null;
-  const Edit = mod.Edit;
-  return (
-    <div className="space-y-2">
-      <span className="inline-block rounded-full bg-[color:var(--glass-bg-strong)] px-2 py-0.5 font-mono text-[0.68rem] uppercase tracking-[0.1em] text-muted">
-        {kind}
-      </span>
-      <Edit payload={payload} onPatch={onPatch} />
-    </div>
-  );
-}
-
-function CanvasRow({
+function BlockCard({
   block,
-  selected,
-  onSelect,
+  label,
+  isFirst,
+  isLast,
+  onPatch,
+  onMove,
   onRemove,
-  previewText,
+  moveUpLabel,
+  moveDownLabel,
   removeLabel,
   dragLabel,
 }: {
   block: DraftBlock;
-  selected: boolean;
-  onSelect: () => void;
+  label: string;
+  isFirst: boolean;
+  isLast: boolean;
+  onPatch: (patch: BlockPayload) => void;
+  onMove: (delta: number) => void;
   onRemove: () => void;
-  previewText: string;
+  moveUpLabel: string;
+  moveDownLabel: string;
   removeLabel: string;
   dragLabel: string;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: block.localId });
+  const mod = getModule(block.kind);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -774,17 +930,16 @@ function CanvasRow({
     opacity: isDragging ? 0.5 : undefined,
   } as React.CSSProperties;
 
+  if (!mod) return null;
+  const Edit = mod.Edit;
+
   return (
-    <li ref={setNodeRef} style={style}>
-      <div
-        onClick={onSelect}
-        className={cn(
-          "flex items-center gap-2 rounded-[var(--r)] border bg-[color:var(--glass-bg-strong)] p-2.5 transition-colors",
-          selected
-            ? "border-[color:var(--color-accent)] shadow-[0_0_0_2px_var(--color-accent-soft)]"
-            : "border-[color:var(--glass-border)] hover:border-[color:var(--color-accent)]"
-        )}
-      >
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-[var(--r-lg)] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] backdrop-blur-md"
+    >
+      <div className="flex items-center gap-2 border-b border-[color:var(--glass-border)] px-3 py-2">
         <button
           type="button"
           ref={setActivatorNodeRef}
@@ -792,28 +947,50 @@ function CanvasRow({
           {...listeners}
           aria-label={dragLabel}
           className="cursor-grab touch-none text-muted hover:text-text active:cursor-grabbing"
-          onClick={(e) => e.stopPropagation()}
         >
           <GripVerticalIcon size={16} />
         </button>
-        <span className="shrink-0 rounded bg-[color:var(--glass-bg)] px-1.5 py-0.5 font-mono text-[0.66rem] uppercase tracking-[0.08em] text-muted">
-          {block.kind}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[0.85rem] text-text-soft">
-          {previewText || "—"}
+        <span className="flex-1 font-mono text-[0.72rem] uppercase tracking-[0.1em] text-muted">
+          {label}
         </span>
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
+          onClick={() => onMove(-1)}
+          disabled={isFirst}
+          aria-label={moveUpLabel}
+          className="rounded p-1 text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <ChevronUp />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(1)}
+          disabled={isLast}
+          aria-label={moveDownLabel}
+          className="rounded p-1 text-muted transition-colors hover:text-text disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <ChevronDown />
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
           aria-label={removeLabel}
-          className="text-muted hover:text-[color:var(--color-danger)]"
+          className="rounded p-1 text-muted transition-colors hover:text-[color:var(--color-danger)]"
         >
           <TrashIcon size={15} />
         </button>
       </div>
-    </li>
+      <div className="p-3">
+        <Edit payload={block.payload} onPatch={onPatch} />
+      </div>
+    </div>
   );
+}
+
+// Small chevrons (rotated reuse of the shared chevron set kept inline to avoid new icon files).
+function ChevronUp() {
+  return <ChevronLeftIcon size={15} className="rotate-90" />;
+}
+function ChevronDown() {
+  return <ChevronRightIcon size={15} className="rotate-90" />;
 }

@@ -10,7 +10,7 @@ export const CodeModule: BlockKindModule = {
     return (
       <pre
         id={id}
-        className="my-6 overflow-x-auto rounded-[var(--r)] border border-[color:var(--glass-border)] bg-[color:color-mix(in_oklab,var(--text)_92%,transparent)] p-4 font-mono text-[0.85rem] leading-relaxed text-white"
+        className="my-6 overflow-x-auto rounded-[var(--r)] border border-[color:var(--glass-border)] bg-[#1A1F2E] p-4 font-mono text-[0.85rem] leading-relaxed text-[#EDF1F9]"
       >
         <code>{getStr(block.payload, "code")}</code>
       </pre>

@@ -3,12 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { getCourseBookmarks } from "@/app/actions/bookmarks";
 import { getCourseBySlug } from "@/app/actions/courses";
 import { requireAuth } from "@/components/admin/role-guard";
 import { BlockRenderer } from "@/components/course/block-renderer";
 import { BlockToc, blockSlug } from "@/components/course/block-toc";
-import { BookmarkButton } from "@/components/course/bookmark-button";
 import { MobileToc } from "@/components/course/mobile-toc";
 import { StudentShell } from "@/components/course/student-shell";
 import { GlassButton } from "@/components/ui/glass-button";
@@ -49,11 +47,6 @@ export default async function CourseReaderPage({ params, searchParams }: PagePro
   ]);
   const course = await getCourseBySlug(slug);
   if (!course) notFound();
-
-  const bookmarks = await getCourseBookmarks(course.id);
-  const bookmarkMap = new Map<string, string>(
-    bookmarks.map((b) => [b.blockId, b.id])
-  );
 
   const pages = [...(course.pages ?? [])]
     .sort((a, b) => a.orderIndex - b.orderIndex)
@@ -173,21 +166,9 @@ export default async function CourseReaderPage({ params, searchParams }: PagePro
               </GlassCardContent>
             </GlassCard>
           ) : (
-            <div className="space-y-2">
+            <div>
               {pageBlocks.map((b) => (
-                <div key={b.id} className="group relative">
-                  <div className="absolute -left-10 top-1 hidden opacity-0 transition-opacity group-hover:opacity-100 lg:block">
-                    <BookmarkButton
-                      courseId={course.id}
-                      blockId={b.id}
-                      initialId={bookmarkMap.get(b.id) ?? null}
-                      labelAdd={t("addBookmark")}
-                      labelRemove={t("removeBookmark")}
-                      iconOnly
-                    />
-                  </div>
-                  <BlockRenderer block={b} id={blockSlug(b)} />
-                </div>
+                <BlockRenderer key={b.id} block={b} id={blockSlug(b)} />
               ))}
             </div>
           )}

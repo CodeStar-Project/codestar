@@ -69,7 +69,7 @@ export async function proxy(req: NextRequest) {
   }
 
   if (hasValidToken && isOnLogin(pathname)) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
   if (!hasValidToken && !isPublic(pathname)) {

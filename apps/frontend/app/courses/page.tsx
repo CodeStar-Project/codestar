@@ -45,13 +45,6 @@ export default async function CoursesCatalogPage() {
       <CatalogGrid
         allCourses={allList}
         groupCourseIds={[...groupCourses.keys()]}
-        labels={{
-          search: t("search"),
-          empty: t("empty"),
-          emptyFiltered: t("emptyFiltered"),
-          tabAll: t("tabs.all"),
-          tabMine: t("tabs.mine"),
-        }}
         locale={locale}
       />
     </StudentShell>

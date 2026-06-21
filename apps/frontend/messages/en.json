@@ -8,7 +8,14 @@
     "catalog": "Catalog",
     "myCourses": "My courses",
     "teach": "Teach",
-    "admin": "Admin"
+    "admin": "Admin",
+    "manageCourses": "Courses",
+    "users": "Users"
+  },
+  "theme": {
+    "toggleTo": "Switch to {mode} mode",
+    "light": "light",
+    "dark": "dark"
   },
   "footer": {
     "rights": "© {year} · All rights reserved",
@@ -20,45 +27,12 @@
     "label": "Footer"
   },
   "home": {
-    "hero": {
-      "chip": "New courses every week",
-      "ctaSecondary": "Browse catalog",
-      "comingSoon": "soon",
-      "stats": {
-        "courses": "courses",
-        "learnersValue": "{count, number}",
-        "learners": "learners",
-        "ratingLabel": "{value} average"
-      },
-      "previewLabel": "Preview"
-    },
-    "featured": {
-      "title": "Featured courses",
-      "subtitle": "A deliberately short selection. The full catalog is available once you're signed in.",
-      "by": "by {author}",
-      "linkAria": "View {title} (sign-in required)"
-    },
-    "pillars": {
-      "reader": {
-        "title": "A reader you'll come back to",
-        "description": "Table of contents, bookmarks, per-section notes. Built for return visits, not endless scroll."
-      },
-      "progress": {
-        "title": "Motivating progression",
-        "description": "XP, leaderboard, streaks. Keep the flame, don't force it. Weekly reset."
-      },
-      "authors": {
-        "title": "Courses by people who know",
-        "description": "Curated authors, content kept up to date, examples that match real work."
+    "landing": {
+      "facts": {
+        "openSource": "Open-source",
+        "license": "GPL v3",
+        "selfHosted": "Self-hosted"
       }
-    },
-    "finalCta": {
-      "titlePart1": "Ready to",
-      "titlePart2": "begin",
-      "titlePart3": "?",
-      "subtitle": "Create a free account. Five minutes, your first lesson is already waiting.",
-      "primary": "Get started",
-      "secondary": "Join with a code"
     }
   },
   "login": {
@@ -87,6 +61,10 @@
       "signin": "Sign in",
       "signup": "Create my account",
       "join": "Join"
+    },
+    "slide": {
+      "label": "Slide to confirm",
+      "confirmed": "Here we go"
     },
     "fields": {
       "email": "Email",
@@ -123,14 +101,13 @@
       "and": "and",
       "privacy": "privacy policy"
     },
-    "decorative": {
-      "license": "GPL v3",
-      "selfHosted": "Self-hosted",
-      "quote": "“We replaced our LMS with {name}. Our teachers love it.”",
-      "quoteAuthor": "Naïma Mansouri",
-      "quoteRole": "Head of Learning · Atelier 89",
-      "streakLabel": "Today's streak",
-      "streakValue": "14 days"
+    "aside": {
+      "subline": "Learn at your own pace, on an instance you control end to end.",
+      "facts": {
+        "openSource": "Open-source",
+        "license": "GPL v3",
+        "selfHosted": "Self-hosted"
+      }
     }
   },
   "instance": {
@@ -194,6 +171,7 @@
       "p": "Paragraph",
       "quote": "Quote",
       "code": "Code",
+      "callout": "Callout",
       "image": "Image",
       "table": "Table",
       "quiz": "Quiz",
@@ -276,6 +254,24 @@
     },
     "export": {
       "button": "Export"
+    },
+    "publish": "Save & publish",
+    "saveDraft": "Save draft",
+    "unpublish": "Unpublish",
+    "viewPublic": "View public page",
+    "addBlock": "Add block",
+    "more": "More",
+    "moveUp": "Move block up",
+    "moveDown": "Move block down",
+    "start": {
+      "title": "Where to begin?",
+      "lead": "Import a ready-made course, or compose your own block by block.",
+      "importTitle": "Import a file",
+      "importDesc": "Upload a course as JSON (.json). Its content and details will replace this course.",
+      "importButton": "Choose a file",
+      "composeTitle": "Compose by hand",
+      "composeDesc": "Start from a blank page and add your blocks: headings, paragraphs, quizzes, code…",
+      "composeButton": "Start writing"
     },
     "canvasEmpty": "No blocks yet. Click a block in the palette to start.",
     "previewEmpty": "The preview will appear here.",
@@ -365,6 +361,8 @@
       "start": "Start",
       "resume": "Resume",
       "review": "Review",
+      "save": "Save course",
+      "saved": "Course saved",
       "progressLabel": "Your progress",
       "bookmarksTitle": "Your bookmarks in this course",
       "bookmarksEmpty": "No bookmark yet. Open the reader and tap the bookmark icon on a block.",
@@ -405,7 +403,10 @@
     },
     "search": "Search a course",
     "empty": "No course yet.",
-    "emptyFiltered": "No course matches your search."
+    "emptyFiltered": "No course matches your search.",
+    "results": "{count, plural, =0 {No course} one {# course} other {# courses}}",
+    "allCategories": "All",
+    "by": "By {author}"
   },
   "studentHome": {
     "kicker": "{date}",
@@ -420,6 +421,47 @@
     "discoverTitle": "Discover",
     "discoverDesc": "Curated from your groups.",
     "browseCta": "See full catalog"
+  },
+  "learn": {
+    "greeting": "Hi {name},",
+    "continueWithCourse": "Let's pick up where you left off.",
+    "startSomething": "Ready to start something new?",
+    "statInProgress": "In progress",
+    "statCompleted": "Completed",
+    "statBookmarks": "Bookmarks",
+    "resumeTitle": "Resume",
+    "allCourses": "All my courses",
+    "resumeEmpty": "Nothing in progress",
+    "resumeEmptyDesc": "Pick a course and start your streak today.",
+    "browseCta": "Browse catalog",
+    "resumeCta": "Resume",
+    "discoverTitle": "Discover",
+    "discoverDesc": "Published courses and those assigned to your groups.",
+    "discoverEmpty": "No course available yet.",
+    "openCta": "Open",
+    "groupsTitle": "My groups"
+  },
+  "studio": {
+    "kicker": "Studio · {name}",
+    "title": "Your courses and groups.",
+    "description": "Author, publish and assign courses to the groups you teach.",
+    "newCourse": "New course",
+    "generateAi": "Generate with AI",
+    "soon": "soon",
+    "statCourses": "My courses",
+    "statPublished": "Published",
+    "statDrafts": "Drafts",
+    "statGroups": "Groups taught",
+    "myCoursesTitle": "My courses",
+    "manageAll": "Manage all",
+    "noCourses": "No course yet",
+    "noCoursesDesc": "Create your first course to get started.",
+    "groupsTitle": "Groups I teach",
+    "noGroups": "You don't teach any group yet.",
+    "curriculumLink": "Curriculum",
+    "membersLink": "Members",
+    "settingsTitle": "Editor settings",
+    "maxBlocks": "Max blocks per page"
   },
   "myCourses": {
     "title": "My courses",
@@ -440,10 +482,11 @@
     "ctaReview": "Review"
   },
   "bookmarks": {
-    "title": "My bookmarks",
-    "kicker": "Bookmarks",
-    "description": "All your bookmarks, grouped by course.",
-    "empty": "No bookmark yet. Tap the bookmark icon while reading a course.",
+    "title": "My saved courses",
+    "kicker": "Saved course",
+    "description": "The courses you saved to find them again later.",
+    "empty": "No saved course yet. Open a course and click \"Save course\".",
+    "open": "Open course",
     "viewBlock": "Open in course",
     "remove": "Remove",
     "bookmarksCount": "{count, plural, one {# bookmark} other {# bookmarks}}"
@@ -480,6 +523,23 @@
       "drafts": "Drafts",
       "students": "Active students",
       "groups": "Groups"
+    },
+    "kpi": {
+      "publishedDrafts": "{published} published · {drafts} drafts",
+      "users": "Users",
+      "disabled": "{count} disabled",
+      "active": "{count} active",
+      "catalogHealth": "Catalog health",
+      "usersByRole": "Users by role",
+      "published": "Published",
+      "drafts": "Drafts",
+      "archived": "Archived"
+    },
+    "superAdmin": {
+      "kicker": "SUPER-ADMIN",
+      "title": "Instance & branding · {name}",
+      "maxBlocks": "Max blocks/page: {n}",
+      "manageRoles": "Manage roles"
     },
     "recentTitle": "Recent courses",
     "groupsTitle": "My groups",

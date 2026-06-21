@@ -8,20 +8,15 @@ import { getCourseBySlug } from "@/app/actions/courses";
 import { getMyEnrollments } from "@/app/actions/enrollments";
 import { requireAuth } from "@/components/admin/role-guard";
 import { CourseMeta } from "@/components/course/course-meta";
+import { CourseSaveButton } from "@/components/course/course-save-button";
 import { PageHeader } from "@/components/course/page-header";
 import { ProgressBar } from "@/components/course/progress-bar";
 import { StatCard } from "@/components/course/stat-card";
 import { StudentShell } from "@/components/course/student-shell";
 import { GlassButton } from "@/components/ui/glass-button";
 import {
-  GlassCard,
-  GlassCardContent,
-  GlassCardTitle,
-} from "@/components/ui/glass-card";
-import {
   ArrowRightIcon,
   BookIcon,
-  BookmarkIcon,
   ClockIcon,
   PlayIcon,
   UsersIcon,
@@ -70,11 +65,21 @@ export default async function CourseIntroPage({ params }: PageProps) {
     ? t("resume")
     : t("start");
 
-  const allBlocks = (course.pages ?? []).flatMap((p) => p.blocks);
+  const sortedPages = [...(course.pages ?? [])].sort(
+    (a, b) => a.orderIndex - b.orderIndex
+  );
+  const allBlocks = sortedPages.flatMap((p) => p.blocks);
   const blocksCount = allBlocks.length;
   const headings = allBlocks.filter((b) => ["H1", "H2"].includes(b.kind));
   // A page maps to a lesson; fall back to headings/blocks for legacy single-page courses.
   const lessonCount = (course.pages?.length ?? 0) || headings.length || blocksCount;
+
+  // Course-level "save": anchored on the first block (cf. CourseSaveButton).
+  const firstBlockId =
+    [...(sortedPages[0]?.blocks ?? [])].sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    )[0]?.id ?? null;
+  const savedId = bookmarks[0]?.id ?? null;
 
   return (
     <StudentShell maxWidth="default">
@@ -87,13 +92,23 @@ export default async function CourseIntroPage({ params }: PageProps) {
         title={course.title}
         description={course.description}
         actions={
-          <GlassButton asChild variant="primary" size="lg">
-            <Link href={`/courses/${course.slug}/read`}>
-              <PlayIcon size={14} />
-              {ctaLabel}
-              <ArrowRightIcon size={14} />
-            </Link>
-          </GlassButton>
+          <>
+            <GlassButton asChild variant="primary" size="lg">
+              <Link href={`/courses/${course.slug}/read`}>
+                <PlayIcon size={14} />
+                {ctaLabel}
+                <ArrowRightIcon size={14} />
+              </Link>
+            </GlassButton>
+            <CourseSaveButton
+              courseId={course.id}
+              firstBlockId={firstBlockId}
+              initialId={savedId}
+              labelSave={t("save")}
+              labelSaved={t("saved")}
+              size="lg"
+            />
+          </>
         }
         className="mb-8"
       />
@@ -142,47 +157,6 @@ export default async function CourseIntroPage({ params }: PageProps) {
           {t("publishedOn", { date: formatDate(course.publishedAt, locale) })}
         </p>
       )}
-
-      <section className="mt-14">
-        <h2 className="mb-5 font-display text-2xl tracking-tight text-text md:text-3xl">
-          {t("bookmarksTitle")}
-        </h2>
-        {bookmarks.length === 0 ? (
-          <GlassCard variant="plain" className="p-8 text-center">
-            <BookmarkIcon
-              size={28}
-              className="mx-auto mb-3 text-muted"
-            />
-            <p className="text-text-soft">{t("bookmarksEmpty")}</p>
-            <GlassButton asChild variant="ghost" size="sm" className="mt-4">
-              <Link href={`/courses/${course.slug}/read`}>{t("openReader")}</Link>
-            </GlassButton>
-          </GlassCard>
-        ) : (
-          <ul className="grid gap-3 md:grid-cols-2">
-            {bookmarks.map((b) => (
-              <li key={b.id}>
-                <Link
-                  href={`/courses/${course.slug}/read#block-${b.blockId}`}
-                  className="block focus-visible:outline-none"
-                >
-                  <GlassCard variant="default" interactive className="h-full">
-                    <GlassCardContent className="flex h-full flex-col gap-2 p-4">
-                      <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.14em] text-muted">
-                        <BookmarkIcon size={12} />
-                        {b.blockKind} · #{b.blockOrderIndex + 1}
-                      </div>
-                      <GlassCardTitle as="h3" className="text-[1rem]">
-                        {b.blockPreview ?? `Bloc ${b.blockOrderIndex + 1}`}
-                      </GlassCardTitle>
-                    </GlassCardContent>
-                  </GlassCard>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </StudentShell>
   );
 }

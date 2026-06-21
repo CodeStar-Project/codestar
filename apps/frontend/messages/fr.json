@@ -8,7 +8,14 @@
     "catalog": "Catalogue",
     "myCourses": "Mes cours",
     "teach": "Enseigner",
-    "admin": "Admin"
+    "admin": "Admin",
+    "manageCourses": "Cours",
+    "users": "Utilisateurs"
+  },
+  "theme": {
+    "toggleTo": "Passer en mode {mode}",
+    "light": "clair",
+    "dark": "sombre"
   },
   "footer": {
     "rights": "© {year} · Tous droits réservés",
@@ -20,45 +27,12 @@
     "label": "Pied de page"
   },
   "home": {
-    "hero": {
-      "chip": "Nouveaux cours chaque semaine",
-      "ctaSecondary": "Voir le catalogue",
-      "comingSoon": "bientôt",
-      "stats": {
-        "courses": "cours",
-        "learnersValue": "{count, number}",
-        "learners": "apprenants",
-        "ratingLabel": "{value} de moyenne"
-      },
-      "previewLabel": "Aperçu"
-    },
-    "featured": {
-      "title": "Cours mis en avant",
-      "subtitle": "Une sélection volontairement courte. Tout le catalogue est accessible une fois connecté.",
-      "by": "par {author}",
-      "linkAria": "Voir {title} (connexion requise)"
-    },
-    "pillars": {
-      "reader": {
-        "title": "Lecteur soigné",
-        "description": "Sommaire, marque-pages, notes par section. Pensé pour qu'on revienne, pas qu'on scroll."
-      },
-      "progress": {
-        "title": "Progression motivante",
-        "description": "XP, classement, séries. Garder la flamme, pas se forcer. Reset hebdomadaire."
-      },
-      "authors": {
-        "title": "Cours faits par des gens qui savent",
-        "description": "Auteurs sélectionnés, contenus mis à jour, exemples qui collent au métier."
+    "landing": {
+      "facts": {
+        "openSource": "Open-source",
+        "license": "GPL v3",
+        "selfHosted": "Self-hébergé"
       }
-    },
-    "finalCta": {
-      "titlePart1": "Prêt·e à",
-      "titlePart2": "commencer",
-      "titlePart3": "?",
-      "subtitle": "Créez un compte gratuit. Cinq minutes, votre première leçon est déjà là.",
-      "primary": "Commencer maintenant",
-      "secondary": "Rejoindre avec un code"
     }
   },
   "login": {
@@ -87,6 +61,10 @@
       "signin": "Se connecter",
       "signup": "Créer mon compte",
       "join": "Rejoindre"
+    },
+    "slide": {
+      "label": "Glissez pour confirmer",
+      "confirmed": "C'est parti"
     },
     "fields": {
       "email": "Email",
@@ -123,14 +101,13 @@
       "and": "et",
       "privacy": "politique de confidentialité"
     },
-    "decorative": {
-      "license": "GPL v3",
-      "selfHosted": "Self-hosted",
-      "quote": "« On a remplacé notre LMS par {name}. Nos profs adorent. »",
-      "quoteAuthor": "Naïma Mansouri",
-      "quoteRole": "Head of Learning · Atelier 89",
-      "streakLabel": "Série du jour",
-      "streakValue": "14 jours"
+    "aside": {
+      "subline": "Apprenez à votre rythme, sur une instance que vous maîtrisez de bout en bout.",
+      "facts": {
+        "openSource": "Open-source",
+        "license": "GPL v3",
+        "selfHosted": "Self-hébergé"
+      }
     }
   },
   "instance": {
@@ -194,6 +171,7 @@
       "p": "Paragraphe",
       "quote": "Citation",
       "code": "Code",
+      "callout": "Encadré",
       "image": "Image",
       "table": "Tableau",
       "quiz": "Quiz",
@@ -276,6 +254,24 @@
     },
     "export": {
       "button": "Exporter"
+    },
+    "publish": "Enregistrer et publier",
+    "saveDraft": "Enregistrer le brouillon",
+    "unpublish": "Dépublier",
+    "viewPublic": "Voir la page publique",
+    "addBlock": "Ajouter un bloc",
+    "more": "Plus",
+    "moveUp": "Monter le bloc",
+    "moveDown": "Descendre le bloc",
+    "start": {
+      "title": "Par où commencer ?",
+      "lead": "Importez un cours déjà rédigé, ou composez le vôtre bloc par bloc.",
+      "importTitle": "Importer un fichier",
+      "importDesc": "Chargez un cours au format JSON (.json). Son contenu et ses informations remplaceront ce cours.",
+      "importButton": "Choisir un fichier",
+      "composeTitle": "Composer à la main",
+      "composeDesc": "Partez d'une page vierge et ajoutez vos blocs : titres, paragraphes, quiz, code…",
+      "composeButton": "Commencer à écrire"
     },
     "canvasEmpty": "Aucun bloc. Cliquez un bloc dans la palette pour commencer.",
     "previewEmpty": "L'aperçu apparaîtra ici.",
@@ -365,6 +361,8 @@
       "start": "Commencer",
       "resume": "Reprendre",
       "review": "Revoir",
+      "save": "Enregistrer le cours",
+      "saved": "Cours enregistré",
       "progressLabel": "Votre progression",
       "bookmarksTitle": "Vos favoris dans ce cours",
       "bookmarksEmpty": "Aucun favori. Ouvrez le cours et cliquez sur l'icône favori sur un bloc.",
@@ -405,7 +403,10 @@
     },
     "search": "Rechercher un cours",
     "empty": "Aucun cours pour l'instant.",
-    "emptyFiltered": "Aucun cours ne correspond à votre recherche."
+    "emptyFiltered": "Aucun cours ne correspond à votre recherche.",
+    "results": "{count, plural, =0 {Aucun cours} one {# cours} other {# cours}}",
+    "allCategories": "Toutes",
+    "by": "Par {author}"
   },
   "studentHome": {
     "kicker": "{date}",
@@ -420,6 +421,47 @@
     "discoverTitle": "Découvrir",
     "discoverDesc": "Sélection issue de vos groupes.",
     "browseCta": "Voir tout le catalogue"
+  },
+  "learn": {
+    "greeting": "Bonjour {name},",
+    "continueWithCourse": "Reprenons là où vous vous êtes arrêté.",
+    "startSomething": "Prêt·e à démarrer quelque chose de nouveau ?",
+    "statInProgress": "En cours",
+    "statCompleted": "Terminés",
+    "statBookmarks": "Favoris",
+    "resumeTitle": "Reprendre",
+    "allCourses": "Tous mes cours",
+    "resumeEmpty": "Rien en cours",
+    "resumeEmptyDesc": "Choisissez un cours et démarrez votre série aujourd'hui.",
+    "browseCta": "Voir le catalogue",
+    "resumeCta": "Reprendre",
+    "discoverTitle": "Découvrir",
+    "discoverDesc": "Cours publiés et ceux assignés à vos groupes.",
+    "discoverEmpty": "Aucun cours disponible pour l'instant.",
+    "openCta": "Ouvrir",
+    "groupsTitle": "Mes groupes"
+  },
+  "studio": {
+    "kicker": "Studio · {name}",
+    "title": "Vos cours et groupes.",
+    "description": "Créez, publiez et assignez des cours aux groupes que vous animez.",
+    "newCourse": "Nouveau cours",
+    "generateAi": "Générer avec l'IA",
+    "soon": "bientôt",
+    "statCourses": "Mes cours",
+    "statPublished": "Publiés",
+    "statDrafts": "Brouillons",
+    "statGroups": "Groupes animés",
+    "myCoursesTitle": "Mes cours",
+    "manageAll": "Tout gérer",
+    "noCourses": "Aucun cours",
+    "noCoursesDesc": "Créez votre premier cours pour commencer.",
+    "groupsTitle": "Groupes que j'anime",
+    "noGroups": "Vous n'animez aucun groupe pour l'instant.",
+    "curriculumLink": "Curriculum",
+    "membersLink": "Membres",
+    "settingsTitle": "Réglages éditeur",
+    "maxBlocks": "Blocs max par page"
   },
   "myCourses": {
     "title": "Mes cours",
@@ -440,13 +482,11 @@
     "ctaReview": "Revoir"
   },
   "bookmarks": {
-    "title": "Mes favoris",
-    "kicker": "Favoris",
-    "description": "Tous vos marque-pages, groupés par cours.",
-    "empty": "Aucun favori pour l'instant. Cliquez sur l'icône favori dans le lecteur d'un cours.",
-    "viewBlock": "Voir dans le cours",
-    "remove": "Retirer",
-    "bookmarksCount": "{count, plural, one {# favori} other {# favoris}}"
+    "title": "Mes cours enregistrés",
+    "kicker": "Cours enregistré",
+    "description": "Les cours que vous avez enregistrés pour les retrouver plus tard.",
+    "empty": "Aucun cours enregistré pour l'instant. Ouvrez un cours et cliquez sur « Enregistrer le cours ».",
+    "open": "Ouvrir le cours"
   },
   "dash": {
     "title": "Mes progrès",
@@ -480,6 +520,23 @@
       "drafts": "Brouillons",
       "students": "Étudiants actifs",
       "groups": "Groupes"
+    },
+    "kpi": {
+      "publishedDrafts": "{published} publiés · {drafts} brouillons",
+      "users": "Utilisateurs",
+      "disabled": "{count} désactivés",
+      "active": "{count} actifs",
+      "catalogHealth": "Santé du catalogue",
+      "usersByRole": "Utilisateurs par rôle",
+      "published": "Publiés",
+      "drafts": "Brouillons",
+      "archived": "Archivés"
+    },
+    "superAdmin": {
+      "kicker": "SUPER-ADMIN",
+      "title": "Instance & branding · {name}",
+      "maxBlocks": "Blocs max/page : {n}",
+      "manageRoles": "Gérer les rôles"
     },
     "recentTitle": "Cours récents",
     "groupsTitle": "Mes groupes",

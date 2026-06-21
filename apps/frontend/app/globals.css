@@ -1,30 +1,16 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Codestar — Design System "Liquid Glass · Citron"
+   Source de vérité : apps/frontend/design-liquid-glass-citron-dark.md
+   Accent citron #EAB12E · modes clair (parchemin) & sombre (navy).
+   ============================================================ */
+
+/* ── Tokens fixes (indépendants du mode) ── */
 :root {
-  --color-bg-base-raw: #f4f6fb;
-  --color-bg-mesh-1-raw: #dce8ff;
-  --color-bg-mesh-2-raw: #ffe4d6;
-  --color-bg-mesh-3-raw: #e1f5e8;
-
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-bg-strong: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
-  --glass-blur: blur(20px) saturate(180%);
-
-  --color-text-raw: #1a1f2e;
-  --color-text-soft-raw: #4a5366;
-  --color-muted-raw: #8892a6;
-
-  --color-accent-raw: #7aa9ff;
-  --color-accent-fg-raw: #ffffff;
-  --color-accent-soft-raw: rgba(122, 169, 255, 0.18);
-
-  --color-success-raw: #5dc9a8;
-  --color-warning-raw: #ffb672;
-  --color-danger-raw: #ff8a95;
-  --color-green-raw: #7bc86c;
-  --color-tip-raw: #ffd66b;
+  --color-accent-raw: #eab12e;
+  --color-accent-fg-raw: #1a1f2e;
+  --glass-blur: blur(29px) saturate(180%);
 
   --r-sm: 8px;
   --r: 14px;
@@ -33,22 +19,59 @@
   --radius: 0.875rem;
 }
 
+/* ── Mode clair (défaut) — parchemin solaire ── */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg-base-raw: #fbf9ee;
+  --color-bg-mesh-1-raw: #fff1bf;
+  --color-bg-mesh-2-raw: #ffe2be;
+  --color-bg-mesh-3-raw: #ebf6c8;
+
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+
+  --color-text-raw: #1a1f2e;
+  --color-text-soft-raw: #4a5366;
+  --color-muted-raw: #8892a6;
+
+  --color-accent-soft-raw: rgba(234, 177, 46, 0.16);
+
+  --color-success-raw: #2faa7e;
+  --color-warning-raw: #e08a2b;
+  --color-danger-raw: #e0556a;
+  --color-green-raw: #5aa84a;
+  --color-tip-raw: #d6a01f;
+}
+
+/* ── Mode sombre — navy profond ── */
 [data-theme="dark"] {
+  color-scheme: dark;
+
   --color-bg-base-raw: #0e1422;
-  --color-bg-mesh-1-raw: #1a2440;
-  --color-bg-mesh-2-raw: #2a1f30;
-  --color-bg-mesh-3-raw: #14283a;
+  --color-bg-mesh-1-raw: #38352a;
+  --color-bg-mesh-2-raw: #332d26;
+  --color-bg-mesh-3-raw: #2f3128;
 
   --glass-bg: rgba(20, 28, 48, 0.55);
-  --glass-bg-strong: rgba(20, 28, 48, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg-strong: rgba(20, 28, 48, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.12);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 
   --color-text-raw: #edf1f9;
   --color-text-soft-raw: #b6c0d6;
   --color-muted-raw: #7c8ba8;
 
-  --color-accent-soft-raw: rgba(122, 169, 255, 0.22);
+  --color-accent-soft-raw: rgba(234, 177, 46, 0.24);
+
+  --color-success-raw: #5dc9a8;
+  --color-warning-raw: #ffb672;
+  --color-danger-raw: #ff8a95;
+  --color-green-raw: #7bc86c;
+  --color-tip-raw: #ffd66b;
 }
 
 @theme inline {
@@ -91,19 +114,12 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --font-sans:
-    var(--font-outfit), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  --font-display:
-    var(--font-instrument-serif), "Fraunces", Georgia, serif;
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-:root {
-  color-scheme: light;
-}
-[data-theme="dark"] {
-  color-scheme: dark;
+    var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, monospace;
 }
 
 html {
@@ -127,7 +143,7 @@ body {
   color: var(--color-accent-fg-raw);
 }
 
-
+/* ── Surfaces verre ── */
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -155,6 +171,29 @@ body {
   border-radius: var(--r-lg);
 }
 
+/* Pseudo-reflet linéaire — cards héro / vcard (design §5) */
+.glass-reflect {
+  position: relative;
+  isolation: isolate;
+}
+.glass-reflect::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, #ffffff 50%, transparent),
+    transparent 42%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+.glass-reflect > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Focus ring — non-supprimable (a11y WCAG AA) */
 :where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent-raw);
@@ -162,6 +201,7 @@ body {
   border-radius: var(--r-sm);
 }
 
+/* ── Animations (design §6) ── */
 @keyframes mesh-drift {
   0%,
   100% {
@@ -175,23 +215,197 @@ body {
   }
 }
 
+@keyframes gh-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 .mesh-spot {
   will-change: transform;
 }
 
+.gh-bob {
+  animation: gh-bob 7s ease-in-out infinite;
+}
+.gh-bob-1 {
+  animation: gh-bob 6s ease-in-out infinite 0.4s;
+}
+.gh-bob-2 {
+  animation: gh-bob 8s ease-in-out infinite 0.8s;
+}
+
 .font-display {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 500;
   letter-spacing: -0.01em;
-  line-height: 1.02;
+  line-height: 1.08;
 }
 
 .font-mono {
   font-family: var(--font-mono);
 }
 
+/* ============================================================
+   Landing FX — effets visuels des pages publiques (home, auth).
+   Tous gated par prefers-reduced-motion (cf. bloc plus bas).
+   ============================================================ */
+
+/* Entrée en cascade : opacité + montée + flou qui se résorbe. */
+@keyframes fx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.fx-rise {
+  opacity: 0;
+  animation: fx-rise 0.95s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* CTA : halo accent pulsé. */
+@keyframes fx-cta-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 8px 28px -6px color-mix(in oklab, var(--color-accent) 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 16px 46px -4px color-mix(in oklab, var(--color-accent) 82%, transparent);
+  }
+}
+.fx-cta-glow {
+  animation: fx-cta-glow 3.2s ease-in-out infinite;
+}
+
+/* Balayage de lumière au survol des surfaces verre. */
+.fx-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.fx-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in oklab, #fff 55%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-130%);
+  transition: transform 0.75s ease;
+  pointer-events: none;
+}
+.fx-sheen:hover::after {
+  transform: translateX(130%);
+}
+
+/* Aurora — faisceau conique en rotation lente. */
+@keyframes fx-aurora {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+.fx-aurora {
+  animation: fx-aurora 30s linear infinite;
+  will-change: transform;
+}
+
+/* Orbes flottants. */
+@keyframes fx-orb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -26px, 0) scale(1.08);
+  }
+}
+.fx-orb {
+  animation: fx-orb 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Particules scintillantes. */
+@keyframes fx-twinkle {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.6);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.2);
+  }
+}
+.fx-particle {
+  animation: fx-twinkle 4.5s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+/* Apparition « pop » élastique — coche de validation live. */
+@keyframes fx-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-22deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.18) rotate(7deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+.fx-pop {
+  animation: fx-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Reflet qui circule dans la piste « glisser pour confirmer ». */
+@keyframes fx-track-flow {
+  to {
+    background-position: 200% center;
+  }
+}
+.fx-track-flow {
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--color-accent) 70%, transparent) 0%,
+    color-mix(in oklab, var(--color-accent) 100%, white 12%) 50%,
+    color-mix(in oklab, var(--color-accent) 70%, transparent) 100%
+  );
+  background-size: 200% auto;
+  animation: fx-track-flow 1.6s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .mesh-spot {
+  .mesh-spot,
+  .gh-bob,
+  .gh-bob-1,
+  .gh-bob-2,
+  .fx-aurora,
+  .fx-orb,
+  .fx-particle,
+  .fx-cta-glow,
+  .fx-track-flow {
+    animation: none !important;
+  }
+  .fx-rise,
+  .fx-pop {
+    opacity: 1;
     animation: none !important;
   }
   html {
@@ -208,5 +422,8 @@ body {
     -webkit-backdrop-filter: none;
     border-color: var(--color-text-raw);
     box-shadow: none;
+  }
+  .glass-reflect::before {
+    display: none;
   }
 }

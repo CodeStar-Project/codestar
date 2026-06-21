@@ -31,7 +31,7 @@ export const SandboxModule: BlockKindModule = {
             <PlayIcon size={12} /> {t("sandbox.run")}
           </button>
         </div>
-        <pre className="overflow-x-auto bg-[color:color-mix(in_oklab,var(--text)_92%,transparent)] p-4 font-mono text-[0.85rem] leading-relaxed text-white">
+        <pre className="overflow-x-auto bg-[#1A1F2E] p-4 font-mono text-[0.85rem] leading-relaxed text-[#EDF1F9]">
           <code>{code}</code>
         </pre>
         {expectedOutput && (

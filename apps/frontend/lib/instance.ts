@@ -8,7 +8,7 @@ export const DEFAULT_INSTANCE: InstanceBranding = {
   name: "Codestar",
   tagline: "Open-source e-learning platform",
   logo: { kind: "preset", value: "star" },
-  accent: "#7AA9FF",
+  accent: "#EAB12E",
   heroTitle: null,
   heroSubtitle: null,
   heroCta: null,

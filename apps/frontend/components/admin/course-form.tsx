@@ -112,6 +112,11 @@ export function CourseForm({ course, labels, cancelHref = "/admin/courses" }: Co
           setError(r.error ?? labels.errorUnknown);
           return;
         }
+        // Création : on enchaîne directement sur l'éditeur de contenu.
+        setSaved(true);
+        router.refresh();
+        router.push(`/admin/courses/${r.course.id}/blocks`);
+        return;
       }
       setSaved(true);
       router.refresh();

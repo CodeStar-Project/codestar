@@ -4,14 +4,13 @@ import { getTranslations } from "next-intl/server";
 
 import { getMyBookmarks } from "@/app/actions/bookmarks";
 import { requireAuth } from "@/components/admin/role-guard";
-import { BookmarkRow } from "@/components/course/bookmark-row";
 import { EmptyState } from "@/components/course/empty-state";
 import { PageHeader } from "@/components/course/page-header";
 import { StudentShell } from "@/components/course/student-shell";
-import { BookmarkIcon } from "@/components/ui/icons";
-import type { BookmarkEnriched } from "@/lib/types";
+import { GlassCard, GlassCardContent, GlassCardTitle } from "@/components/ui/glass-card";
+import { ArrowRightIcon, BookmarkFilledIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Mes favoris" };
+export const metadata: Metadata = { title: "Cours enregistrés" };
 
 export default async function BookmarksPage() {
   await requireAuth();
@@ -20,17 +19,14 @@ export default async function BookmarksPage() {
     getMyBookmarks(),
   ]);
 
-  const byCourse = new Map<string, { title: string; slug: string; items: BookmarkEnriched[] }>();
+  // One saved course per courseId (the bookmark is anchored on the first block).
+  const byCourse = new Map<string, { title: string; slug: string }>();
   for (const b of bookmarks) {
-    const k = b.courseId;
-    if (!byCourse.has(k)) {
-      byCourse.set(k, { title: b.courseTitle, slug: b.courseSlug, items: [] });
+    if (!byCourse.has(b.courseId)) {
+      byCourse.set(b.courseId, { title: b.courseTitle, slug: b.courseSlug });
     }
-    byCourse.get(k)!.items.push(b);
   }
-  for (const entry of byCourse.values()) {
-    entry.items.sort((a, b) => a.blockOrderIndex - b.blockOrderIndex);
-  }
+  const courses = [...byCourse.values()];
 
   return (
     <StudentShell maxWidth="wide">
@@ -41,39 +37,31 @@ export default async function BookmarksPage() {
         className="mb-10"
       />
 
-      {bookmarks.length === 0 ? (
-        <EmptyState icon={<BookmarkIcon size={22} />} title={t("empty")} />
+      {courses.length === 0 ? (
+        <EmptyState icon={<BookmarkFilledIcon size={22} />} title={t("empty")} />
       ) : (
-        <div className="space-y-12">
-          {[...byCourse.entries()].map(([id, group]) => (
-            <section key={id}>
-              <div className="mb-4 flex items-end justify-between gap-3">
-                <h2 className="font-display text-xl tracking-tight text-text md:text-2xl">
-                  <Link
-                    href={`/courses/${group.slug}`}
-                    className="hover:text-[color:var(--color-accent)]"
-                  >
-                    {group.title}
-                  </Link>
-                </h2>
-                <span className="text-[0.82rem] text-muted">
-                  {t("bookmarksCount", { count: group.items.length })}
-                </span>
-              </div>
-              <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {group.items.map((b) => (
-                  <li key={b.id}>
-                    <BookmarkRow
-                      bookmark={b}
-                      labelView={t("viewBlock")}
-                      labelRemove={t("remove")}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {courses.map((c) => (
+            <li key={c.slug}>
+              <Link href={`/courses/${c.slug}`} className="block focus-visible:outline-none">
+                <GlassCard variant="default" interactive className="h-full">
+                  <GlassCardContent className="flex h-full flex-col gap-3 p-5">
+                    <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.14em] text-muted">
+                      <BookmarkFilledIcon size={13} className="text-[color:var(--color-accent)]" />
+                      {t("kicker")}
+                    </div>
+                    <GlassCardTitle as="h2" className="text-[1.15rem]">
+                      {c.title}
+                    </GlassCardTitle>
+                    <span className="mt-auto inline-flex items-center gap-1 text-[0.85rem] text-[color:var(--color-accent)]">
+                      {t("open")} <ArrowRightIcon size={14} />
+                    </span>
+                  </GlassCardContent>
+                </GlassCard>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </StudentShell>
   );
