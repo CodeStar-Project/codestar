@@ -694,7 +694,9 @@
       "curriculum": "Courses",
       "invitations": "Invitations",
       "deleteConfirm": "Permanently delete this group?",
+      "deleteBtn": "Delete",
       "form": {
+        "title": "Create a group",
         "name": "Group name",
         "namePlaceholder": "e.g. Year 9 class",
         "slug": "Identifier (slug)",

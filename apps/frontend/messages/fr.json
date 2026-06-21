@@ -691,7 +691,9 @@
       "curriculum": "Cours",
       "invitations": "Invitations",
       "deleteConfirm": "Supprimer ce groupe définitivement ?",
+      "deleteBtn": "Supprimer",
       "form": {
+        "title": "Créer un groupe",
         "name": "Nom du groupe",
         "namePlaceholder": "ex. Classe de 3ème",
         "slug": "Identifiant (slug)",

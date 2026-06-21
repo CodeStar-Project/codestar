@@ -8,6 +8,7 @@ import { GlassButton } from "@/components/ui/glass-button";
 import { GlassField, GlassInput } from "@/components/ui/glass-input";
 
 export interface CreateGroupModalLabels {
+  title: string;
   name: string;
   namePlaceholder: string;
   slug: string;
@@ -35,7 +36,8 @@ export function CreateGroupModal({ open, onClose, labels }: CreateGroupModalProp
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const name = (fd.get("name") as string).trim();
     const slug = (fd.get("slug") as string).trim() || undefined;
     const startsAt = (fd.get("startsAt") as string) || null;
@@ -47,7 +49,6 @@ export function CreateGroupModal({ open, onClose, labels }: CreateGroupModalProp
       if (res.ok) {
         router.refresh();
         onClose();
-        formRef.current?.reset();
       } else {
         setError(res.error ?? "Une erreur est survenue.");
       }
@@ -56,7 +57,6 @@ export function CreateGroupModal({ open, onClose, labels }: CreateGroupModalProp
 
   function handleClose() {
     setError("");
-    formRef.current?.reset();
     onClose();
   }
 
@@ -64,7 +64,7 @@ export function CreateGroupModal({ open, onClose, labels }: CreateGroupModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[color:var(--glass-bg)] p-6 shadow-2xl">
         <h2 className="mb-5 text-lg font-semibold text-text">
-          Créer un groupe
+          {labels.title}
         </h2>
 
         <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
