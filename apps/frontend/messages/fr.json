@@ -10,7 +10,8 @@
     "teach": "Enseigner",
     "admin": "Admin",
     "manageCourses": "Cours",
-    "users": "Utilisateurs"
+    "users": "Utilisateurs",
+    "groups": "Groupes"
   },
   "theme": {
     "toggleTo": "Passer en mode {mode}",
@@ -679,6 +680,45 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "saved": "Enregistré"
+    },
+    "groups": {
+      "kicker": "Gestion des groupes",
+      "title": "Groupes",
+      "description": "Créez et gérez vos classes. Ajoutez des élèves via des codes d'invitation.",
+      "newGroup": "Créer un groupe",
+      "empty": "Aucun groupe pour l'instant.",
+      "members": "Membres",
+      "curriculum": "Cours",
+      "invitations": "Invitations",
+      "deleteConfirm": "Supprimer ce groupe définitivement ?",
+      "form": {
+        "name": "Nom du groupe",
+        "namePlaceholder": "ex. Classe de 3ème",
+        "slug": "Identifiant (slug)",
+        "slugPlaceholder": "ex. classe-3eme",
+        "slugHelper": "Laissez vide pour générer automatiquement",
+        "startsAt": "Date de début",
+        "endsAt": "Date de fin",
+        "create": "Créer",
+        "cancel": "Annuler"
+      },
+      "hub": {
+        "kicker": "Groupe · {name}",
+        "membersDesc": "Gérer les membres et leurs rôles dans ce groupe",
+        "curriculumDesc": "Assigner des cours accessibles à ce groupe",
+        "invitationsTitle": "Codes d'invitation",
+        "invitationsDesc": "Générez des codes pour inviter des utilisateurs à rejoindre ce groupe",
+        "newInvitation": "Générer un code",
+        "invitationFormMaxUses": "Utilisations maximum",
+        "invitationFormExpiresAt": "Date d'expiration (optionnel)",
+        "invitationFormCreate": "Générer",
+        "code": "Code",
+        "uses": "{used}/{max} utilisations",
+        "expires": "Expire le {date}",
+        "noExpiry": "Pas d'expiration",
+        "noInvitations": "Aucun code actif.",
+        "copyCode": "Copier"
+      }
     }
   }
 }

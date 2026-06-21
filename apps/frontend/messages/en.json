@@ -10,7 +10,8 @@
     "teach": "Teach",
     "admin": "Admin",
     "manageCourses": "Courses",
-    "users": "Users"
+    "users": "Users",
+    "groups": "Groups"
   },
   "theme": {
     "toggleTo": "Switch to {mode} mode",
@@ -682,6 +683,45 @@
       "save": "Save",
       "cancel": "Cancel",
       "saved": "Saved"
+    },
+    "groups": {
+      "kicker": "Group management",
+      "title": "Groups",
+      "description": "Create and manage your classes. Add students via invitation codes.",
+      "newGroup": "Create a group",
+      "empty": "No groups yet.",
+      "members": "Members",
+      "curriculum": "Courses",
+      "invitations": "Invitations",
+      "deleteConfirm": "Permanently delete this group?",
+      "form": {
+        "name": "Group name",
+        "namePlaceholder": "e.g. Year 9 class",
+        "slug": "Identifier (slug)",
+        "slugPlaceholder": "e.g. year-9-class",
+        "slugHelper": "Leave blank to auto-generate",
+        "startsAt": "Start date",
+        "endsAt": "End date",
+        "create": "Create",
+        "cancel": "Cancel"
+      },
+      "hub": {
+        "kicker": "Group · {name}",
+        "membersDesc": "Manage members and their roles in this group",
+        "curriculumDesc": "Assign courses accessible to this group",
+        "invitationsTitle": "Invitation codes",
+        "invitationsDesc": "Generate codes so users can join this group",
+        "newInvitation": "Generate a code",
+        "invitationFormMaxUses": "Max uses",
+        "invitationFormExpiresAt": "Expiry date (optional)",
+        "invitationFormCreate": "Generate",
+        "code": "Code",
+        "uses": "{used}/{max} uses",
+        "expires": "Expires {date}",
+        "noExpiry": "No expiry",
+        "noInvitations": "No active codes.",
+        "copyCode": "Copy"
+      }
     }
   }
 }
