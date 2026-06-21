@@ -69,6 +69,11 @@ export async function TopNav() {
                 {t("manageCourses")}
               </Link>
             )}
+            {isStaff(me.role) && (
+              <Link href="/admin/groups" className={navLinkClass}>
+                {t("groups")}
+              </Link>
+            )}
             {isAdmin(me.role) && (
               <Link href="/admin/users" className={navLinkClass}>
                 {t("users")}
