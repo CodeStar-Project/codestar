@@ -34,16 +34,16 @@ public class AiCourseService {
 
     private static final String SYSTEM_PROMPT_PATH = "classpath:prompts/course-system.txt";
 
-    private final AiProperties props;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final AuditLogger audit;
+    private final SettingsService settingsService;
     private final String systemPrompt;
 
-    public AiCourseService(AiProperties props, RestClient.Builder restClientBuilder, ObjectMapper objectMapper, AuditLogger audit, ResourceLoader resourceLoader) {
-        this.props = props;
+    public AiCourseService(AiProperties props, RestClient.Builder restClientBuilder, ObjectMapper objectMapper, SettingsService settingsService, AuditLogger audit, ResourceLoader resourceLoader) {
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.settingsService = settingsService;
         this.systemPrompt = loadSystemPrompt(resourceLoader);
 
         HttpClient httpClient = HttpClient.newBuilder()
@@ -54,9 +54,7 @@ public class AiCourseService {
         factory.setReadTimeout(Duration.ofSeconds(props.timeoutSeconds()));
 
         this.restClient = restClientBuilder
-                .baseUrl(props.apiUrl())
                 .requestFactory(factory)
-                .defaultHeader("Authorization", "Bearer " + props.apiKey())
                 .build();
     }
 
@@ -106,10 +104,11 @@ public class AiCourseService {
     }
 
     private String groqCallApi(UUID userId, String systemPrompt, String userPrompt) {
+        SettingsService.AiConfig ai = settingsService.getAiConfig();
         Map<String, Object> body = Map.of(
-                "model", props.model(),
-                "temperature", props.temperature(),
-                "max_tokens", props.maxTokens(),
+                "model", ai.model(),
+                "temperature", ai.temperature(),
+                "max_tokens", ai.maxTokens(),
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", userPrompt)
@@ -118,7 +117,8 @@ public class AiCourseService {
         );
         try {
             return restClient.post()
-                    .uri("/chat/completions")
+                    .uri(joinUrl(ai.apiUrl(), "/chat/completions"))
+                    .header("Authorization", "Bearer " + (ai.apiKey() == null ? "" : ai.apiKey()))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
@@ -137,6 +137,12 @@ public class AiCourseService {
             auditUpstreamError(userId, null, e);
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "AI service unavailable, please retry");
         }
+    }
+
+    private static String joinUrl(String base, String path) {
+        if (base == null || base.isBlank()) return path;
+        String b = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
+        return b + path;
     }
 
     private void auditUpstreamError(UUID userId, Integer status, Exception e) {

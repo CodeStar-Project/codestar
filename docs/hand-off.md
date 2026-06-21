@@ -61,7 +61,6 @@ Phase v1 **terminée**, phase v2 **largement avancée** (cours, progression, boo
 
 ### Frontend — reste à faire ❌
 
-- **Page `/admin/branding`** (live preview) : absente, alors que l'API `PATCH /branding` existe.
 - **UI génération IA** (bouton « Générer », modal, preview avant insertion → `/courses/import`).
 - **`/leaderboard`** (v3).
 - **Tests Playwright** : aucun sur la branche courante (présents sur `add-playwright-tests`, non mergée).
@@ -93,13 +92,11 @@ Le frontend n'utilise **pas** la Next.js standard (cf. `AGENTS.md`). Les APIs pe
 ```env
 JWT_SECRET=<random-256-bits>
 JWT_EXPIRATION=86400000
-INSTANCE_CONFIG_PATH=/app/config/instance.json
-SIGNUP_OPEN=false                 # si false, code d'invitation obligatoire au register
-MEDIA_STORAGE_PATH=/app/media     # volume Docker media_data
-MEDIA_USER_QUOTA_MB=100
-MEDIA_INSTANCE_QUOTA_MB=5000
-# Génération IA (provider OpenAI-compatible, défaut Groq) — clé optionnelle
-codestar.ai.api-url / api-key / model / max-tokens / temperature / rate-limit
+MEDIA_STORAGE_PATH=/app/media     # volume Docker media_data (boot-only)
+CODESTAR_BOOTSTRAP_SUPER_ADMIN_EMAIL/PASSWORD/DISPLAY_NAME   # bootstrap super-admin
+DB_URL / DB_USER / DB_PASSWORD
+CORS_ALLOWED_ORIGINS              # boot (filtre sécurité)
+MEDIA_RATE_LIMIT_* / AI_CONNECT_TIMEOUT_SECONDS / AI_TIMEOUT_SECONDS / AI_RATE_LIMIT_*
 # Logging front (server-side)
 LOG_LEVEL=info                    # debug en dev
 LOG_PRETTY=true                   # false → JSON même en dev
@@ -108,7 +105,7 @@ LOG_PRETTY=true                   # false → JSON même en dev
 ### Autres risques connus
 
 - **Liquid Glass** : contraste sur mesh coloré → variant `glass-strong` systématique au-dessus du texte + axe-core en CI.
-- **`instance.json` modifié à chaud** : lu à chaque `GET /branding` (pas de cache backend) + invalidation front au save.
+- **Settings DB cachés en mémoire** : `SettingsService` charge `app_settings` au boot (`@PostConstruct`) dans un cache `ConcurrentHashMap`, invalidé à chaque write. Le branding (blob JSON sous la clé `branding`) remplace `instance.json`.
 - **Codes d'invitation partagés** : TTL + quota d'usages + révocation admin.
 
 ---
@@ -118,20 +115,20 @@ LOG_PRETTY=true                   # false → JSON même en dev
 | Aspect | Décision |
 |---|---|
 | Architecture | Single-tenant par déploiement Docker |
-| Identité instance | Fichier `instance.json` (volume monté), lu au boot, exposé via `GET /api/v1/instance/branding` |
-| Persistance branding | v1 : JSON manuel · v2 : `PATCH /instance/branding` réécrit le JSON (page UI à faire) |
+| Identité instance | **DB** (`app_settings`, clé `branding` = blob JSON), exposé via `GET /api/v1/settings/branding` (public) |
+| Persistance branding | `PATCH /api/v1/settings/branding` (Admin+) → upsert DB ; page UI `/admin/settings` (onglets) livrée |
 
-Format `instance.json` :
+Forme du `BrandingDto` (clé `branding` dans `app_settings`, défaut = `BrandingDto.DEFAULT` back / `DEFAULT_INSTANCE` front) :
 ```json
 {
-  "name": "Atelier 89",
-  "tagline": "Studio open-source de cours",
+  "name": "Atelier 89", "tagline": "…",
   "logo": { "kind": "preset", "value": "star" },
   "accent": "#EAB12E",
-  "heroTitle": "Apprenez à votre rythme.",
-  "heroSubtitle": "…",
-  "heroCta": "Commencer",
-  "locale": "fr"
+  "heroTitle": "…", "heroSubtitle": "…", "heroCta": "…",
+  "locale": "fr",
+  "favicon": "/api/v1/media/…", "metaTitle": "…", "metaDescription": "…",
+  "fontPreset": "outfit-instrument",
+  "theme": { "light": { "bgBase": "#…", "…": "…" }, "dark": { "…": "…" } }
 }
 ```
 
@@ -168,9 +165,9 @@ Légende : ✅ autorisé · ⚠️ autorisé sur ses propres ressources · ❌ r
 | Promouvoir / rétrograder rôles | ❌ | ❌ | ❌ | ⚠️ rôles sous lui | ✅ |
 | Désactiver / réactiver un utilisateur | ❌ | ❌ | ❌ | ✅ | ✅ |
 | **Settings & branding** ||||||
-| Lire les settings (`max_blocks_per_page`) | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Modifier les settings | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Modifier le branding | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Lire le branding (`GET /settings/branding`) | ✅ public | ✅ | ✅ | ✅ | ✅ |
+| Lire les settings (agrégat `GET /settings`) | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Modifier les settings / le branding | ❌ | ❌ | ❌ | ✅ | ✅ |
 | Retirer la mention `★ Codestar` | — | — | — | — | ❌ (figé licence) |
 | **Médias** ||||||
 | Uploader un média | ❌ | ❌ | ✅ | ✅ | ✅ |
@@ -192,7 +189,7 @@ Légende : ✅ autorisé · ⚠️ autorisé sur ses propres ressources · ❌ r
 - **Préfixe global** : `/api/v1`.
 - **Enveloppe** : toutes les réponses dans `ApiResponseDto<T> { success, message, data }`. **Exception** : `GET /media/{id}` renvoie le binaire brut (`Resource`).
 - **Auth** : JWT Bearer (`Authorization: Bearer <token>`), sessions `STATELESS`.
-- **Routes publiques** (`permitAll`, cf. `SecurityConfig`) : `POST /auth/login`, `POST /auth/register`, `GET /instance/branding`, `GET /media/**`, Swagger (`/v3/api-docs/**`, `/swagger-ui/**`). **Toute autre route = `authenticated()` (≥ Student)** même sans `@PreAuthorize` explicite.
+- **Routes publiques** (`permitAll`, cf. `SecurityConfig`) : `POST /auth/login`, `POST /auth/register`, `GET /settings/branding`, `GET /media/**`, Swagger (`/v3/api-docs/**`, `/swagger-ui/**`). **Toute autre route = `authenticated()` (≥ Student)** même sans `@PreAuthorize` explicite.
 - **Mapping rôles** : `Student+` = tout authentifié · `Teacher+` = TEACHER/ADMIN/SUPER_ADMIN · `Admin+` = ADMIN/SUPER_ADMIN.
 
 ### 5.2 Endpoints
@@ -276,12 +273,14 @@ Légende : ✅ autorisé · ⚠️ autorisé sur ses propres ressources · ❌ r
 | POST | `/users/{id}/disable` | Admin+ | Désactive |
 | POST | `/users/{id}/enable` | Admin+ | Réactive |
 
-**Settings** — `SettingsController` (`/api/v1/settings`)
+**Settings** — `SettingsController` (`/api/v1/settings`) 
 
 | Méthode | Endpoint | Rôle | Description |
 |---|---|---|---|
-| GET | `/settings` | Teacher+ | `SettingsDto` (l'éditeur lit `max_blocks_per_page`). TODO restreindre après fusion avec `instance` |
-| PATCH | `/settings` | Admin+ | `UpdateSettingsRequestDto` (borne `max_blocks_per_page` 1–1000) |
+| GET | `/settings/branding` | **Public** | `BrandingDto` (lit la clé `branding` en DB, cache mémoire ; défaut `BrandingDto.DEFAULT`) |
+| PATCH | `/settings/branding` | Admin+ | `UpdateBrandingRequestDto` (PATCH partiel : name/logo/accent/hero*/locale/favicon/meta*/fontPreset/theme) |
+| GET | `/settings` | Admin+ | `SettingsDto` agrégat (signup, quotas médias, config IA). **Clé IA jamais renvoyée en clair** (`aiApiKeySet`) |
+| PATCH | `/settings` | Admin+ | `UpdateSettingsRequestDto` (signup, quotas, IA ; partiel) |
 
 **Media** — `MediaController` (`/api/v1/media`) — cf. §5.3
 
@@ -289,13 +288,6 @@ Légende : ✅ autorisé · ⚠️ autorisé sur ses propres ressources · ❌ r
 |---|---|---|---|
 | POST | `/media` | Teacher+ | multipart `file` (png/jpg/webp/gif, ≤ 5 MB) → 201 `{id, url}` |
 | GET | `/media/{id}` | Public | Binaire brut. Headers `Cache-Control: immutable 1 an`, `ETag`, `nosniff`, `Content-Disposition: inline` |
-
-**Instance** — `InstanceController` (`/api/v1/instance`)
-
-| Méthode | Endpoint | Rôle | Description |
-|---|---|---|---|
-| GET | `/instance/branding` | Public | `InstanceBrandingDto` (lit `instance.json`, pas de cache) |
-| PATCH | `/instance/branding` | Admin+ | `UpdateBrandingRequestDto` → réécrit `instance.json` |
 
 **AI** — `AiCourseController` (`/api/v1/ai/courses`) — cf. §5.4
 
@@ -394,8 +386,7 @@ Aucune dépendance n'a été actée. Le but est aussi que tu nous proposes des l
 | `/admin/courses` (+ `[id]/blocks`) | Teacher+ | Liste + **éditeur 3 colonnes** (palette / canvas dnd / inspector) | ✅ |
 | `/admin/groups/[id]/{members,curriculum}` | Admin+ ⚠️ | Gestion membres + curriculum | ✅ |
 | `/admin/users` | Admin+ | Gestion utilisateurs (rôle, disable/enable) | ✅ |
-| `/admin/settings` | Admin+ | `max_blocks_per_page` | ✅ |
-| `/admin/branding` | Admin+ | Live preview branding | ❌ API prête, UI à faire |
+| `/admin/settings` | Admin+ | **Onglets** : Général · Branding · Thème · Médias · IA (config unifiée, ex-instance/branding fusionnés) | ✅ |
 
 
 ### 7.3 Roadmap
