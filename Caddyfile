@@ -1,0 +1,31 @@
+# ─────────────────────────────────────────────────────────────
+# Caddy reverse proxy — automatic HTTPS (Let's Encrypt).
+# The domain is injected at runtime from the DOMAIN env var, so this
+# file stays generic: every deployment sets its own DOMAIN in .env.
+# Only the frontend is exposed; backend & postgres stay on the
+# internal Docker network and are never reachable from the Internet.
+# ─────────────────────────────────────────────────────────────
+
+{$DOMAIN} {
+	# Compress responses (zstd preferred, gzip fallback).
+	encode zstd gzip
+
+	# All public traffic goes to the Next.js frontend over the internal
+	# Docker network. The frontend talks to the backend server-side.
+	reverse_proxy frontend:3000
+
+	# Structured access logs to stdout — ready to be shipped to Loki later.
+	log {
+		output stdout
+		format json
+	}
+
+	# Baseline security headers.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
