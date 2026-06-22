@@ -14,6 +14,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S codestar && adduser -S codestar -G codestar
+RUN mkdir -p /app/media && chown -R codestar:codestar /app/media
 USER codestar
 
 COPY --from=build /app/target/*.jar app.jar

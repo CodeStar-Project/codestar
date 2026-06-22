@@ -46,7 +46,7 @@ public class SecurityConfig {
                             "/api/v1/auth/login",
                             "/api/v1/auth/register").permitAll()
                     .requestMatchers(HttpMethod.GET,
-                            "/api/v1/instance/branding").permitAll()
+                            "/api/v1/settings/branding").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/media/**").permitAll()
                     // actuator health
