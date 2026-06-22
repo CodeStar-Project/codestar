@@ -1,0 +1,10 @@
+# Force LF line endings for files that run on the Linux VPS, so they
+# work regardless of the contributor's OS / git autocrlf setting.
+# (CRLF in a shell script breaks the shebang: "bad interpreter ^M".)
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+Caddyfile   text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+mvnw        text eol=lf

@@ -6,6 +6,10 @@
 *.key
 *.crt
 
+# Per-instance branding/config (never committed — survives git pull)
+/config/*
+!/config/.gitkeep
+
 # OS
 .DS_Store
 .AppleDouble
