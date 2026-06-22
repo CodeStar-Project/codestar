@@ -140,7 +140,9 @@ public class AiCourseService {
     }
 
     private static String joinUrl(String base, String path) {
-        if (base == null || base.isBlank()) return path;
+        if (base == null || base.isBlank()) {
+            throw new IllegalStateException("AI API URL is not configured");
+        }
         String b = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
         return b + path;
     }

@@ -16,7 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -50,6 +54,8 @@ public class SettingsService {
 
     private final ConcurrentMap<String, String> cache = new ConcurrentHashMap<>();
 
+    private static final Object PENDING_KEY = new Object();
+
     public SettingsService(IAppSettingRepository repository, AuditLogger audit, ObjectMapper objectMapper, SignupProperties signupDefaults, MediaProperties mediaDefaults, AiProperties aiDefaults) {
         this.repository = repository;
         this.audit = audit;
@@ -72,7 +78,7 @@ public class SettingsService {
     }
 
     public boolean isSignupOpen() {
-        String v = cache.get(KEY_SIGNUP_OPEN);
+        String v = rawValue(KEY_SIGNUP_OPEN);
         return v == null ? signupDefaults.open() : Boolean.parseBoolean(v.trim());
     }
 
@@ -173,13 +179,14 @@ public class SettingsService {
         if (patch == null) return cur;
         BrandingDto.ThemeDto base = cur != null ? cur : BrandingDto.DEFAULT.theme();
         return new BrandingDto.ThemeDto(
-                mergeTokens(base.light(), patch.light()),
-                mergeTokens(base.dark(), patch.dark()));
+                mergeTokens(base.light(), patch.light(), BrandingDto.DEFAULT.theme().light()),
+                mergeTokens(base.dark(), patch.dark(), BrandingDto.DEFAULT.theme().dark())
+            );
     }
 
-    private static BrandingDto.ThemeTokens mergeTokens(BrandingDto.ThemeTokens cur, BrandingDto.ThemeTokens patch) {
+    private static BrandingDto.ThemeTokens mergeTokens(BrandingDto.ThemeTokens cur, BrandingDto.ThemeTokens patch, BrandingDto.ThemeTokens fallback) {
         if (patch == null) return cur;
-        BrandingDto.ThemeTokens b = cur != null ? cur : BrandingDto.DEFAULT.theme().light();
+        BrandingDto.ThemeTokens b = cur != null ? cur : fallback;
         return new BrandingDto.ThemeTokens(
                 patch.bgBase() != null ? patch.bgBase() : b.bgBase(),
                 patch.bgMesh1() != null ? patch.bgMesh1() : b.bgMesh1(),
@@ -197,16 +204,53 @@ public class SettingsService {
 
     private void put(String key, String value, UUID userId) {
         repository.upsert(key, value, userId);
-        cache.put(key, value);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            pendingWrites().put(key, value);
+        } else {
+            cache.put(key, value);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> pendingWrites() {
+        Map<String, String> staged = (Map<String, String>) TransactionSynchronizationManager.getResource(PENDING_KEY);
+        if (staged == null) {
+            staged = new HashMap<>();
+            TransactionSynchronizationManager.bindResource(PENDING_KEY, staged);
+            final Map<String, String> toFlush = staged;
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cache.putAll(toFlush);
+                }
+
+                @Override
+                public void afterCompletion(int status) {
+                    TransactionSynchronizationManager.unbindResourceIfPossible(PENDING_KEY);
+                }
+            });
+        }
+        return staged;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String rawValue(String key) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            Map<String, String> staged = (Map<String, String>) TransactionSynchronizationManager.getResource(PENDING_KEY);
+            if (staged != null && staged.containsKey(key)) {
+                return staged.get(key);
+            }
+        }
+        return cache.get(key);
     }
 
     private String str(String key, String def) {
-        String v = cache.get(key);
+        String v = rawValue(key);
         return v == null ? def : v;
     }
 
     private long parseLong(String key, long def) {
-        String v = cache.get(key);
+        String v = rawValue(key);
         if (v == null) return def;
         try {
             return Long.parseLong(v.trim());
@@ -217,7 +261,7 @@ public class SettingsService {
     }
 
     private double parseDouble(String key, double def) {
-        String v = cache.get(key);
+        String v = rawValue(key);
         if (v == null) return def;
         try {
             return Double.parseDouble(v.trim());
