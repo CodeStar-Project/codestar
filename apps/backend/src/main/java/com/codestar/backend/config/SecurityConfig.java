@@ -49,10 +49,13 @@ public class SecurityConfig {
                             "/api/v1/instance/branding").permitAll()
                     .requestMatchers(HttpMethod.GET,
                             "/api/v1/media/**").permitAll()
-                    // actuator health
+                    // actuator: health probes + info + Prometheus scrape.
+                    // Not internet-facing (backend runs on loopback + internal network).
                     .requestMatchers(HttpMethod.GET,
                             "/actuator/health",
-                            "/actuator/health/**").permitAll()
+                            "/actuator/health/**",
+                            "/actuator/info",
+                            "/actuator/prometheus").permitAll()
                     // swagger / OpenAPI
                     .requestMatchers(
                             "/v3/api-docs/**",
