@@ -209,9 +209,6 @@ CREATE TABLE app_settings (
         FOREIGN KEY (updated_by) REFERENCES users (id) ON DELETE SET NULL
 );
 
--- Default editorial limit: max blocks per course page.
-INSERT INTO app_settings (key, value) VALUES ('max_blocks_per_page', '50');
-
 -- MEDIA_ASSETS — index of uploaded course images (files live on the filesystem)
 CREATE TABLE media_assets (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),

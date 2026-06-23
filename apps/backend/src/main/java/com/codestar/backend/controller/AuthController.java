@@ -1,6 +1,5 @@
 package com.codestar.backend.controller;
 
-import com.codestar.backend.config.SignupProperties;
 import com.codestar.backend.dto.ApiResponseDto;
 import com.codestar.backend.dto.auth.LoginRequestDto;
 import com.codestar.backend.dto.auth.LoginResponseDto;
@@ -14,6 +13,7 @@ import com.codestar.backend.security.AuthenticatedUser;
 import com.codestar.backend.service.AuditLogger;
 import com.codestar.backend.service.GroupService;
 import com.codestar.backend.service.InvitationService;
+import com.codestar.backend.service.SettingsService;
 import com.codestar.backend.utils.Emails;
 import com.codestar.backend.utils.JwtUtils;
 import jakarta.validation.Valid;
@@ -37,17 +37,16 @@ public class AuthController {
     private final InvitationService invitationService;
     private final GroupService groupService;
     private final AuditLogger audit;
+    private final SettingsService settingsService;
 
-    private final boolean signupOpen;
-
-    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService, SignupProperties signupProperties, AuditLogger audit) {
+    public AuthController(IUserRepository userRepository, JwtUtils jwtUtils, PasswordEncoder passwordEncoder, InvitationService invitationService, GroupService groupService, SettingsService settingsService, AuditLogger audit) {
         this.userRepository = userRepository;
         this.jwtUtils = jwtUtils;
         this.passwordEncoder = passwordEncoder;
         this.invitationService = invitationService;
         this.groupService = groupService;
         this.audit = audit;
-        this.signupOpen = signupProperties.open();
+        this.settingsService = settingsService;
     }
 
     @PostMapping("/login")
@@ -75,7 +74,7 @@ public class AuthController {
         }
 
         boolean hasCode = request.getInvitationCode() != null && !request.getInvitationCode().isBlank();
-        if (!signupOpen && !hasCode) {
+        if (!settingsService.isSignupOpen() && !hasCode) {
             audit.event("auth.register_refused").warn();
             throw ApiException.badRequest("Registration closed — an invitation code is required.");
         }

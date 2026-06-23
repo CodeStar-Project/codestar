@@ -32,22 +32,21 @@ public class CourseService {
     private static final Set<String> ALLOWED_BLOCK_KINDS = EnumSet.allOf(CourseBlockType.class)
             .stream().map(Enum::name).collect(Collectors.toUnmodifiableSet());
     private static final int MAX_PAGES = 200;
+    private static final int MAX_BLOCKS_PER_PAGE = 200;
 
     private final ICourseRepository courseRepository;
     private final ICoursePageRepository pageRepository;
     private final IUserRepository userRepository;
     private final CoursePermissionService coursePermissions;
     private final BlockPayloadValidator blockPayloadValidator;
-    private final SettingsService settingsService;
     private final AuditLogger audit;
 
-    public CourseService(ICourseRepository courseRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, SettingsService settingsService, AuditLogger audit) {
+    public CourseService(ICourseRepository courseRepository, ICoursePageRepository pageRepository, IUserRepository userRepository, CoursePermissionService coursePermissions, BlockPayloadValidator blockPayloadValidator, AuditLogger audit) {
         this.courseRepository = courseRepository;
         this.pageRepository = pageRepository;
         this.userRepository = userRepository;
         this.coursePermissions = coursePermissions;
         this.blockPayloadValidator = blockPayloadValidator;
-        this.settingsService = settingsService;
         this.audit = audit;
     }
 
@@ -292,16 +291,14 @@ public class CourseService {
         if (pageInputs.size() > MAX_PAGES) {
             throw ApiException.badRequest("A course cannot exceed " + MAX_PAGES + " pages");
         }
-        int maxBlocksPerPage = settingsService.getMaxBlocksPerPage();
-
         List<List<Map<String, Object>>> validatedByPage = new ArrayList<>(pageInputs.size());
         for (int pi = 0; pi < pageInputs.size(); pi++) {
             List<SavePagesRequestDto.BlockInput> blocks = pageInputs.get(pi).getBlocks();
             if (blocks == null) {
                 throw ApiException.badRequest("Page " + pi + ": blocks is required");
             }
-            if (blocks.size() > maxBlocksPerPage) {
-                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
+            if (blocks.size() > MAX_BLOCKS_PER_PAGE) {
+                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + MAX_BLOCKS_PER_PAGE + " blocks per page");
             }
             List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
             for (int bi = 0; bi < blocks.size(); bi++) {
@@ -402,13 +399,11 @@ public class CourseService {
         if (importPages.size() > MAX_PAGES) {
             throw ApiException.badRequest("A course cannot exceed " + MAX_PAGES + " pages");
         }
-        int maxBlocksPerPage = settingsService.getMaxBlocksPerPage();
-
         List<List<Map<String, Object>>> validatedByPage = new ArrayList<>(importPages.size());
         for (int pi = 0; pi < importPages.size(); pi++) {
             List<CoursePayloadDto.Block> blocks = importPages.get(pi).blocks();
-            if (blocks.size() > maxBlocksPerPage) {
-                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + maxBlocksPerPage + " blocks per page");
+            if (blocks.size() > MAX_BLOCKS_PER_PAGE) {
+                throw ApiException.badRequest("Page " + (pi + 1) + " exceeds the max of " + MAX_BLOCKS_PER_PAGE + " blocks per page");
             }
             List<Map<String, Object>> validated = new ArrayList<>(blocks.size());
             for (int bi = 0; bi < blocks.size(); bi++) {

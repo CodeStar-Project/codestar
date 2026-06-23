@@ -19,7 +19,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 
-@Component
+@Component("codestarRequestContextFilter")
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
