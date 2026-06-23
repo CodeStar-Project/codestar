@@ -47,8 +47,7 @@ fi
 # Uses an existing environment value if set; otherwise prompts (TTY required).
 ask() {
   local __var="$1" __prompt="$2" __secret="${3:-}" __default="${4:-}"
-  local __cur="${!__var:-}"
-  if [ -n "$__cur" ]; then return 0; fi
+  if [ -n "${!__var:-}" ]; then return 0; fi
   if [ ! -t 0 ]; then
     if [ -n "$__default" ]; then printf -v "$__var" '%s' "$__default"; return 0; fi
     err "Missing required value '$__var' and no TTY to prompt."; exit 1
@@ -58,8 +57,9 @@ ask() {
   else
     local __hint=""; [ -n "$__default" ] && __hint=" [$__default]"
     read -rp "$__prompt$__hint: " "$__var"
-    [ -z "${!__var}" ] && [ -n "$__default" ] && printf -v "$__var" '%s' "$__default"
+    if [ -z "${!__var}" ] && [ -n "$__default" ]; then printf -v "$__var" '%s' "$__default"; fi
   fi
+  return 0
 }
 
 # set_env KEY VALUE [file]  — replace or append KEY=VALUE (literal, no sed pitfalls)
@@ -122,13 +122,15 @@ if [ -f .env ]; then
 else
   log "Creating .env…"
   [ -f .env.example ] || { err ".env.example missing — are you in the repo root?"; exit 1; }
-  cp .env.example .env
 
   ask DOMAIN         "Domain name (e.g. codestar.example.com)"
   ask ADMIN_EMAIL    "Super-admin email"
   ask ADMIN_PASSWORD "Super-admin password" secret
   ask ADMIN_NAME     "Super-admin display name" "" "Admin"
   ask SIGNUP_OPEN    "Open signups without invitation? (true/false)" "" "false"
+
+  # Create .env only after all answers are collected (no half-written file).
+  cp .env.example .env
 
   set_env DB_USER     "codestar"
   set_env DB_NAME     "codestardb"
