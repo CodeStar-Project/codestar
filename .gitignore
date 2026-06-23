@@ -10,6 +10,9 @@
 /config/*
 !/config/.gitkeep
 
+# Database backups produced by update.sh (stay on the host only)
+/backups/
+
 # OS
 .DS_Store
 .AppleDouble

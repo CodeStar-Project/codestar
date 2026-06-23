@@ -1,0 +1,15 @@
+# Codestar — schedule for the auto-update service.
+# Default: every 15 minutes. Adjust OnCalendar to taste, e.g. "*-*-* 03:00:00"
+# for a nightly update at 3am.
+[Unit]
+Description=Run Codestar auto-update on a schedule
+
+[Timer]
+OnCalendar=*:0/15
+# Run a missed update if the VPS was off at the scheduled time.
+Persistent=true
+# Avoid all instances hitting GitHub at the same second.
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target
