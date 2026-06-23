@@ -1,0 +1,179 @@
+name: CI
+
+# Fast feedback on every push / PR to dev and main.
+# Heavy security scanning lives in security.yml (main + nightly).
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+# Cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      i18n: ${{ steps.filter.outputs.i18n }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'apps/frontend/**'
+            backend:
+              - 'apps/backend/**'
+            migrations:
+              - 'apps/backend/src/main/resources/db/migration/**'
+            i18n:
+              - 'apps/frontend/messages/**'
+
+  frontend:
+    name: Frontend — lint, typecheck, build
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: '9.15.0'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: apps/frontend/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Type-check
+        run: pnpm typecheck
+      - name: Build
+        run: pnpm build
+
+  backend:
+    name: Backend — compile, test, coverage
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+      - name: Compile
+        run: ./mvnw compile -B --no-transfer-progress
+      - name: Test + coverage
+        run: ./mvnw verify -B --no-transfer-progress
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: jacoco-coverage
+          path: apps/backend/target/site/jacoco/
+          retention-days: 7
+          if-no-files-found: warn
+          compression-level: 6
+
+  governance:
+    name: Codestar governance (migrations, i18n)
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0   # full history so guards can diff against the base branch
+      - name: Flyway migration governance
+        if: needs.changes.outputs.migrations == 'true'
+        env:
+          BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: bash scripts/ci/flyway-governance.sh
+      - name: i18n key parity
+        if: needs.changes.outputs.i18n == 'true'
+        run: bash scripts/ci/i18n-parity.sh
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/dependency-review-action@e58c696e52cac8e62d61cc21fda89565d71505d7 # v4.3.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  docker:
+    name: Docker — compose build
+    needs: [frontend, backend]
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      (needs.frontend.result == 'success' || needs.backend.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Create env file
+        run: cp .env.example .env
+      - name: Build images
+        run: docker compose build
+
+  # Single required status check for branch protection.
+  ci-required:
+    name: CI required
+    needs: [frontend, backend, governance, secrets, docker]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no required job failed
+        run: |
+          results='${{ join(needs.*.result, ',') }}'
+          echo "Upstream results: $results"
+          case "$results" in
+            *failure*|*cancelled*) echo "A required job failed."; exit 1 ;;
+            *) echo "All required jobs passed (or were skipped)." ;;
+          esac
