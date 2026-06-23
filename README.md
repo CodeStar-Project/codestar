@@ -1,5 +1,10 @@
 # Codestar
 
+[![CI](https://github.com/CodeStar-Project/codestar/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeStar-Project/codestar/actions/workflows/ci.yml)
+[![Security](https://github.com/CodeStar-Project/codestar/actions/workflows/security.yml/badge.svg)](https://github.com/CodeStar-Project/codestar/actions/workflows/security.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/CodeStar-Project/codestar/badge)](https://scorecard.dev/viewer/?uri=github.com/CodeStar-Project/codestar)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+
 Open-source &amp; self-hosted e-learning platform template to build yours easly.
 
 ## Backend 
