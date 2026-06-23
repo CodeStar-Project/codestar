@@ -77,6 +77,24 @@ jobs:
     defaults:
       run:
         working-directory: apps/backend
+    # Ephemeral Postgres for @SpringBootTest (context load runs Flyway against it).
+    # Created before the steps, reachable at localhost:5432, destroyed with the runner.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: codestar
+          POSTGRES_PASSWORD: codestar
+          POSTGRES_DB: codestardb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codestar -d codestardb"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/codestardb
+      DB_USER: codestar
+      DB_PASSWORD: codestar
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
@@ -126,9 +144,15 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+      # Run the gitleaks binary directly: the GitHub Action requires a paid
+      # license for organisation repos, the open-source binary does not.
+      - name: Run gitleaks
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.21.2
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --verbose --exit-code 1
 
   dependency-review:
     name: Dependency review

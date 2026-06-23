@@ -345,7 +345,7 @@ function PromptHelpPopover() {
             ))}
           </ul>
           <p className="mt-3 border-t border-white/10 pt-3 text-[11px] text-muted">
-            Exemple : <em className="text-text-soft">"Introduction à Docker pour des lycéens en terminale NSI, ton accessible, avec des analogies du quotidien"</em>
+            Exemple : <em className="text-text-soft">«&nbsp;Introduction à Docker pour des lycéens en terminale NSI, ton accessible, avec des analogies du quotidien&nbsp;»</em>
           </p>
         </div>
       )}

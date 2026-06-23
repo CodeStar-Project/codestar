@@ -487,7 +487,10 @@
     "kicker": "Cours enregistré",
     "description": "Les cours que vous avez enregistrés pour les retrouver plus tard.",
     "empty": "Aucun cours enregistré pour l'instant. Ouvrez un cours et cliquez sur « Enregistrer le cours ».",
-    "open": "Ouvrir le cours"
+    "open": "Ouvrir le cours",
+    "viewBlock": "Ouvrir dans le cours",
+    "remove": "Retirer",
+    "bookmarksCount": "{count, plural, one {# cours enregistré} other {# cours enregistrés}}"
   },
   "dash": {
     "title": "Mes progrès",
