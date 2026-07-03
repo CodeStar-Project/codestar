@@ -6,6 +6,16 @@
 # internal Docker network and are never reachable from the Internet.
 # ─────────────────────────────────────────────────────────────
 
+{
+	# Admin API on the internal Docker network so the monitoring stack can
+	# scrape Caddy's own metrics. This port is never published to the host,
+	# so it stays unreachable from the Internet.
+	admin 0.0.0.0:2019
+	servers {
+		metrics
+	}
+}
+
 {$DOMAIN} {
 	# Compress responses (zstd preferred, gzip fallback).
 	encode zstd gzip

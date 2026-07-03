@@ -1,4 +1,4 @@
-.PHONY: setup prod dev down logs ps clean
+.PHONY: setup prod dev down logs ps clean monitoring
 
 ## First-time setup: copy env template
 setup:
@@ -27,3 +27,7 @@ logs:
 ## Service status
 ps:
 	docker compose ps
+
+## Monitoring stack: Prometheus + Grafana + Loki (reach Grafana via SSH tunnel)
+monitoring:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.monitoring.yml up -d

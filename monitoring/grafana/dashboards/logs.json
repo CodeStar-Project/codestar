@@ -1,0 +1,44 @@
+{
+  "uid": "codestar-logs",
+  "title": "Codestar — Logs (Loki)",
+  "tags": ["codestar", "logs"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "label": "Container",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": { "label": "container", "stream": "{stack=\"codestar\"}", "type": 1 },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "Log volume per container",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (container) (count_over_time({stack=\"codestar\", container=~\"$container\"}[1m]))", "legendFormat": "{{container}}" }
+      ]
+    },
+    {
+      "id": 2, "type": "logs", "title": "Logs",
+      "gridPos": { "h": 17, "w": 24, "x": 0, "y": 7 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": { "showTime": true, "wrapLogMessage": true, "sortOrder": "Descending", "enableLogDetails": true },
+      "targets": [
+        { "refId": "A", "expr": "{stack=\"codestar\", container=~\"$container\"}" }
+      ]
+    }
+  ]
+}

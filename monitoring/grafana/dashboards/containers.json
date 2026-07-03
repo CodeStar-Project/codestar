@@ -1,0 +1,48 @@
+{
+  "uid": "codestar-containers",
+  "title": "Codestar — Containers",
+  "tags": ["codestar", "docker"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "timeseries", "title": "CPU per container (cores)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\"codestar-.+\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Memory per container",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sum by (name) (container_memory_usage_bytes{name=~\"codestar-.+\"})", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Network RX per container",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sum by (name) (rate(container_network_receive_bytes_total{name=~\"codestar-.+\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Network TX per container",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+      "targets": [
+        { "refId": "A", "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name=~\"codestar-.+\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    }
+  ]
+}

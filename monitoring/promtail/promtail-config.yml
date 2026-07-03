@@ -1,0 +1,29 @@
+# Promtail — discovers running containers via the Docker socket and ships
+# their stdout/stderr to Loki. Backend & Caddy already log JSON, so the
+# raw line is the JSON object; Grafana parses it at query time.
+server:
+  http_listen_port: 9080
+  log_level: warn
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+    relabel_configs:
+      # container name (strip the leading "/").
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+      # compose service name when present.
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+      # Static label to find everything under the stack quickly.
+      - replacement: codestar
+        target_label: stack

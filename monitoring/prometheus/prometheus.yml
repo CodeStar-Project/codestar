@@ -1,0 +1,33 @@
+# Prometheus scrape configuration.
+# Targets are reached by their Docker container names over codestar-net.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus itself.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Spring Boot backend — Micrometer exposes Prometheus format here.
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["codestar-backend:8080"]
+
+  # VPS host metrics (CPU / RAM / disk / network).
+  - job_name: node
+    static_configs:
+      - targets: ["codestar-node-exporter:9100"]
+
+  # Per-container metrics.
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["codestar-cadvisor:8080"]
+
+  # Caddy metrics — the admin API is exposed on 2019 via the Caddyfile global block.
+  - job_name: caddy
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["codestar-caddy:2019"]
