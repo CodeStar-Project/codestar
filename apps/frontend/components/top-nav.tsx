@@ -70,6 +70,14 @@ export async function TopNav() {
                 {isAdmin(me.role) ? t("admin") : t("teach")}
               </Link>
             )}
+            {isStaff(me.role) && (
+              <Link
+                href="/admin/groups"
+                className="rounded-full px-3 py-1.5 text-[0.88rem] text-text-soft hover:bg-[color:var(--glass-bg)] hover:text-text"
+              >
+                {t("groups")}
+              </Link>
+            )}
           </nav>
         )}
 
