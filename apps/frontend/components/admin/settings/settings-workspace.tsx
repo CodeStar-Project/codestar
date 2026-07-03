@@ -349,10 +349,10 @@ export function SettingsWorkspace({
 
       {/* ── Content ── */}
       <div className="min-w-0">
-        {/* Save bar */}
+        {/* Save bar — opaque backing so scrolled content never shows through. */}
         <div
           className={cn(
-            "sticky top-20 z-20 mb-5 transition-all duration-200",
+            "sticky top-20 z-30 mb-5 rounded-[var(--r-lg)] bg-bg-base shadow-xl transition-all duration-200",
             dirty || saved || error
               ? "opacity-100"
               : "pointer-events-none h-0 overflow-hidden opacity-0"

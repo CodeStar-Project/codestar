@@ -11,7 +11,7 @@ import { getTranslations } from "next-intl/server";
 
 import { getMe } from "@/app/actions/auth";
 import { getInstanceBranding } from "@/app/actions/instance";
-import { BrandMark, type LogoPreset } from "@/components/brand-mark";
+import { BrandMark } from "@/components/brand-mark";
 import { UserMenu } from "@/components/user-menu";
 import { GlassButton } from "@/components/ui/glass-button";
 import { GlassNav, GlassNavInner } from "@/components/ui/glass-nav";
@@ -25,8 +25,6 @@ export async function TopNav() {
     getMe(),
   ]);
 
-  const preset = branding.logo.value as LogoPreset;
-
   return (
     <GlassNav>
       <GlassNavInner>
@@ -35,7 +33,7 @@ export async function TopNav() {
           className="inline-flex items-center gap-2.5 rounded-full"
           aria-label={t("homeAria", { name: branding.name })}
         >
-          <BrandMark size={28} preset={preset} accent={branding.accent} />
+          <BrandMark size={28} logo={branding.logo} accent={branding.accent} />
           <span className="font-semibold text-text">{branding.name}</span>
         </Link>
 
