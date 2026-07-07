@@ -8,7 +8,8 @@
     "catalog": "Catalog",
     "myCourses": "My courses",
     "teach": "Teach",
-    "admin": "Admin"
+    "admin": "Admin",
+    "groups": "Groups"
   },
   "footer": {
     "rights": "© {year} · All rights reserved",
@@ -294,13 +295,150 @@
   "adminSettings": {
     "kicker": "ADMIN · SETTINGS",
     "title": "Settings",
-    "description": "Instance settings, editable by administrators.",
+    "description": "Branding, theme and instance settings, editable by administrators.",
     "courseBuilderSection": "Course Builder",
     "maxBlocksLabel": "Max blocks per page",
     "maxBlocksHelper": "Between {min} and {max}. Caps how many blocks a course page may hold.",
     "maxBlocksRange": "Value must be an integer between {min} and {max}.",
     "save": "Save",
-    "saved": "✓ Saved"
+    "saved": "Changes saved",
+    "saving": "Saving…",
+    "discard": "Discard",
+    "unsaved": "Unsaved changes",
+    "resetSection": "Reset section",
+    "nav": {
+      "identity": "Identity",
+      "theme": "Theme",
+      "hero": "Home & SEO",
+      "access": "Access",
+      "media": "Media",
+      "ai": "AI"
+    },
+    "sectionDescription": {
+      "identity": "Instance name, logo, accent color and font.",
+      "theme": "Color palette for light and dark modes.",
+      "hero": "Landing page copy and SEO metadata.",
+      "access": "Platform access and signup rules.",
+      "media": "Storage quotas for uploaded files.",
+      "ai": "AI provider connection for course generation."
+    },
+    "preview": {
+      "title": "Live preview",
+      "themeSwitch": "Preview mode",
+      "light": "Light",
+      "dark": "Dark",
+      "heroFallback": "Learn, build, share.",
+      "ctaFallback": "Get started"
+    },
+    "identity": {
+      "name": "Instance name",
+      "tagline": "Tagline",
+      "logo": "Logo",
+      "logoHelper": "Mark shown next to the name.",
+      "logoPreset": {
+        "star": "Star",
+        "alpha": "Alpha",
+        "flame": "Flame",
+        "hash": "Hash"
+      },
+      "locale": "Default language",
+      "localeOption": {
+        "en": "English",
+        "fr": "French"
+      },
+      "accent": "Accent color",
+      "accentHelper": "Primary color for buttons and links.",
+      "font": "Font",
+      "fontHelper": "Font pairing (headings · body).",
+      "logoMode": {
+        "preset": "Preset",
+        "image": "Image"
+      },
+      "logoUpload": "Upload an image",
+      "logoReplace": "Replace image",
+      "uploadError": "Upload failed"
+    },
+    "theme": {
+      "modeSwitch": "Edited mode",
+      "light": "Light",
+      "dark": "Dark",
+      "reset": "Reset",
+      "group": {
+        "backgrounds": "Backgrounds",
+        "text": "Text",
+        "status": "Status"
+      },
+      "token": {
+        "bgBase": "Base background",
+        "bgMesh1": "Glow 1",
+        "bgMesh2": "Glow 2",
+        "bgMesh3": "Glow 3",
+        "text": "Text",
+        "textSoft": "Soft text",
+        "muted": "Muted text",
+        "success": "Success",
+        "warning": "Warning",
+        "danger": "Danger",
+        "green": "Green",
+        "tip": "Tip"
+      },
+      "tokenDesc": {
+        "bgBase": "Main page background color.",
+        "bgMesh1": "Background gradient glow.",
+        "bgMesh2": "Second gradient glow.",
+        "bgMesh3": "Third gradient glow.",
+        "text": "Primary text color.",
+        "textSoft": "Secondary, lower-contrast text.",
+        "muted": "Subtle text (captions, hints).",
+        "success": "Success messages and confirmations.",
+        "warning": "Warnings and light alerts.",
+        "danger": "Errors and destructive actions.",
+        "green": "Green accent (progress, achievements).",
+        "tip": "Tips and info callouts."
+      }
+    },
+    "hero": {
+      "heroGroup": "Landing page",
+      "heroTitle": "Hero title",
+      "heroTitleHelper": "Leave empty to use the default text.",
+      "heroSubtitle": "Subtitle",
+      "heroCta": "Call to action",
+      "seoGroup": "Search (SEO)",
+      "metaTitle": "Page title",
+      "metaTitleHelper": "Ideally under 60 characters.",
+      "metaDescription": "Meta description",
+      "metaDescriptionHelper": "Ideally under 160 characters.",
+      "favicon": "Favicon",
+      "faviconHelper": "URL of the icon shown in the browser tab.",
+      "faviconUpload": "Upload an image",
+      "uploadError": "Upload failed"
+    },
+    "access": {
+      "signupOpen": "Open signups",
+      "signupOpenHelper": "Allow new users to create an account.",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "media": {
+      "userQuota": "Per-user quota",
+      "userQuotaHelper": "Maximum storage per user.",
+      "instanceQuota": "Instance quota",
+      "instanceQuotaHelper": "Maximum total storage for the instance."
+    },
+    "ai": {
+      "apiUrl": "API URL",
+      "model": "Model",
+      "apiKey": "API key",
+      "apiKeyHelper": "Leave empty to keep the existing key.",
+      "keyConfigured": "Configured",
+      "keyMissing": "No key",
+      "keyPlaceholder": "Paste your API key",
+      "keyPlaceholderSet": "•••••••••• (replace)",
+      "temperature": "Temperature",
+      "temperatureHelper": "Response creativity (0 = strict, 2 = creative).",
+      "maxTokens": "Max tokens",
+      "maxTokensHelper": "Maximum length of generated responses."
+    }
   },
   "adminAi": {
     "breadcrumbAdmin": "Admin",
@@ -440,13 +578,14 @@
     "ctaReview": "Review"
   },
   "bookmarks": {
-    "title": "My bookmarks",
-    "kicker": "Bookmarks",
-    "description": "All your bookmarks, grouped by course.",
-    "empty": "No bookmark yet. Tap the bookmark icon while reading a course.",
+    "title": "My saved courses",
+    "kicker": "Saved course",
+    "description": "The courses you saved to find them again later.",
+    "empty": "No saved course yet. Open a course and click \"Save course\".",
     "viewBlock": "Open in course",
     "remove": "Remove",
-    "bookmarksCount": "{count, plural, one {# bookmark} other {# bookmarks}}"
+    "bookmarksCount": "{count, plural, one {# bookmark} other {# bookmarks}}",
+    "open": "Open course"
   },
   "dash": {
     "title": "My progress",
@@ -622,6 +761,52 @@
       "save": "Save",
       "cancel": "Cancel",
       "saved": "Saved"
+    },
+    "groups": {
+      "kicker": "Group management",
+      "title": "Groups",
+      "description": "Create and manage your classes. Add students via invitation codes.",
+      "newGroup": "Create a group",
+      "empty": "No groups yet.",
+      "members": "Members",
+      "curriculum": "Courses",
+      "invitations": "Invitations",
+      "deleteConfirm": "Permanently delete this group?",
+      "deleteBtn": "Delete",
+      "deleteError": "Failed to delete the group.",
+      "dateSince": "Since {date}",
+      "dateUntil": "Until {date}",
+      "form": {
+        "title": "Create a group",
+        "name": "Group name",
+        "namePlaceholder": "e.g. Year 9 class",
+        "slug": "Identifier (slug)",
+        "slugPlaceholder": "e.g. year-9-class",
+        "slugHelper": "Leave blank to auto-generate",
+        "startsAt": "Start date",
+        "endsAt": "End date",
+        "create": "Create",
+        "cancel": "Cancel",
+        "error": "Something went wrong."
+      },
+      "hub": {
+        "kicker": "Group · {name}",
+        "membersDesc": "Manage members and their roles in this group",
+        "curriculumDesc": "Assign courses accessible to this group",
+        "invitationsTitle": "Invitation codes",
+        "invitationsDesc": "Generate codes so users can join this group",
+        "newInvitation": "Generate a code",
+        "invitationFormMaxUses": "Max uses",
+        "invitationFormExpiresAt": "Expiry date (optional)",
+        "invitationFormCreate": "Generate",
+        "code": "Code",
+        "uses": "{used}/{max} uses",
+        "expires": "Expires {date}",
+        "noExpiry": "No expiry",
+        "noInvitations": "No active codes.",
+        "copyCode": "Copy",
+        "createError": "Failed to create the code."
+      }
     }
   }
 }

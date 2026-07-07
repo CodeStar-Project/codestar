@@ -1,6 +1,6 @@
 /**
  * Logo / mark de l'instance — étoile par défaut.
- * Le preset et l'accent peuvent être surchargés via `instance.json`.
+ * Le logo (preset ou image téléversée) et l'accent proviennent du branding (Settings).
  */
 
 import * as React from "react";
@@ -12,6 +12,9 @@ export type LogoPreset = "star" | "alpha" | "flame" | "hash";
 interface BrandMarkProps {
   size?: number;
   accent?: string;
+  /** Full logo descriptor; when kind !== "preset", `value` is an image URL. */
+  logo?: { kind: string; value: string };
+  /** Legacy: preset name when no `logo` object is provided. */
   preset?: LogoPreset;
   className?: string;
 }
@@ -26,11 +29,39 @@ const PRESET_GLYPH: Record<LogoPreset, string | null> = {
 export function BrandMark({
   size = 28,
   accent = DEFAULT_INSTANCE.accent,
-  preset = DEFAULT_INSTANCE.logo.value as LogoPreset,
+  logo,
+  preset,
   className,
 }: BrandMarkProps) {
-  const glyph = PRESET_GLYPH[preset];
-  const gradientID = "mark-" + String(accent).replace(/[^a-zA-Z0-9_-]/g, "")
+  // Uploaded / URL logo wins over presets.
+  const imageSrc =
+    logo && logo.kind !== "preset" && logo.value ? logo.value : null;
+
+  if (imageSrc) {
+    return (
+      <img
+        src={imageSrc}
+        alt=""
+        width={size}
+        height={size}
+        className={className}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.3,
+          objectFit: "contain",
+        }}
+      />
+    );
+  }
+
+  const presetName: LogoPreset =
+    (logo?.kind === "preset" ? (logo.value as LogoPreset) : undefined) ??
+    preset ??
+    (DEFAULT_INSTANCE.logo.value as LogoPreset);
+
+  const glyph = PRESET_GLYPH[presetName];
+  const gradientID = "mark-" + String(accent).replace(/[^a-zA-Z0-9_-]/g, "");
 
   if (glyph) {
     return (

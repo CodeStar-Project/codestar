@@ -8,7 +8,28 @@ import { getInstanceBranding } from "@/app/actions/instance";
 import { AuthProvider } from "@/components/auth-provider";
 import { BrandingProvider } from "@/components/branding-provider";
 import { MeshBackground } from "@/components/ui/mesh-background";
+import { themeTokensToVars } from "@/lib/branding-css";
 import { SITE_URL } from "@/lib/site";
+import type { InstanceBranding } from "@/lib/types";
+
+/**
+ * Branding color tokens injected in <head> so saved branding overrides the
+ * globals.css defaults. `html[data-theme]` selectors win over `:root`, and the
+ * light/dark split keeps both modes correct.
+ */
+function brandingStyle(branding: InstanceBranding): string {
+  const vars = (o: Record<string, string>) =>
+    Object.entries(o)
+      .map(([k, v]) => `${k}:${v};`)
+      .join("");
+  const soft = (pct: string) =>
+    `color-mix(in srgb, ${branding.accent} ${pct}, transparent)`;
+  return [
+    `html[data-theme]{--color-accent-raw:${branding.accent};}`,
+    `html[data-theme="light"]{${vars(themeTokensToVars(branding.theme.light))}--color-accent-soft-raw:${soft("16%")};}`,
+    `html[data-theme="dark"]{${vars(themeTokensToVars(branding.theme.dark))}--color-accent-soft-raw:${soft("24%")};}`,
+  ].join("");
+}
 
 import "./globals.css";
 
@@ -27,7 +48,7 @@ const instrumentSerif = Instrument_Serif({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "Codestar — Open-source e-learning, hosted by you",
@@ -76,6 +97,15 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.ico" },
 };
 
+// Favicon (and title) follow the saved branding.
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getInstanceBranding();
+  return {
+    ...baseMetadata,
+    icons: { icon: branding.favicon ?? "/favicon.ico" },
+  };
+}
+
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f6fb" },
@@ -112,13 +142,12 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      data-theme="light"
       className={`${outfit.variable} ${instrumentSerif.variable} h-full antialiased`}
-      style={
-        {
-          "--color-accent-raw": branding.accent,
-        } as React.CSSProperties
-      }
     >
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: brandingStyle(branding) }} />
+      </head>
       <body className="min-h-full flex flex-col bg-bg-base text-text font-sans">
         <script
           type="application/ld+json"

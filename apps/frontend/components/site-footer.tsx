@@ -22,7 +22,7 @@ export async function SiteFooter() {
     <footer className="relative mt-32 border-t border-[color:var(--glass-border)]">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 md:flex-row md:items-center md:justify-between md:px-8">
         <div className="flex items-center gap-3">
-          <BrandMark size={26} preset={branding.logo.value as "star" | "alpha" | "flame" | "hash"} accent={branding.accent} />
+          <BrandMark size={26} logo={branding.logo} accent={branding.accent} />
           <div className="flex flex-col">
             <span className="font-semibold text-text">{branding.name}</span>
             <span className="text-[0.78rem] text-muted">

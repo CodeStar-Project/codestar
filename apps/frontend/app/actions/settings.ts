@@ -1,11 +1,11 @@
 "use server";
 
 /**
- * Instance settings
+ * Platform settings — backed by GET/PATCH /api/v1/settings (Admin+).
  */
 
 import { ApiError, apiFetch } from "@/lib/api";
-import type { InstanceSettings } from "@/lib/types";
+import type { InstanceSettings, UpdateSettingsPayload } from "@/lib/types";
 
 export async function getSettings(): Promise<InstanceSettings | null> {
   try {
@@ -16,9 +16,9 @@ export async function getSettings(): Promise<InstanceSettings | null> {
   }
 }
 
-export async function updateSettings(payload: {
-  maxBlocksPerPage: number;
-}): Promise<{ ok: boolean; error?: string; data?: InstanceSettings }> {
+export async function updateSettings(
+  payload: UpdateSettingsPayload
+): Promise<{ ok: boolean; error?: string; data?: InstanceSettings }> {
   try {
     const data = await apiFetch<InstanceSettings>("/api/v1/settings", {
       method: "PATCH",
