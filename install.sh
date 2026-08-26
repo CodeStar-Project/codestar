@@ -90,7 +90,15 @@ wait_healthy() {
 log "Checking Docker…"
 if ! command -v docker >/dev/null 2>&1; then
   log "Docker not found — installing via get.docker.com"
-  curl -fsSL https://get.docker.com | $SUDO sh
+  # Ne pas piper du code distant dans un shell root : telecharger, verifier
+  # que c'est bien un script, puis executer depuis un fichier inspectable.
+  DOCKER_SETUP="$(mktemp)"
+  curl -fsSL https://get.docker.com -o "$DOCKER_SETUP"
+  head -1 "$DOCKER_SETUP" | grep -qE '^#!/bin/(sh|bash)' || {
+    err "Unexpected content from get.docker.com - aborting."; rm -f "$DOCKER_SETUP"; exit 1
+  }
+  $SUDO sh "$DOCKER_SETUP"
+  rm -f "$DOCKER_SETUP"
   ok "Docker installed"
 else
   ok "Docker present: $(docker --version)"
