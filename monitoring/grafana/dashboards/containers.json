@@ -23,7 +23,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "targets": [
-        { "refId": "A", "expr": "sum by (name) (container_memory_usage_bytes{name=~\"codestar-.+\"})", "legendFormat": "{{name}}" }
+        { "refId": "A", "expr": "sum by (name) (container_memory_working_set_bytes{name=~\"codestar-.+\"})", "legendFormat": "{{name}}" }
       ]
     },
     {
