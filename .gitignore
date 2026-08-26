@@ -85,3 +85,5 @@ temp/
 
 # have to be delete
 codestar-draft-design/
+# Verrou du script de mise a jour (voir update.sh)
+.update.lock

@@ -34,14 +34,16 @@ for arg in "$@"; do
 done
 
 # ── logging ──────────────────────────────────────────────────
+# Toute la journalisation part sur stderr : stdout reste reserve aux valeurs
+# de retour des fonctions (cf. BACKUP_FILE="$(backup_db)").
 c_blue=$'\033[1;34m'; c_green=$'\033[1;32m'; c_yellow=$'\033[1;33m'; c_red=$'\033[1;31m'; c_reset=$'\033[0m'
-log()  { printf '%s==>%s %s\n' "$c_blue"   "$c_reset" "$*"; }
-ok()   { printf '%s✓%s %s\n'   "$c_green"  "$c_reset" "$*"; }
-warn() { printf '%s!%s %s\n'   "$c_yellow" "$c_reset" "$*"; }
+log()  { printf '%s==>%s %s\n' "$c_blue"   "$c_reset" "$*" >&2; }
+ok()   { printf '%s✓%s %s\n'   "$c_green"  "$c_reset" "$*" >&2; }
+warn() { printf '%s!%s %s\n'   "$c_yellow" "$c_reset" "$*" >&2; }
 err()  { printf '%s✗%s %s\n'   "$c_red"    "$c_reset" "$*" >&2; }
 
 # ── single-instance lock (avoid concurrent updates) ──────────
-exec 9>/tmp/codestar-update.lock
+exec 9>.update.lock
 if ! flock -n 9; then err "Another update is already running."; exit 1; fi
 
 # ── prerequisites ────────────────────────────────────────────
@@ -87,7 +89,10 @@ restore_db() {
   local f="$1"
   [ -n "$f" ] && [ -f "$f" ] || { warn "No backup to restore."; return 1; }
   log "Restoring database from $f"
-  gunzip -c "$f" | docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" >/dev/null
+  gunzip -c "$f" | docker exec -i "$DB_CONTAINER" psql -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" >/dev/null || {
+    err "Database restore FAILED from $f - the database is in an unknown state."
+    return 1
+  }
   ok "Database restored"
 }
 
@@ -129,9 +134,25 @@ if wait_healthy codestar-backend 60; then
 fi
 
 err "Backend unhealthy after update. Rolling back to $(git rev-parse --short "$OLD_COMMIT")…"
+# La base est restauree backend arrete : le redemarrer avant la restauration
+# le ferait tourner sur un schema partiellement restaure.
+$COMPOSE stop backend >/dev/null 2>&1 || true
+
+RESTORE_FAILED=0
+if [ -n "$BACKUP_FILE" ]; then
+  restore_db "$BACKUP_FILE" || RESTORE_FAILED=1
+else
+  warn "No DB restore: the backup was skipped (--no-backup)."
+fi
+
 git reset --hard "$OLD_COMMIT"
 $COMPOSE up --build -d
-[ -n "$BACKUP_FILE" ] && restore_db "$BACKUP_FILE" || warn "No DB restore (backup was skipped)."
+
+if [ "$RESTORE_FAILED" -eq 1 ]; then
+  err "Code rolled back, but the DATABASE RESTORE FAILED. Restore manually from: $BACKUP_FILE"
+  exit 1
+fi
+
 if wait_healthy codestar-backend 60; then
   warn "Rolled back successfully. The update was NOT applied."
 else
