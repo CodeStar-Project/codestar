@@ -77,7 +77,7 @@ rand_hex() { openssl rand -hex "$1"; }
 wait_healthy() {
   local name="$1" tries="${2:-60}" status
   for _ in $(seq 1 "$tries"); do
-    status="$(docker inspect -f '{{.State.Health.Status}}' "$name" 2>/dev/null || echo missing)"
+    status="$($SUDO docker inspect -f '{{.State.Health.Status}}' "$name" 2>/dev/null || echo missing)"
     [ "$status" = "healthy" ] && return 0
     [ "$status" = "missing" ] && { sleep 5; continue; }
     printf '   backend health: %s\n' "$status"
@@ -104,12 +104,16 @@ log "Hardening host (ufw + fail2ban)…"
 if command -v apt-get >/dev/null 2>&1; then
   $SUDO apt-get update -qq
   $SUDO apt-get install -y -qq ufw fail2ban openssl >/dev/null
-  $SUDO ufw allow 22/tcp   >/dev/null 2>&1 || true
+  # Port SSH reel : ouvrir 22 en dur enfermerait dehors un admin sur port non standard
+  SSH_PORT="$($SUDO sshd -T 2>/dev/null | awk '/^port /{print $2; exit}')"
+  [ -n "${SSH_PORT:-}" ] || SSH_PORT=22
+  $SUDO ufw allow "${SSH_PORT}/tcp" >/dev/null 2>&1 || true
   $SUDO ufw allow 80/tcp   >/dev/null 2>&1 || true
   $SUDO ufw allow 443/tcp  >/dev/null 2>&1 || true
+  $SUDO ufw allow 443/udp  >/dev/null 2>&1 || true   # HTTP/3 (QUIC) servi par Caddy
   $SUDO ufw --force enable >/dev/null 2>&1 || true
   $SUDO systemctl enable --now fail2ban >/dev/null 2>&1 || true
-  ok "Firewall (22/80/443) + fail2ban active"
+  ok "Firewall (${SSH_PORT}/80/443 tcp + 443 udp) + fail2ban active"
 else
   warn "Non-apt system: skipping ufw/fail2ban (configure your firewall manually)."
 fi
@@ -163,7 +167,7 @@ cat <<EOF
 ${c_green}────────────────────────────────────────────────${c_reset}
 ${c_green} Codestar is deploying.${c_reset}
    URL:      https://${DOMAIN}
-   Admin:    ${CODESTAR_BOOTSTRAP_SUPER_ADMIN_EMAIL:-<from .env>}
+   Admin:    ${ADMIN_EMAIL:-<from .env>}
 
  First-time HTTPS note:
    Caddy fetches a Let's Encrypt certificate on first request.
