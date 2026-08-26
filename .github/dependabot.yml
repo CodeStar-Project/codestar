@@ -1,0 +1,49 @@
+version: 2
+
+updates:
+  # ── Backend (Maven) ──────────────────────────────────────
+  - package-ecosystem: maven
+    directory: /apps/backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, backend]
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+
+  # ── Frontend (npm/pnpm) ──────────────────────────────────
+  - package-ecosystem: npm
+    directory: /apps/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    groups:
+      frontend-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Next.js is an internal fork — never auto-bump (see apps/frontend/AGENTS.md)
+      - dependency-name: next
+
+  # ── Docker base images ───────────────────────────────────
+  - package-ecosystem: docker
+    directory: /apps/backend
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+  - package-ecosystem: docker
+    directory: /apps/frontend
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+
+  # ── GitHub Actions ───────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, github-actions]
+    groups:
+      actions:
+        update-types: [minor, patch]

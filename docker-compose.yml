@@ -48,7 +48,9 @@ services:
       # uploaded course images (persisted across restarts)
       - media_data:/app/media
     ports:
-      - "${BACKEND_PORT:-8080}:8080"
+      # Bound to loopback only: never public. In prod, Caddy reaches the
+      # backend indirectly via the frontend over the internal network.
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
       interval: 10s
@@ -77,7 +79,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SITE_URL: ${SITE_URL:-http://localhost:3000}
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      # Bound to loopback only: never public. Caddy (prod overlay) proxies
+      # to this service over the internal "codestar-net" network.
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     networks:
       - codestar-net
 
