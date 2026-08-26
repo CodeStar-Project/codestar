@@ -208,7 +208,7 @@ jobs:
   # Single required status check for branch protection.
   ci-required:
     name: CI required
-    needs: [frontend, backend, governance, secrets, docker]
+    needs: [frontend, backend, governance, secrets, docker, dependency-review]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -224,7 +224,7 @@ jobs:
   # Discord notification. No-ops when DISCORD_WEBHOOK_URL is unset (fork-safe).
   notify:
     name: Discord notification
-    needs: [frontend, backend, governance, secrets, docker]
+    needs: [frontend, backend, governance, secrets, docker, dependency-review]
     if: always()
     runs-on: ubuntu-latest
     steps:
