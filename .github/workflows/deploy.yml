@@ -1,0 +1,61 @@
+name: Deploy
+
+# Continuous deployment over SSH (build-on-VPS model): connect to the
+# server and run ./update.sh, which pulls, rebuilds, health-checks and
+# rolls back on failure.
+#
+# GUARDED: each job runs only if its host secret is set, so a fork without
+# deployment secrets simply skips this workflow (no red runs).
+#
+# Required secrets (per environment):
+#   prod    : SSH_HOST,         SSH_USER, SSH_KEY  (+ optional SSH_PORT, SSH_PATH)
+#   staging : SSH_HOST_STAGING, SSH_USER, SSH_KEY  (+ optional SSH_PORT, SSH_PATH)
+# SSH_PATH defaults to ~/codestar.
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false   # never interrupt a deployment mid-flight
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-prod:
+    name: Deploy → production
+    if: github.ref == 'refs/heads/main' && vars.HAS_PROD == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: Run remote update
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SSH_PATH || '~/codestar' }}
+            ./update.sh --yes
+
+  deploy-staging:
+    name: Deploy → staging
+    if: github.ref == 'refs/heads/dev' && vars.HAS_STAGING == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 30
+    steps:
+      - name: Run remote update
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST_STAGING }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SSH_PATH || '~/codestar' }}
+            ./update.sh --yes

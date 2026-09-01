@@ -1,5 +1,7 @@
 "use server";
 
+// Server actions for groups: CRUD, members, curriculum, invitations, stats.
+
 import { ApiError, apiFetch, apiFetchText } from "@/lib/api";
 import type { CourseSummary, GroupResponse, GroupSummary } from "@/lib/types";
 
@@ -113,7 +115,61 @@ export interface Invitation {
 
 export async function getInvitations(groupId: string, includeRevoked = false): Promise<Invitation[]> {
   const qs = includeRevoked ? "?includeRevoked=true" : "";
-  return (
-    (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? []
-  );
+  try {
+    return (await apiFetch<Invitation[]>(`/api/v1/groups/${groupId}/invitations${qs}`)) ?? [];
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 403 || e.status === 404)) return [];
+    throw e;
+  }
+}
+
+export async function createGroup(payload: {
+  name: string;
+  slug?: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+}): Promise<{ ok: boolean; error?: string; group?: GroupResponse }> {
+  try {
+    const g = await apiFetch<GroupResponse>("/api/v1/groups", {
+      method: "POST",
+      body: payload,
+    });
+    return { ok: true, group: g ?? undefined };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
+  }
+}
+
+export async function updateGroup(
+  id: string,
+  payload: { name?: string; startsAt?: string | null; endsAt?: string | null }
+): Promise<{ ok: boolean; error?: string; group?: GroupResponse }> {
+  try {
+    const g = await apiFetch<GroupResponse>(`/api/v1/groups/${id}`, {
+      method: "PATCH",
+      body: payload,
+    });
+    return { ok: true, group: g ?? undefined };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
+  }
+}
+
+export async function createInvitation(
+  groupId: string,
+  maxUses: number,
+  expiresAt?: string
+): Promise<{ ok: boolean; error?: string; invitation?: Invitation }> {
+  try {
+    const inv = await apiFetch<Invitation>(
+      `/api/v1/groups/${groupId}/invitations`,
+      {
+        method: "POST",
+        body: { maxUses, ...(expiresAt ? { expiresAt } : {}) },
+      }
+    );
+    return { ok: true, invitation: inv ?? undefined };
+  } catch (e) {
+    return { ok: false, error: e instanceof ApiError ? e.message : undefined };
+  }
 }

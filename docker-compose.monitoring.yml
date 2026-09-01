@@ -1,0 +1,125 @@
+# ─────────────────────────────────────────────────────────────
+# Monitoring overlay — Prometheus + Grafana + Loki stack.
+#
+# Usage (always combined with the base, prod optional):
+#   docker compose \
+#     -f docker-compose.yml \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.monitoring.yml up -d
+#
+# The app runs perfectly WITHOUT this file — monitoring is opt-in.
+#
+# Security model (same as the rest of the stack):
+#   • No service is published to the Internet.
+#   • Grafana is bound to 127.0.0.1 only → reach it through an SSH tunnel:
+#       ssh -L 3000:localhost:3001 user@vps   # then open http://localhost:3000
+#   • All collectors live on the internal "codestar-net" network and scrape
+#     the app containers by their service/container names.
+# ─────────────────────────────────────────────────────────────
+services:
+
+  # ── Metrics store ──────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: codestar-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"   # retention decided: 15 days
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - codestar-net
+
+  # ── Logs store ─────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.1.0
+    container_name: codestar-loki
+    restart: unless-stopped
+    command: "-config.file=/etc/loki/loki-config.yml"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    networks:
+      - codestar-net
+
+  # ── Log collector (containers' stdout → Loki) ──────────────
+  promtail:
+    image: grafana/promtail:3.1.0
+    container_name: codestar-promtail
+    restart: unless-stopped
+    depends_on:
+      - loki
+    command: "-config.file=/etc/promtail/promtail-config.yml"
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      # Container logs + Docker socket for service discovery & labels.
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_positions:/tmp
+    networks:
+      - codestar-net
+
+  # ── Host metrics (CPU / RAM / disk of the VPS) ─────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: codestar-node-exporter
+    restart: unless-stopped
+    command:
+      - "--path.rootfs=/host"
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - codestar-net
+
+  # ── Per-container metrics (CPU / RAM / net per service) ────
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: codestar-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - codestar-net
+
+  # ── Dashboards (SSH-tunnel access only) ────────────────────
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: codestar-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+      # Never exposed publicly → sign-up off, anonymous off.
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      # Loopback only. Tunnel in: ssh -L 3000:localhost:3001 user@vps
+      # (host port 3001 because the frontend already owns 3000).
+      - "127.0.0.1:3001:3000"
+    networks:
+      - codestar-net
+
+volumes:
+  prometheus_data:
+  loki_data:
+  grafana_data:
+  promtail_positions:

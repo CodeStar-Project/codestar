@@ -1,5 +1,10 @@
 # Codestar
 
+[![CI](https://github.com/CodeStar-Project/codestar/actions/workflows/ci.yml/badge.svg)](https://github.com/CodeStar-Project/codestar/actions/workflows/ci.yml)
+[![Security](https://github.com/CodeStar-Project/codestar/actions/workflows/security.yml/badge.svg)](https://github.com/CodeStar-Project/codestar/actions/workflows/security.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/CodeStar-Project/codestar/badge)](https://scorecard.dev/viewer/?uri=github.com/CodeStar-Project/codestar)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
+
 Open-source &amp; self-hosted e-learning platform template to build yours easly.
 
 ## Backend 
@@ -76,3 +81,31 @@ Or with frontend hot-reload via Docker:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
+
+## Monitoring (optional)
+
+An overlay adds Prometheus, Grafana, Loki, Promtail, node-exporter and cAdvisor.
+Every container stays on the internal network — no public port is opened.
+
+**1. Generate the Grafana admin password (one-time, on the host)**
+
+```bash
+echo "GRAFANA_ADMIN_PASSWORD=$(openssl rand -base64 24)" >> .env
+```
+
+**2. Start the stack**
+
+```bash
+make monitoring
+# equivalent to:
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.monitoring.yml up -d
+```
+
+**3. Reach Grafana through an SSH tunnel** (it is never exposed publicly)
+
+```bash
+ssh -L 3000:localhost:3001 user@vps   # then open http://localhost:3000
+```
+
+Log in with `admin` and the password you generated. Dashboards are provisioned
+automatically: Spring/JVM, VPS system, containers, and Loki logs.

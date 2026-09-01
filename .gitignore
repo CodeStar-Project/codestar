@@ -6,6 +6,13 @@
 *.key
 *.crt
 
+# Per-instance branding/config (never committed — survives git pull)
+/config/*
+!/config/.gitkeep
+
+# Database backups produced by update.sh (stay on the host only)
+/backups/
+
 # OS
 .DS_Store
 .AppleDouble
@@ -78,3 +85,5 @@ temp/
 
 # have to be delete
 codestar-draft-design/
+# Verrou du script de mise a jour (voir update.sh)
+.update.lock

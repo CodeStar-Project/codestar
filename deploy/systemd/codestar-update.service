@@ -1,0 +1,22 @@
+# Codestar — auto-update unit (oneshot, triggered by codestar-update.timer).
+#
+# Install (edit User and the repo path to match your setup):
+#   sudo cp deploy/systemd/codestar-update.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now codestar-update.timer
+#
+# Inspect:
+#   systemctl list-timers codestar-update.timer
+#   journalctl -u codestar-update.service -f
+[Unit]
+Description=Codestar instance auto-update
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=ray
+WorkingDirectory=/home/ray/codestar
+ExecStart=/home/ray/codestar/update.sh --yes
+# Don't let a deploy hang forever.
+TimeoutStartSec=1800

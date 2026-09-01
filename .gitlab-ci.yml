@@ -1,0 +1,70 @@
+# GitLab CI mirror of .github/workflows/ci.yml.
+# Same logic, driven by the shared scripts in scripts/ci/ and the same
+# build commands, so a fork hosted on GitLab gets equivalent coverage.
+#
+# Native GitLab security templates provide SAST / secret detection /
+# dependency scanning (the GitLab equivalents of CodeQL / gitleaks / Trivy).
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+
+stages: [build, test, security]
+
+default:
+  interruptible: true
+
+# ── Frontend ─────────────────────────────────────────────────
+frontend:
+  stage: build
+  image: node:20-alpine
+  rules:
+    - changes: [apps/frontend/**/*]
+  cache:
+    key:
+      files: [apps/frontend/pnpm-lock.yaml]
+    paths: [apps/frontend/.pnpm-store]
+  before_script:
+    - corepack enable && corepack prepare pnpm@9.15.0 --activate
+    - cd apps/frontend
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm lint
+    - pnpm typecheck
+    - pnpm build
+
+# ── Backend ──────────────────────────────────────────────────
+backend:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  rules:
+    - changes: [apps/backend/**/*]
+  cache:
+    key: maven
+    paths: [.m2/repository]
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  script:
+    - cd apps/backend
+    - ./mvnw verify -B --no-transfer-progress
+  artifacts:
+    when: always
+    paths: [apps/backend/target/site/jacoco/]
+    expire_in: 7 days
+
+# ── Codestar governance guards ───────────────────────────────
+governance:
+  stage: test
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash git jq
+  script:
+    - |
+      if git diff --name-only "origin/$CI_DEFAULT_BRANCH"...HEAD -- apps/backend/src/main/resources/db/migration | grep -q .; then
+        BASE_REF="origin/$CI_DEFAULT_BRANCH" bash scripts/ci/flyway-governance.sh
+      fi
+    - |
+      if git diff --name-only "origin/$CI_DEFAULT_BRANCH"...HEAD -- apps/frontend/messages | grep -q .; then
+        bash scripts/ci/i18n-parity.sh
+      fi

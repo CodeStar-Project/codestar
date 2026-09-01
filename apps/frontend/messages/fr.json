@@ -8,7 +8,8 @@
     "catalog": "Catalogue",
     "myCourses": "Mes cours",
     "teach": "Enseigner",
-    "admin": "Admin"
+    "admin": "Admin",
+    "groups": "Groupes"
   },
   "footer": {
     "rights": "© {year} · Tous droits réservés",
@@ -294,13 +295,150 @@
   "adminSettings": {
     "kicker": "ADMIN · PARAMÈTRES",
     "title": "Paramètres",
-    "description": "Réglages de l'instance, modifiables par les administrateurs.",
+    "description": "Branding, thème et réglages de l'instance, modifiables par les administrateurs.",
     "courseBuilderSection": "Course Builder",
     "maxBlocksLabel": "Nombre max de blocs par page",
     "maxBlocksHelper": "Entre {min} et {max}. Limite le nombre de blocs autorisés par page de cours.",
     "maxBlocksRange": "La valeur doit être un entier entre {min} et {max}.",
     "save": "Enregistrer",
-    "saved": "✓ Enregistré"
+    "saved": "Modifications enregistrées",
+    "saving": "Enregistrement…",
+    "discard": "Annuler",
+    "unsaved": "Modifications non enregistrées",
+    "resetSection": "Réinitialiser la section",
+    "nav": {
+      "identity": "Identité",
+      "theme": "Thème",
+      "hero": "Accueil & SEO",
+      "access": "Accès",
+      "media": "Médias",
+      "ai": "IA"
+    },
+    "sectionDescription": {
+      "identity": "Nom, logo, couleur d'accent et police de l'instance.",
+      "theme": "Palette de couleurs pour les modes clair et sombre.",
+      "hero": "Texte de la page d'accueil et métadonnées de référencement.",
+      "access": "Règles d'accès et d'inscription à la plateforme.",
+      "media": "Quotas de stockage des fichiers téléversés.",
+      "ai": "Connexion au fournisseur d'IA pour la génération de cours."
+    },
+    "preview": {
+      "title": "Aperçu en direct",
+      "themeSwitch": "Mode d'aperçu",
+      "light": "Clair",
+      "dark": "Sombre",
+      "heroFallback": "Apprenez, créez, partagez.",
+      "ctaFallback": "Commencer"
+    },
+    "identity": {
+      "name": "Nom de l'instance",
+      "tagline": "Slogan",
+      "logo": "Logo",
+      "logoHelper": "Symbole affiché à côté du nom.",
+      "logoPreset": {
+        "star": "Étoile",
+        "alpha": "Alpha",
+        "flame": "Flamme",
+        "hash": "Dièse"
+      },
+      "locale": "Langue par défaut",
+      "localeOption": {
+        "en": "Anglais",
+        "fr": "Français"
+      },
+      "accent": "Couleur d'accent",
+      "accentHelper": "Couleur principale des boutons et liens.",
+      "font": "Police",
+      "fontHelper": "Paire de polices (titres · texte).",
+      "logoMode": {
+        "preset": "Preset",
+        "image": "Image"
+      },
+      "logoUpload": "Téléverser une image",
+      "logoReplace": "Remplacer l'image",
+      "uploadError": "Échec du téléversement"
+    },
+    "theme": {
+      "modeSwitch": "Mode édité",
+      "light": "Clair",
+      "dark": "Sombre",
+      "reset": "Réinitialiser",
+      "group": {
+        "backgrounds": "Arrière-plans",
+        "text": "Texte",
+        "status": "États"
+      },
+      "token": {
+        "bgBase": "Fond principal",
+        "bgMesh1": "Halo 1",
+        "bgMesh2": "Halo 2",
+        "bgMesh3": "Halo 3",
+        "text": "Texte",
+        "textSoft": "Texte adouci",
+        "muted": "Texte discret",
+        "success": "Succès",
+        "warning": "Avertissement",
+        "danger": "Danger",
+        "green": "Vert",
+        "tip": "Astuce"
+      },
+      "tokenDesc": {
+        "bgBase": "Couleur de fond principale des pages.",
+        "bgMesh1": "Halo de dégradé en arrière-plan.",
+        "bgMesh2": "Deuxième halo de dégradé.",
+        "bgMesh3": "Troisième halo de dégradé.",
+        "text": "Couleur du texte principal.",
+        "textSoft": "Texte secondaire, moins contrasté.",
+        "muted": "Texte discret (légendes, aides).",
+        "success": "Messages de succès et validations.",
+        "warning": "Avertissements et alertes légères.",
+        "danger": "Erreurs et actions destructrices.",
+        "green": "Accent vert (progression, réussite).",
+        "tip": "Astuces et encadrés d'information."
+      }
+    },
+    "hero": {
+      "heroGroup": "Page d'accueil",
+      "heroTitle": "Titre principal",
+      "heroTitleHelper": "Laissez vide pour utiliser le texte par défaut.",
+      "heroSubtitle": "Sous-titre",
+      "heroCta": "Bouton d'action",
+      "seoGroup": "Référencement (SEO)",
+      "metaTitle": "Titre de la page",
+      "metaTitleHelper": "Idéalement moins de 60 caractères.",
+      "metaDescription": "Méta-description",
+      "metaDescriptionHelper": "Idéalement moins de 160 caractères.",
+      "favicon": "Favicon",
+      "faviconHelper": "URL de l'icône affichée dans l'onglet du navigateur.",
+      "faviconUpload": "Téléverser une image",
+      "uploadError": "Échec du téléversement"
+    },
+    "access": {
+      "signupOpen": "Inscriptions ouvertes",
+      "signupOpenHelper": "Autoriser la création de compte par de nouveaux utilisateurs.",
+      "open": "Ouvertes",
+      "closed": "Fermées"
+    },
+    "media": {
+      "userQuota": "Quota par utilisateur",
+      "userQuotaHelper": "Stockage maximum par utilisateur.",
+      "instanceQuota": "Quota de l'instance",
+      "instanceQuotaHelper": "Stockage maximum cumulé pour l'instance."
+    },
+    "ai": {
+      "apiUrl": "URL de l'API",
+      "model": "Modèle",
+      "apiKey": "Clé API",
+      "apiKeyHelper": "Laissez vide pour conserver la clé existante.",
+      "keyConfigured": "Configurée",
+      "keyMissing": "Aucune clé",
+      "keyPlaceholder": "Collez votre clé API",
+      "keyPlaceholderSet": "•••••••••• (remplacer)",
+      "temperature": "Température",
+      "temperatureHelper": "Créativité des réponses (0 = strict, 2 = créatif).",
+      "maxTokens": "Tokens max",
+      "maxTokensHelper": "Longueur maximale des réponses générées."
+    }
   },
   "adminAi": {
     "breadcrumbAdmin": "Admin",
@@ -440,13 +578,14 @@
     "ctaReview": "Revoir"
   },
   "bookmarks": {
-    "title": "Mes favoris",
-    "kicker": "Favoris",
-    "description": "Tous vos marque-pages, groupés par cours.",
-    "empty": "Aucun favori pour l'instant. Cliquez sur l'icône favori dans le lecteur d'un cours.",
-    "viewBlock": "Voir dans le cours",
+    "title": "Mes cours enregistrés",
+    "kicker": "Cours enregistré",
+    "description": "Les cours que vous avez enregistrés pour les retrouver plus tard.",
+    "empty": "Aucun cours enregistré pour l'instant. Ouvrez un cours et cliquez sur « Enregistrer le cours ».",
+    "viewBlock": "Ouvrir dans le cours",
     "remove": "Retirer",
-    "bookmarksCount": "{count, plural, one {# favori} other {# favoris}}"
+    "bookmarksCount": "{count, plural, one {# cours enregistré} other {# cours enregistrés}}",
+    "open": "Ouvrir le cours"
   },
   "dash": {
     "title": "Mes progrès",
@@ -622,6 +761,52 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "saved": "Enregistré"
+    },
+    "groups": {
+      "kicker": "Gestion des groupes",
+      "title": "Groupes",
+      "description": "Créez et gérez vos classes. Ajoutez des élèves via des codes d'invitation.",
+      "newGroup": "Créer un groupe",
+      "empty": "Aucun groupe pour l'instant.",
+      "members": "Membres",
+      "curriculum": "Cours",
+      "invitations": "Invitations",
+      "deleteConfirm": "Supprimer ce groupe définitivement ?",
+      "deleteBtn": "Supprimer",
+      "deleteError": "Erreur lors de la suppression.",
+      "dateSince": "Depuis {date}",
+      "dateUntil": "Jusqu'au {date}",
+      "form": {
+        "title": "Créer un groupe",
+        "name": "Nom du groupe",
+        "namePlaceholder": "ex. Classe de 3ème",
+        "slug": "Identifiant (slug)",
+        "slugPlaceholder": "ex. classe-3eme",
+        "slugHelper": "Laissez vide pour générer automatiquement",
+        "startsAt": "Date de début",
+        "endsAt": "Date de fin",
+        "create": "Créer",
+        "cancel": "Annuler",
+        "error": "Une erreur est survenue."
+      },
+      "hub": {
+        "kicker": "Groupe · {name}",
+        "membersDesc": "Gérer les membres et leurs rôles dans ce groupe",
+        "curriculumDesc": "Assigner des cours accessibles à ce groupe",
+        "invitationsTitle": "Codes d'invitation",
+        "invitationsDesc": "Générez des codes pour inviter des utilisateurs à rejoindre ce groupe",
+        "newInvitation": "Générer un code",
+        "invitationFormMaxUses": "Utilisations maximum",
+        "invitationFormExpiresAt": "Date d'expiration (optionnel)",
+        "invitationFormCreate": "Générer",
+        "code": "Code",
+        "uses": "{used}/{max} utilisations",
+        "expires": "Expire le {date}",
+        "noExpiry": "Pas d'expiration",
+        "noInvitations": "Aucun code actif.",
+        "copyCode": "Copier",
+        "createError": "Erreur lors de la création."
+      }
     }
   }
 }

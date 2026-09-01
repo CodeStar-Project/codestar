@@ -162,8 +162,35 @@ export interface AiCourseDraft {
   pages: PageInput[];
 }
 
+/**
+ * Platform settings — mirrors backend SettingsDto (GET /api/v1/settings).
+ * The AI API key is never returned; `aiApiKeySet` only tells whether one is configured.
+ */
 export interface InstanceSettings {
-  maxBlocksPerPage: number;
+  signupOpen: boolean;
+  mediaUserQuotaMb: number;
+  mediaInstanceQuotaMb: number;
+  aiApiUrl: string;
+  aiModel: string;
+  aiMaxTokens: number;
+  aiTemperature: number;
+  aiApiKeySet: boolean;
+  /** Course builder: max blocks per page. */
+  maxBlocksPerPage?: number;
+}
+
+/** Partial patch payload for PATCH /api/v1/settings (only changed fields). */
+export interface UpdateSettingsPayload {
+  maxBlocksPerPage?: number;
+  signupOpen?: boolean;
+  mediaUserQuotaMb?: number;
+  mediaInstanceQuotaMb?: number;
+  aiApiUrl?: string;
+  /** Write-only: send to replace the stored key; never read back. */
+  aiApiKey?: string;
+  aiModel?: string;
+  aiMaxTokens?: number;
+  aiTemperature?: number;
 }
 
 export interface CourseMutationResult {
@@ -199,6 +226,31 @@ export interface BookmarkEnriched {
   createdAt: string;
 }
 
+/** One light/dark set of theme color tokens — mirrors backend ThemeTokens. */
+export interface ThemeTokens {
+  bgBase: string;
+  bgMesh1: string;
+  bgMesh2: string;
+  bgMesh3: string;
+  text: string;
+  textSoft: string;
+  muted: string;
+  success: string;
+  warning: string;
+  danger: string;
+  green: string;
+  tip: string;
+}
+
+export interface BrandingTheme {
+  light: ThemeTokens;
+  dark: ThemeTokens;
+}
+
+/**
+ * Instance branding — mirrors backend BrandingDto (GET /api/v1/settings/branding).
+ * Public read (landing before login); writes are Admin+.
+ */
 export interface InstanceBranding {
   name: string;
   tagline: string;
@@ -207,5 +259,27 @@ export interface InstanceBranding {
   heroTitle: string | null;
   heroSubtitle: string | null;
   heroCta: string | null;
-  locale: "en" | "fr";
+  locale: string;
+  favicon: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  fontPreset: string;
+  theme: BrandingTheme;
+}
+
+/** Partial patch payload for PATCH /api/v1/settings/branding (only changed fields). */
+export interface UpdateBrandingPayload {
+  name?: string;
+  tagline?: string;
+  logo?: { kind: string; value: string };
+  accent?: string;
+  heroTitle?: string | null;
+  heroSubtitle?: string | null;
+  heroCta?: string | null;
+  locale?: string;
+  favicon?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  fontPreset?: string;
+  theme?: BrandingTheme;
 }

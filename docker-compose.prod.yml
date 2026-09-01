@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────
+# Production overlay — adds the Caddy reverse proxy (automatic HTTPS).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+#
+# In the base file, backend (8080) and frontend (3000) are bound to
+# 127.0.0.1 only, so they are NOT public. Caddy reaches the frontend
+# through the internal "codestar-net" network (service name "frontend").
+# ─────────────────────────────────────────────────────────────
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: codestar-caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3 (QUIC)
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # certificates & ACME account (persisted)
+      - caddy_config:/config
+    networks:
+      - codestar-net
+
+volumes:
+  caddy_data:
+  caddy_config:
