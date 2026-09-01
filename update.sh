@@ -96,6 +96,36 @@ restore_db() {
   ok "Database restored"
 }
 
+rollback() {
+  err "$1 Rolling back to $(git rev-parse --short "$OLD_COMMIT")…"
+
+  # La base est restauree backend arrete : le redemarrer avant la restauration
+  # le ferait tourner sur un schema partiellement restaure.
+  $COMPOSE stop backend >/dev/null 2>&1 || true
+
+  local restore_failed=0
+  if [ -n "$BACKUP_FILE" ]; then
+    restore_db "$BACKUP_FILE" || restore_failed=1
+  else
+    warn "No DB restore: the backup was skipped (--no-backup)."
+  fi
+
+  git reset --hard "$OLD_COMMIT"
+  $COMPOSE up --build -d || err "Rebuilding the previous revision also failed - manual recovery required."
+
+  if [ "$restore_failed" -eq 1 ]; then
+    err "Code rolled back, but the DATABASE RESTORE FAILED. Restore manually from: $BACKUP_FILE"
+    exit 1
+  fi
+
+  if wait_healthy codestar-backend 60; then
+    warn "Rolled back successfully. The update was NOT applied."
+  else
+    err "Rollback finished but backend still unhealthy. Check: $COMPOSE logs backend"
+  fi
+  exit 1
+}
+
 # ── 1. is there anything new? ────────────────────────────────
 log "Checking for updates…"
 git fetch --quiet
@@ -123,7 +153,7 @@ log "Pulling new code…"
 git merge --ff-only "$NEW_COMMIT"
 
 log "Rebuilding and restarting…"
-$COMPOSE up --build -d
+$COMPOSE up --build -d || rollback "Build or startup failed after update."
 
 # ── 4. verify, else rollback ─────────────────────────────────
 log "Waiting for backend health…"
@@ -133,29 +163,4 @@ if wait_healthy codestar-backend 60; then
   exit 0
 fi
 
-err "Backend unhealthy after update. Rolling back to $(git rev-parse --short "$OLD_COMMIT")…"
-# La base est restauree backend arrete : le redemarrer avant la restauration
-# le ferait tourner sur un schema partiellement restaure.
-$COMPOSE stop backend >/dev/null 2>&1 || true
-
-RESTORE_FAILED=0
-if [ -n "$BACKUP_FILE" ]; then
-  restore_db "$BACKUP_FILE" || RESTORE_FAILED=1
-else
-  warn "No DB restore: the backup was skipped (--no-backup)."
-fi
-
-git reset --hard "$OLD_COMMIT"
-$COMPOSE up --build -d
-
-if [ "$RESTORE_FAILED" -eq 1 ]; then
-  err "Code rolled back, but the DATABASE RESTORE FAILED. Restore manually from: $BACKUP_FILE"
-  exit 1
-fi
-
-if wait_healthy codestar-backend 60; then
-  warn "Rolled back successfully. The update was NOT applied."
-else
-  err "Rollback finished but backend still unhealthy. Check: $COMPOSE logs backend"
-fi
-exit 1
+rollback "Backend unhealthy after update."
