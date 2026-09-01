@@ -1,12 +1,12 @@
 # Install dependencies
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Build
-FROM node:20-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 RUN npm install -g pnpm
 COPY --from=deps /app/node_modules ./node_modules
@@ -23,7 +23,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
 # Runtime (standalone)
-FROM node:20-alpine AS runtime
+FROM node:26-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
