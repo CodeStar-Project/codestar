@@ -83,7 +83,7 @@ jobs:
           output: trivy-fs.sarif
           severity: CRITICAL,HIGH
       - name: Upload filesystem SARIF
-        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v3
         if: always()
         with:
           sarif_file: trivy-fs.sarif
@@ -98,7 +98,7 @@ jobs:
           output: trivy-config.sarif
           severity: CRITICAL,HIGH
       - name: Upload config SARIF
-        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v3
         if: always()
         with:
           sarif_file: trivy-config.sarif
@@ -122,7 +122,7 @@ jobs:
           results_file: scorecard.sarif
           results_format: sarif
           publish_results: true
-      - uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+      - uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v3
         if: always()
         with:
           sarif_file: scorecard.sarif
